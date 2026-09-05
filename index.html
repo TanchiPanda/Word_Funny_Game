@@ -392,6 +392,19 @@
             letter-spacing: 1px;
         }
         .access-login:active { transform: scale(0.96); }
+        .access-login.hidden { display: none; }
+        .access-out {
+            padding: 7px 18px;
+            border: 1.5px solid rgba(255,107,107,0.6);
+            border-radius: 8px;
+            background: rgba(255,107,107,0.15);
+            color: #ff8888;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .access-out:active { transform: scale(0.96); }
         .access-bar.hidden { display: none; }
         /* ========== 受限模式按钮（锁定态） ========== */
         .mode-btn.locked {
@@ -493,10 +506,11 @@
 <div class="container">
     <!-- ========== 全局音效开关（固定左上角，所有页面可用） ========== -->
     <button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()" aria-label="音效开关" title="点击开启或关闭音效"></button>
-    <!-- ========== 客人模式提示条 ========== -->
+    <!-- ========== 身份提示条（客人模式 / 已解锁） ========== -->
     <div class="access-bar hidden" id="accessBar">
         <span class="access-label" id="accessLabel">👤 客人模式</span>
-        <button class="access-login" type="button" onclick="goLogin()">登录解锁全部</button>
+        <button class="access-login hidden" id="accessLogin" type="button" onclick="goLogin()">登录解锁全部</button>
+        <button class="access-out" id="accessLogout" type="button" onclick="goLogout()">退出登录</button>
     </div>
 <!-- ========== 单词剔除选词页（默认首页，无密码） ========== -->
     <div id="selectPage" class="page active">
@@ -1119,11 +1133,20 @@ function goLogin() {
     playClickSound();
     location.href = "login.html";
 }
+function goLogout() {
+    playClickSound();
+    if (confirm("确定要退出登录吗？退出后将回到登录页重新选择身份。")) {
+        localStorage.removeItem(ACCESS_KEY);
+        location.href = "login.html";
+    }
+}
 function renderAccessUI() {
     const bar = document.getElementById("accessBar");
     if (!bar) return;
     const guest = isGuest();
-    bar.classList.toggle("hidden", !guest);
+    bar.classList.remove("hidden");
+    document.getElementById("accessLabel").innerText = guest ? "👤 客人模式" : "✅ 已解锁全部内容";
+    document.getElementById("accessLogin").classList.toggle("hidden", !guest);
     document.getElementById("modeBtnRace").classList.toggle("locked", guest);
     document.getElementById("modeBtnHell").classList.toggle("locked", guest);
     renderSelectTip();
