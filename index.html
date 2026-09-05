@@ -365,12 +365,139 @@
             color: #a8a8d8;
             border-color: rgba(255,255,255,0.25);
         }
+        /* ========== 身份提示条（客人模式） ========== */
+        .access-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(78,205,196,0.4);
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .access-label { color: #4ecdc4; font-weight: bold; letter-spacing: 1px; }
+        .access-login {
+            padding: 7px 18px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg,#ffd700,#ff9500);
+            color: #222;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .access-login:active { transform: scale(0.96); }
+        .access-bar.hidden { display: none; }
+        /* ========== 受限模式按钮（锁定态） ========== */
+        .mode-btn.locked {
+            filter: grayscale(0.85);
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        /* ========== 密码解锁弹窗 ========== */
+        .gate-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(10,5,30,0.72);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gate-mask.show { display: flex; }
+        .gate-box {
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(160deg,#3a2470,#2c1b54);
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 18px;
+            padding: 28px 22px 22px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .gate-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+        .gate-tip {
+            font-size: 14px;
+            color: #ddd;
+            line-height: 1.9;
+            margin-bottom: 16px;
+        }
+        .gate-tip .hint-text { color: #ffd700; font-weight: bold; font-size: 17px; }
+        .gate-input {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,215,0,0.35);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 17px;
+            text-align: center;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .gate-input:focus {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+        .gate-input::placeholder { color: rgba(255,255,255,0.4); }
+        .gate-err {
+            color: #ff8888;
+            font-size: 13px;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+        .gate-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+        .gate-btn {
+            flex: 1;
+            max-width: 150px;
+            padding: 12px 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .gate-btn.cancel {
+            background: rgba(255,255,255,0.12);
+            color: #ddd;
+            border: 1.5px solid rgba(255,255,255,0.2);
+        }
+        .gate-btn.ok {
+            background: linear-gradient(90deg,#ffd700,#ff9500);
+            color: #222;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.35);
+        }
+        .gate-btn:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
 <div class="container">
     <!-- ========== 全局音效开关（固定左上角，所有页面可用） ========== -->
     <button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()" aria-label="音效开关" title="点击开启或关闭音效"></button>
+    <!-- ========== 客人模式提示条 ========== -->
+    <div class="access-bar hidden" id="accessBar">
+        <span class="access-label" id="accessLabel">👤 客人模式</span>
+        <button class="access-login" type="button" onclick="goLogin()">登录解锁全部</button>
+    </div>
 <!-- ========== 单词剔除选词页（默认首页，无密码） ========== -->
     <div id="selectPage" class="page active">
         <div class="select-header">
@@ -389,10 +516,10 @@
             <button class="leaderboard-clear" onclick="clearLeaderboard()">清除全部记录</button>
         </div>
         <div class="bottom-select-area">
-            <button class="mode-btn heaven-btn" onclick="startGame('heaven')">☁️ 天堂模式</button>
-            <button class="mode-btn simple-btn" onclick="startGame('easy')">🟢 简单模式</button>
-            <button class="mode-btn challenge-btn" onclick="startGame('race')">🔴 挑战模式</button>
-            <button class="mode-btn hell-btn" onclick="startGame('hell')">💀 地狱模式</button>
+            <button class="mode-btn heaven-btn" onclick="handleModeClick('heaven')">☁️ 天堂模式</button>
+            <button class="mode-btn simple-btn" onclick="handleModeClick('easy')">🟢 简单模式</button>
+            <button class="mode-btn challenge-btn" id="modeBtnRace" onclick="handleModeClick('race')">🔴 困难模式</button>
+            <button class="mode-btn hell-btn" id="modeBtnHell" onclick="handleModeClick('hell')">💀 地狱模式</button>
         </div>
     </div>
     <!-- ========== 连连看游戏页 ========== -->
@@ -416,6 +543,19 @@
         <div class="bottom-btn-area">
             <button class="game-btn reset-btn" id="resetBtn">🔄 重置本局</button>
             <button class="game-btn home-back-btn" onclick="backToSelect()">🏠 返回选词页</button>
+        </div>
+    </div>
+</div>
+<!-- ========== 密码解锁弹窗 ========== -->
+<div class="gate-mask" id="gateModal">
+    <div class="gate-box">
+        <div class="gate-title">🔒 此功能需要解锁</div>
+        <div class="gate-tip">请输入通关暗号解锁全部内容<br>提示：<span class="hint-text">二水在手</span></div>
+        <input class="gate-input" id="gateInput" placeholder="请输入通关暗号" onkeydown="if(event.key==='Enter')submitGate()">
+        <div class="gate-err" id="gateErr"></div>
+        <div class="gate-btns">
+            <button class="gate-btn cancel" type="button" onclick="closeGate()">取消</button>
+            <button class="gate-btn ok" type="button" onclick="submitGate()">确认解锁</button>
         </div>
     </div>
 </div>
@@ -500,6 +640,22 @@ function playWinSound() {
             gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.1);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
             osc.start(ctx.currentTime + i * 0.1); osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+        });
+    } catch(e) {}
+}
+function playUnlockSound() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = freq; osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.25);
+            osc.start(ctx.currentTime + i * 0.08); osc.stop(ctx.currentTime + i * 0.08 + 0.25);
         });
     } catch(e) {}
 }
@@ -939,7 +1095,7 @@ function activeWordList() { return LEVELS[currentLevel].words; }
 const modeNames = {
     heaven: "☁️ 天堂模式",
     easy: "🟢 简单模式",
-    race: "🔴 挑战模式",
+    race: "🔴 困难模式",
     hell: "💀 地狱模式"
 };
 // ===== 全局变量 =====
@@ -952,26 +1108,106 @@ let hellOpenCards = [];
 const MAX_OPEN = 6;
 const HELL_DELAY = 3000;
 let gameStartTime = 0;
+// ===== 身份/权限（客人模式受限） =====
+const ACCESS_KEY = "wordGameAccess";
+const LOCKED_MODES = ["race", "hell"];
+const GUEST_MAX_LEVEL = 2; // 客人仅可体验 Level 1~3（下标 0~2）
+function isGuest() {
+    return localStorage.getItem(ACCESS_KEY) !== "full";
+}
+function goLogin() {
+    playClickSound();
+    location.href = "login.html";
+}
+function renderAccessUI() {
+    const bar = document.getElementById("accessBar");
+    if (!bar) return;
+    const guest = isGuest();
+    bar.classList.toggle("hidden", !guest);
+    document.getElementById("modeBtnRace").classList.toggle("locked", guest);
+    document.getElementById("modeBtnHell").classList.toggle("locked", guest);
+    renderSelectTip();
+}
+function unlockFull() {
+    localStorage.setItem(ACCESS_KEY, "full");
+    playUnlockSound();
+    renderAccessUI();
+    renderLevelSelect();
+    renderLeaderboard();
+}
+// ===== 密码解锁弹窗 =====
+let pendingGateAction = null; // {type:'level', idx} | {type:'mode', mode} | {type:'moreLevels'}
+function openGate(action) {
+    pendingGateAction = action;
+    document.getElementById("gateErr").innerText = "";
+    document.getElementById("gateInput").value = "";
+    document.getElementById("gateModal").classList.add("show");
+    document.getElementById("gateInput").focus();
+}
+function closeGate() {
+    pendingGateAction = null;
+    document.getElementById("gateModal").classList.remove("show");
+}
+function submitGate() {
+    const v = document.getElementById("gateInput").value.trim();
+    if (v === "满分有我") {
+        const act = pendingGateAction;
+        pendingGateAction = null;
+        document.getElementById("gateModal").classList.remove("show");
+        unlockFull();
+        if (act && act.type === "level") switchLevel(act.idx);
+        else if (act && act.type === "mode") startGame(act.mode);
+        // act.type === 'moreLevels'：已解锁并重渲染下拉，无需跳转
+    } else {
+        playErrorSound();
+        document.getElementById("gateErr").innerText = "暗号错误！再想想提示：二水在手";
+        document.getElementById("gateInput").value = "";
+    }
+}
 // ===== 页面切换 =====
 function showPage(id) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.getElementById(id).classList.add("active");
 }
 function initLevels() {
+    renderLevelSelect();
+    renderWordTags();
+    renderLeaderboard();
+}
+function renderLevelSelect() {
     const sel = document.getElementById("levelSelect");
     sel.innerHTML = "";
+    const guest = isGuest();
     LEVELS.forEach((lv, i) => {
+        if (guest && i > GUEST_MAX_LEVEL) return; // 客人只列 Level 1~3
         const opt = document.createElement("option");
         opt.value = String(i);
         opt.textContent = lv.name + "（" + lv.words.length + "词）";
         sel.appendChild(opt);
     });
-    sel.value = String(currentLevel);
-    sel.onchange = () => switchLevel(Number(sel.value));
-    renderWordTags();
-    renderLeaderboard();
+    if (guest) {
+        const lock = document.createElement("option");
+        lock.value = "-1";
+        lock.textContent = "🔒 解锁全部课时…";
+        sel.appendChild(lock);
+    }
+    sel.value = String(Math.min(currentLevel, GUEST_MAX_LEVEL));
+    sel.onchange = () => {
+        const v = sel.value;
+        if (v === "-1") {
+            sel.value = String(currentLevel);
+            openGate({ type: "moreLevels" });
+            return;
+        }
+        switchLevel(Number(v));
+    };
 }
 function switchLevel(idx) {
+    if (isGuest() && idx > GUEST_MAX_LEVEL) {
+        document.getElementById("levelSelect").value = String(currentLevel);
+        openGate({ type: "level", idx: idx });
+        return;
+    }
     playClickSound();
     currentLevel = idx;
     document.getElementById("levelSelect").value = String(currentLevel);
@@ -995,7 +1231,22 @@ function renderWordTags() {
         box.appendChild(tag);
     });
     const tip = document.getElementById("selectTip");
-    if (tip) tip.innerText = "当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）";
+    if (tip) {
+        if (isGuest()) {
+            tip.innerText = "客人模式 · 当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）；更多课时与困难、地狱模式需解锁";
+        } else {
+            tip.innerText = "当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）";
+        }
+    }
+}
+function renderSelectTip() {
+    const tip = document.getElementById("selectTip");
+    if (!tip) return;
+    if (isGuest()) {
+        tip.innerText = "客人模式 · 当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）；更多课时与困难、地狱模式需解锁";
+    } else {
+        tip.innerText = "当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）";
+    }
 }
 function toggleRemove(dom, index) {
     const removed = getRemovedList();
@@ -1055,8 +1306,20 @@ function clearLeaderboard() {
     }
 }
 // ===== 开始游戏 =====
+function handleModeClick(mode) {
+    playClickSound();
+    if (isGuest() && LOCKED_MODES.includes(mode)) {
+        openGate({ type: "mode", mode: mode });
+        return;
+    }
+    startGame(mode);
+}
 function startGame(mode) {
     playClickSound();
+    if (isGuest() && LOCKED_MODES.includes(mode)) {
+        openGate({ type: "mode", mode: mode });
+        return;
+    }
     gameMode = mode;
     keptWords = [];
     const removed = getRemovedList();
@@ -1229,6 +1492,7 @@ function backToSelect() {
 }
 // ===== 启动：直接进入选词（划词）页 =====
 updateSoundBtn();
+renderAccessUI();
 initLevels();
 </script>
 </body>
