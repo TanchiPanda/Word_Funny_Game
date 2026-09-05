@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <title>单词闯关连连看</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg,#2c1b54,#422880,#201440);
+            padding: 20px 12px 40px;
+            text-align: center;
+            overflow-x: hidden;
+            color: #fff;
+        }
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            background: linear-gradient(90deg,#ffd700,#ff6b6b,#4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1.4;
+        }
+        .tip-info {
+            color:#ccccdd;
+            margin-bottom:16px;
+            font-size:16px;
+        }
+        .page { display:none; }
+        .page.active { display:block; }
+        /* ========== 选词页顶部栏（标题 + 右上角课时选择） ========== */
+        .select-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .select-header h2 { margin-bottom: 0; }
+        .level-select-wrap {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 2px solid rgba(255,215,0,0.45);
+            border-radius: 12px;
+            padding: 8px 12px;
+        }
+        .level-select-wrap label {
+            font-size: 14px;
+            color: #ffd700;
+            font-weight: bold;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        #levelSelect {
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(255,215,0,0.5);
+            background: #2c1b54;
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+            min-width: 118px;
+        }
+        #levelSelect option { background: #2c1b54; color: #fff; }
+        @media (max-width: 640px) {
+            .select-header { flex-direction: column; gap: 12px; }
+            .level-select-wrap { position: static; transform: none; }
+        }
+        /* ========== 选词页 ========== */
+        .word-tag-wrap {
+            background: rgba(255,255,255,0.12);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 24px 16px;
+            margin: 20px 0;
+            max-height: 38vh;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .word-tag {
+            padding: 12px 16px;
+            background: rgba(78,205,196,0.25);
+            border: 2px solid #4ecdc4;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .word-tag:hover { transform: scale(1.03); }
+        .word-tag.remove {
+            background: rgba(255,107,107,0.2);
+            border-color: #ff6b6b;
+            color: #bbbbbb;
+            text-decoration: line-through;
+        }
+        /* ========== 最佳用时排行榜 ========== */
+        .leaderboard {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 16px;
+            padding: 18px 14px;
+            margin: 20px 0;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .leaderboard-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 14px;
+            letter-spacing: 2px;
+        }
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .leaderboard-item {
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+        .leaderboard-item .mode-name {
+            font-size: 12px;
+            color: #a8a8d8;
+            margin-bottom: 5px;
+        }
+        .leaderboard-item .best-time {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        .leaderboard-item .best-words {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .leaderboard-item .best-time.no-record {
+            color: #666;
+            font-size: 13px;
+        }
+        .leaderboard-clear {
+            margin-top: 12px;
+            padding: 7px 18px;
+            border: 1px solid rgba(255,107,107,0.5);
+            background: rgba(255,107,107,0.15);
+            color: #ff8888;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        /* ========== 模式按钮 ========== */
+        .mode-btn {
+            width: 100%;
+            max-width: 340px;
+            padding: 16px 14px;
+            border-radius: 14px;
+            border: none;
+            font-size: 17px;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .mode-btn:active { transform: scale(0.97); }
+        .heaven-btn {
+            background: linear-gradient(90deg,#48c9b0,#85c1e9);
+            box-shadow: 0 4px 15px rgba(72,201,176,0.35);
+        }
+        .simple-btn {
+            background: linear-gradient(90deg,#39d98a,#4ecdc4);
+            box-shadow: 0 4px 15px rgba(57,217,138,0.35);
+        }
+        .challenge-btn {
+            background: linear-gradient(90deg,#ff6b6b,#ee4c4c);
+            box-shadow: 0 4px 15px rgba(255,107,107,0.35);
+        }
+        .hell-btn {
+            background: linear-gradient(90deg,#8b0000,#c0392b);
+            box-shadow: 0 4px 15px rgba(192,57,43,0.4);
+        }
+        .bottom-select-area {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+        }
+        /* ========== 游戏页 ========== */
+        .tip {
+            color:#ddd;
+            margin-bottom:12px;
+            font-size:15px;
+        }
+        .progress-wrap {
+            width: 100%;
+            height: 22px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 11px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg,#4ecdc4,#39d98a);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-bar.time {
+            background: linear-gradient(90deg,#ffd700,#ff6b6b);
+        }
+        .status-text {
+            font-size: 17px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+        .two-col-wrap {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-direction: row;
+            align-items: flex-start;
+        }
+        .col {
+            width: 48%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .col-title {
+            font-size: 14px;
+            color: #a8a8d8;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+        .item {
+            padding: 14px 10px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(255,255,255,0.2);
+            color: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: clamp(12px, 2.8vw, 16px);
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+            line-height: 1.4;
+        }
+        .item:active { transform: scale(0.96); }
+        .item.selected {
+            box-shadow: 0 0 0 3px #ffd700;
+            background: rgba(255,215,0,0.25);
+        }
+        .item.matched {
+            background: rgba(57,217,138,0.35);
+            border-color: #39d98a;
+            transform: scale(1.02);
+            pointer-events: none;
+        }
+        /* 地狱模式遮罩 */
+        .item.hell-cover {
+            color: transparent !important;
+        }
+        .item.hell-cover::after {
+            content: "?";
+            position: absolute;
+            inset: 0;
+            background: #601818;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #ff8888;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .bottom-btn-area {
+            margin-top: 28px;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .game-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            min-width: 140px;
+            max-width: 200px;
+        }
+        .reset-btn { background: linear-gradient(90deg,#ff6b6b,#ee4c4c); }
+        .home-back-btn { background: linear-gradient(90deg,#6c5ce7,#a29bfe); }
+        /* ========== 全局音效开关 ========== */
+        .sound-toggle {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 999;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(255,215,0,0.5);
+            background: rgba(44,27,84,0.88);
+            color: #ffd700;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+        }
+        .sound-toggle:active { transform: scale(0.95); }
+        .sound-toggle svg { display: block; }
+        .sound-toggle.off {
+            color: #a8a8d8;
+            border-color: rgba(255,255,255,0.25);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- ========== 全局音效开关（固定左上角，所有页面可用） ========== -->
+    <button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()" aria-label="音效开关" title="点击开启或关闭音效"></button>
+<!-- ========== 单词剔除选词页（默认首页，无密码） ========== -->
+    <div id="selectPage" class="page active">
+        <div class="select-header">
+            <h2>📚 剔除你不需要练习的单词</h2>
+            <div class="level-select-wrap">
+                <label for="levelSelect">课时</label>
+                <select id="levelSelect" aria-label="课时选择"></select>
+            </div>
+        </div>
+        <div class="tip-info" id="selectTip">默认本课时全部单词都将加入游戏，点击单词即可剔除（划掉）</div>
+        <div class="word-tag-wrap" id="tagBox"></div>
+        <!-- 最佳用时排行榜 -->
+        <div class="leaderboard">
+            <div class="leaderboard-title" id="leaderboardTitle">🏆 最佳用时排行榜</div>
+            <div class="leaderboard-grid" id="leaderboardGrid"></div>
+            <button class="leaderboard-clear" onclick="clearLeaderboard()">清除全部记录</button>
+        </div>
+        <div class="bottom-select-area">
+            <button class="mode-btn heaven-btn" onclick="startGame('heaven')">☁️ 天堂模式</button>
+            <button class="mode-btn simple-btn" onclick="startGame('easy')">🟢 简单模式</button>
+            <button class="mode-btn challenge-btn" onclick="startGame('race')">🔴 挑战模式</button>
+            <button class="mode-btn hell-btn" onclick="startGame('hell')">💀 地狱模式</button>
+        </div>
+    </div>
+    <!-- ========== 连连看游戏页 ========== -->
+    <div id="gamePage" class="page">
+        <h2>单词配对游戏</h2>
+        <div class="tip">✅ 可自由先点英文或者中文进行配对</div>
+        <div class="progress-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="status-text" id="statusText"></div>
+        <div class="two-col-wrap">
+            <div class="col">
+                <div class="col-title">🔤 ENGLISH</div>
+                <div id="enBox"></div>
+            </div>
+            <div class="col">
+                <div class="col-title">📖 中文释义</div>
+                <div id="cnBox"></div>
+            </div>
+        </div>
+        <div class="bottom-btn-area">
+            <button class="game-btn reset-btn" id="resetBtn">🔄 重置本局</button>
+            <button class="game-btn home-back-btn" onclick="backToSelect()">🏠 返回选词页</button>
+        </div>
+    </div>
+</div>
+<script>
+// ===== 音效系统（全部离线生成）=====
+let audioCtx = null;
+// ===== 音效开关（设置持久化到 localStorage）=====
+let soundEnabled = (localStorage.getItem("wordGameSoundEnabled") !== "0");
+const ICON_SOUND_ON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>';
+const ICON_SOUND_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"></polygon><line x1="16" y1="9" x2="22" y2="15"></line><line x1="22" y1="9" x2="16" y2="15"></line></svg>';
+function updateSoundBtn() {
+    const btn = document.getElementById("soundToggle");
+    if (!btn) return;
+    btn.classList.toggle("off", !soundEnabled);
+    btn.innerHTML = (soundEnabled ? ICON_SOUND_ON + "<span>音效开</span>" : ICON_SOUND_OFF + "<span>音效关</span>");
+}
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem("wordGameSoundEnabled", soundEnabled ? "1" : "0");
+    updateSoundBtn();
+    if (soundEnabled) playClickSound();
+}
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+function playClickSound() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 800; osc.type = 'square';
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.08);
+    } catch(e) {}
+}
+function playSuccessSound() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = freq; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+            osc.start(ctx.currentTime + i * 0.1); osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+        });
+    } catch(e) {}
+}
+function playErrorSound() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+        osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
+    } catch(e) {}
+}
+
+function playWinSound() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioCtx();
+        const notes = [523, 587, 659, 698, 784, 880, 988, 1047];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = freq; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+            osc.start(ctx.currentTime + i * 0.1); osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+        });
+    } catch(e) {}
+}
+
+
+// ===== 词库：雪球初中英语初二秋季教材单词（已跳过「抢跑单词」42 个；基础词汇 383 个，每 20 词一课时）=====
+const LEVELS = [
+  { name: "Level 1", words: [
+    {en:"compare", phonetic:"/kəmˈpeə(r)/", pos:"v.", cn:"比较；对比"},
+    {en:"shy", phonetic:"/ʃaɪ/", pos:"adj.", cn:"害羞的"},
+    {en:"lazy", phonetic:"/ˈleɪzi/", pos:"adj.", cn:"懒惰的；懒洋洋的"},
+    {en:"loud", phonetic:"/laʊd/", pos:"adv. adj.", cn:"响亮地；大声的"},
+    {en:"outgoing", phonetic:"/ˈaʊtɡəʊɪŋ/", pos:"adj.", cn:"外向的"},
+    {en:"hard-working", phonetic:"/ˌhɑːd ˈwɜːkɪŋ/", pos:"adj.", cn:"勤奋的"},
+    {en:"perform", phonetic:"/pəˈfɔːm/", pos:"v.", cn:"表演；执行"},
+    {en:"solve", phonetic:"/sɒlv/", pos:"v.", cn:"解决；解答"},
+    {en:"flute", phonetic:"/fluːt/", pos:"n.", cn:"长笛"},
+    {en:"congratulation", phonetic:"/kənˌɡrætʃuˈleɪʃn/", pos:"n.", cn:"祝贺；恭喜"},
+    {en:"Congratulations (on...)!", phonetic:"/kənˌɡrætʃuˈleɪʃnz (ɒn... )! /", pos:"phr.", cn:"（对…… 表示）祝贺！"},
+    {en:"prize", phonetic:"/praɪz/", pos:"n.", cn:"奖；奖励"},
+    {en:"attend", phonetic:"/əˈtend/", pos:"v.", cn:"参加；出席"},
+    {en:"as... as...", phonetic:"/æz... æz.../", pos:"phr.", cn:"像…… 一样……"},
+    {en:"besides", phonetic:"/bɪˈsaɪdz/", pos:"prep. adv.", cn:"除…… 之外（还）；而且"},
+    {en:"spare", phonetic:"/speə(r)/", pos:"adj. v.", cn:"空闲的；备用的；抽出；拨出"},
+    {en:"spare time", phonetic:"/ˈspeə taɪm/", pos:"n.", cn:"空闲时间"},
+    {en:"pleasure", phonetic:"/ˈpleʒə(r)/", pos:"n.", cn:"乐事；愉快；荣幸"},
+    {en:"have sth in common", phonetic:"/hæv sth ɪn ˈkɒmən/", pos:"phr.", cn:"有共同之处"},
+    {en:"appearance", phonetic:"/əˈpɪərəns/", pos:"n.", cn:"外表；露面"},
+  ] },
+  { name: "Level 2", words: [
+    {en:"personality", phonetic:"/ˌpɜːsəˈnæləti/", pos:"n.", cn:"性格；品质"},
+    {en:"serious", phonetic:"/ˈsɪəriəs/", pos:"adj.", cn:"严肃的；严重的"},
+    {en:"strength", phonetic:"/streŋθ/", pos:"n.", cn:"优势；力量"},
+    {en:"fact", phonetic:"/fækt/", pos:"n.", cn:"事实；现实"},
+    {en:"slim", phonetic:"/slɪm/", pos:"adj.", cn:"苗条的；薄的"},
+    {en:"population", phonetic:"/ˌpɒpjuˈleɪʃn/", pos:"n.", cn:"人口"},
+    {en:"km", phonetic:"/ˈkɪləʊmiːtə(r); kɪˈlɒmɪtə(r)/", pos:"n.", cn:"千米；公里；（= kilometre /kilometer ）"},
+    {en:"average", phonetic:"/ˈævərɪdʒ/", pos:"adj.", cn:"平均的；平常的"},
+    {en:"rainfall", phonetic:"/ˈreɪnfɔːl/", pos:"n.", cn:"降雨量"},
+    {en:"per", phonetic:"/pə(r)/", pos:"prep.", cn:"每"},
+    {en:"mm", phonetic:"/ˈmɪlimiːtə(r)/", pos:"n.", cn:"毫米 （= millimetre /millimeter ）"},
+    {en:"pleasant", phonetic:"/ˈpleznt/", pos:"adj.", cn:"宜人的；友好的"},
+    {en:"alike", phonetic:"/əˈlaɪk/", pos:"adj. adv.", cn:"相像的；相似地"},
+    {en:"mirror", phonetic:"/ˈmɪrə(r)/", pos:"n.", cn:"镜子"},
+    {en:"interest", phonetic:"/ˈɪntrəst/", pos:"n. v.", cn:"业余爱好；兴趣；使感兴趣"},
+    {en:"novel", phonetic:"/ˈnɒvl/", pos:"n.", cn:"小说"},
+    {en:"difference", phonetic:"/ˈdɪfrəns/", pos:"n.", cn:"差异"},
+    {en:"sense", phonetic:"/sens/", pos:"n.", cn:"理解力；感觉"},
+    {en:"humour", phonetic:"/ˈhjuːmə(r)/", pos:"n.", cn:"幽默；幽默感 （= humor ）"},
+    {en:"thanks to", phonetic:"/θæŋks tuː/", pos:"phr.", cn:"归功于；由于；因为"},
+  ] },
+  { name: "Level 3", words: [
+    {en:"less", phonetic:"/les/", pos:"adj. adv. pron.", cn:"较少的；更少的；较少地；更少地；较少；更少"},
+    {en:"straightforward", phonetic:"/ˌstreɪtˈfɔːwəd/", pos:"adj.", cn:"坦率的；简单的"},
+    {en:"opinion", phonetic:"/əˈpɪnjən/", pos:"n.", cn:"看法；意见"},
+    {en:"make a mistake", phonetic:"/meɪk ə mɪˈsteɪk/", pos:"phr.", cn:"犯错误"},
+    {en:"honest", phonetic:"/ˈɒnɪst/", pos:"adj.", cn:"坦诚的；诚实的"},
+    {en:"direct", phonetic:"/dəˈrekt; daɪˈrekt/", pos:"adj.", cn:"率直的；直接的"},
+    {en:"similarity", phonetic:"/ˌsɪməˈlærəti/", pos:"n.", cn:"相似之处"},
+    {en:"friendship", phonetic:"/ˈfrendʃɪp/", pos:"n.", cn:"友谊；友情"},
+    {en:"metre", phonetic:"/ˈmiːtə(r)/", pos:"n.", cn:"米 （= meter ）"},
+    {en:"prince", phonetic:"/prɪns/", pos:"n.", cn:"王子"},
+    {en:"character", phonetic:"/ˈkærəktə(r)/", pos:"n.", cn:"人物；个性"},
+    {en:"pauper", phonetic:"/ˈpɔːpə(r)/", pos:"n.", cn:"贫民；乞丐"},
+    {en:"exchange", phonetic:"/ɪksˈtʃeɪndʒ/", pos:"v.&n.", cn:"交换"},
+    {en:"accident", phonetic:"/ˈæksɪdənt/", pos:"n.", cn:"意外；（交通）事故"},
+    {en:"by accident", phonetic:"/baɪ ˈæksɪdənt/", pos:"phr.", cn:"偶然；意外地"},
+    {en:"expect", phonetic:"/ɪkˈspekt/", pos:"v.", cn:"预料；期待"},
+    {en:"silver", phonetic:"/ˈsɪlvə(r)/", pos:"adj. n.", cn:"银色的；银"},
+    {en:"silver lining", phonetic:"/ˈsɪlvə ˈlaɪnɪŋ/", pos:"n.", cn:"一线光明"},
+    {en:"situation", phonetic:"/ˌsɪtʃuˈeɪʃn/", pos:"n.", cn:"情况；状况"},
+    {en:"care about", phonetic:"/keə(r) əˈbaʊt/", pos:"phr.", cn:"关心；担心"},
+  ] },
+  { name: "Level 4", words: [
+    {en:"reach", phonetic:"/riːtʃ/", pos:"v.", cn:"伸手；达到"},
+    {en:"reach for", phonetic:"/riːtʃ fɔː(r)/", pos:"phr.", cn:"伸手触碰"},
+    {en:"touch", phonetic:"/tʌtʃ/", pos:"v.", cn:"触动；触碰"},
+    {en:"lend (sb) a hand", phonetic:"/lend (sb) ə hænd/", pos:"phr.", cn:"帮助（某人）"},
+    {en:"moss", phonetic:"/mɒs/", pos:"n.", cn:"苔藓"},
+    {en:"redwood", phonetic:"/ˈredwʊd/", pos:"n.", cn:"红杉；红木"},
+    {en:"cheetah", phonetic:"/ˈtʃiːtə/", pos:"n.", cn:"猎豹"},
+    {en:"folding", phonetic:"/ˈfəʊldɪŋ/", pos:"adj.", cn:"折叠式的；可折叠的"},
+    {en:"folding fan", phonetic:"/ˈfəʊldɪŋ fæn/", pos:"n.", cn:"折扇"},
+    {en:"bamboo", phonetic:"/ˌbæmˈbuː/", pos:"n.", cn:"竹；竹子"},
+    {en:"yeah", phonetic:"/jeə/", pos:"interj.", cn:"是的；对"},
+    {en:"popular", phonetic:"/ˈpɒpjələ(r)/", pos:"adj.", cn:"广受欢迎的；流行的"},
+    {en:"goodness", phonetic:"/ˈɡʊdnəs/", pos:"n.", cn:"美德；营养"},
+    {en:"tool", phonetic:"/tuːl/", pos:"n.", cn:"工具；手段"},
+    {en:"actually", phonetic:"/ˈæktʃuəli/", pos:"adv.", cn:"实际上；居然"},
+    {en:"shoot", phonetic:"/ʃuːt/", pos:"n. v.", cn:"幼苗；嫩芽；(shot /ʃɒt/) 开（枪）；射击"},
+    {en:"appear", phonetic:"/əˈpɪə(r)/", pos:"v.", cn:"出现；呈现"},
+    {en:"feel free (to do sth)", phonetic:"/fiːl friː (tuː duː sth)/", pos:"phr.", cn:"可以随便做某事"},
+    {en:"land", phonetic:"/lænd/", pos:"n. v.", cn:"陆地；土地；降落；着陆"},
+    {en:"African", phonetic:"/ˈæfrɪkən/", pos:"adj. n.", cn:"非洲的；非洲人的；非洲人"},
+  ] },
+  { name: "Level 5", words: [
+    {en:"peony", phonetic:"/ˈpiːəni/", pos:"n.", cn:"牡丹；芍药"},
+    {en:"lotus", phonetic:"/ˈləʊtəs/", pos:"n.", cn:"莲花"},
+    {en:"butterfly", phonetic:"/ˈbʌtəflaɪ/", pos:"n.", cn:"蝴蝶"},
+    {en:"wing", phonetic:"/wɪŋ/", pos:"n.", cn:"翅膀；翼"},
+    {en:"frog", phonetic:"/frɒɡ/", pos:"n.", cn:"蛙；青蛙"},
+    {en:"weigh", phonetic:"/weɪ/", pos:"v.", cn:"有…… 重；称重量"},
+    {en:"kg", phonetic:"/ˈkɪləʊɡræm/", pos:"n.", cn:"千克；公斤 （= kilogram ）"},
+    {en:"ginkgo", phonetic:"/ˈɡɪŋkɡəʊ/", pos:"n.", cn:"银杏"},
+    {en:"province", phonetic:"/ˈprɒvɪns/", pos:"n.", cn:"省份"},
+    {en:"take a walk", phonetic:"/teɪk ə wɔːk/", pos:"phr.", cn:"散步"},
+    {en:"connect", phonetic:"/kəˈnekt/", pos:"v.", cn:"关联；连接"},
+    {en:"connected", phonetic:"/kəˈnektɪd/", pos:"adj.", cn:"连接的；相关的"},
+    {en:"be connected with / to", phonetic:"/biː kəˈnektɪd wɪð / tuː/", pos:"phr.", cn:"与…… 相连；与…… 有关联"},
+    {en:"without", phonetic:"/wɪˈðaʊt/", pos:"prep.", cn:"没有；缺乏"},
+    {en:"imagine", phonetic:"/ɪˈmædʒɪn/", pos:"v.", cn:"想象；猜想"},
+    {en:"honey", phonetic:"/ˈhʌni/", pos:"n.", cn:"蜂蜜；（爱称）亲爱的"},
+    {en:"disappointed", phonetic:"/ˌdɪsəˈpɔɪntɪd/", pos:"adj.", cn:"失望的；沮丧的"},
+    {en:"connection", phonetic:"/kəˈnekʃn/", pos:"n.", cn:"联系；连接"},
+    {en:"pollination", phonetic:"/ˌpɒləˈneɪʃn/", pos:"n.", cn:"授粉"},
+    {en:"pollen", phonetic:"/ˈpɒlən/", pos:"n.", cn:"花粉"},
+  ] },
+  { name: "Level 6", words: [
+    {en:"action", phonetic:"/ˈækʃn/", pos:"n.", cn:"行动；行为"},
+    {en:"in fact", phonetic:"/ɪn fækt/", pos:"phr.", cn:"确切地说；实际上"},
+    {en:"per cent", phonetic:"/pə ˈsent/", pos:"n. adj.&adv.", cn:"百分之…… （= percent ）；每一百中"},
+    {en:"for this reason", phonetic:"/fɔː ðɪs ˈriːzn/", pos:"phr.", cn:"出于这个原因"},
+    {en:"planet", phonetic:"/ˈplænɪt/", pos:"n.", cn:"行星"},
+    {en:"in order to", phonetic:"/ɪn ˈɔːdə(r) tuː/", pos:"phr.", cn:"为了；以便"},
+    {en:"store", phonetic:"/stɔː(r)/", pos:"v. n.", cn:"贮存；存储；百货商店；商店"},
+    {en:"honeycomb", phonetic:"/ˈhʌnikəʊm/", pos:"n.", cn:"蜂巢"},
+    {en:"communicate", phonetic:"/kəˈmjuːnɪkeɪt/", pos:"v.", cn:"交流；沟通"},
+    {en:"play a part (in sth)", phonetic:"/pleɪ ə pɑːt (ɪn sth)/", pos:"phr.", cn:"参与某事"},
+    {en:"ecosystem", phonetic:"/ˈiːkəʊsɪstəm/", pos:"n.", cn:"生态系统"},
+    {en:"protect", phonetic:"/prəˈtekt/", pos:"v.", cn:"保护；防护"},
+    {en:"importance", phonetic:"/ɪmˈpɔːtns/", pos:"n.", cn:"重要性"},
+    {en:"title", phonetic:"/ˈtaɪtl/", pos:"n.", cn:"标题；题目；名称"},
+    {en:"human", phonetic:"/ˈhjuːmən/", pos:"n. adj.", cn:"人；人的；人类的"},
+    {en:"ant", phonetic:"/ænt/", pos:"n.", cn:"蚂蚁"},
+    {en:"be home to sb / sth", phonetic:"/biː həʊm tuː sb / sth/", pos:"phr.", cn:"有…… 栖息；是…… 的家乡"},
+    {en:"happiness", phonetic:"/ˈhæpinəs/", pos:"n.", cn:"幸福；快乐"},
+    {en:"disappoint", phonetic:"/ˌdɪsəˈpɔɪnt/", pos:"v.", cn:"使失望；使破灭"},
+    {en:"mushroom", phonetic:"/ˈmʌʃrʊm/", pos:"n.", cn:"蘑菇；伞菌"},
+  ] },
+  { name: "Level 7", words: [
+    {en:"ton", phonetic:"/tʌn/", pos:"n.", cn:"吨"},
+    {en:"role", phonetic:"/rəʊl/", pos:"n.", cn:"作用；职能；角色"},
+    {en:"play a role (in)", phonetic:"/pleɪ ə rəʊl (ɪn)/", pos:"phr.", cn:"在…… 中发挥作用；扮演角色"},
+    {en:"pea", phonetic:"/piː/", pos:"n.", cn:"豌豆"},
+    {en:"climate", phonetic:"/ˈklaɪmət/", pos:"n.", cn:"气候"},
+    {en:"ocean", phonetic:"/ˈəʊʃn/", pos:"n.", cn:"大海；海洋"},
+    {en:"except", phonetic:"/ɪkˈsept/", pos:"prep.", cn:"除…… 之外；除了"},
+    {en:"tiny", phonetic:"/ˈtaɪni/", pos:"adj.", cn:"极小的；微小的"},
+    {en:"live up to", phonetic:"/lɪv ʌp tuː/", pos:"phr.", cn:"达到；符合"},
+    {en:"lively", phonetic:"/ˈlaɪvli/", pos:"adj.", cn:"精力充沛的；生机勃勃的"},
+    {en:"the Arctic Ocean", phonetic:"/ðə ˈɑːktɪk ˈəʊʃn/", pos:"n.", cn:"北冰洋"},
+    {en:"pepper", phonetic:"/ˈpepə(r)/", pos:"n.", cn:"胡椒粉；菜椒"},
+    {en:"cut up", phonetic:"/kʌt ʌp/", pos:"phr.", cn:"切碎；剁碎"},
+    {en:"mix", phonetic:"/mɪks/", pos:"v. n.", cn:"（使）混合；融合；调配；混合；混杂；混合料"},
+    {en:"bake", phonetic:"/beɪk/", pos:"v.", cn:"烘焙"},
+    {en:"oven", phonetic:"/ˈʌvn/", pos:"n.", cn:"烤箱；烤炉"},
+    {en:"pour sth into sth", phonetic:"/pɔː(r) sth ˈɪntuː sth/", pos:"phr.", cn:"将…… 倒入……"},
+    {en:"flour", phonetic:"/ˈflaʊə(r)/", pos:"n.", cn:"面粉"},
+    {en:"boil", phonetic:"/bɔɪl/", pos:"v. n.", cn:"煮沸；烧开；沸腾；沸点"},
+    {en:"butter", phonetic:"/ˈbʌtə(r)/", pos:"n.", cn:"黄油"},
+  ] },
+  { name: "Level 8", words: [
+    {en:"cheese", phonetic:"/tʃiːz/", pos:"n.", cn:"奶酪；干酪"},
+    {en:"cut sth in / into sth", phonetic:"/kʌt sth ɪn / ˈɪntuː sth/", pos:"phr.", cn:"将…… 切成……"},
+    {en:"tablespoon", phonetic:"/ˈteɪblspuːn/", pos:"n.", cn:"一汤匙（的量）；餐匙；汤匙"},
+    {en:"mash", phonetic:"/mæʃ/", pos:"v.", cn:"捣烂；捣碎"},
+    {en:"mashed potatoes", phonetic:"/mæʃt pəˈteɪtəʊz/", pos:"n.", cn:"土豆泥"},
+    {en:"stir-fry", phonetic:"/ˈstɜː fraɪ/", pos:"v.", cn:"翻炒；炒；煸"},
+    {en:"do with", phonetic:"/duː wɪð/", pos:"phr.", cn:"处理"},
+    {en:"bowl", phonetic:"/bəʊl/", pos:"n.", cn:"碗；钵；盆"},
+    {en:"heat", phonetic:"/hiːt/", pos:"v. n.", cn:"加热；变热；热；温度；炎热天气"},
+    {en:"oil", phonetic:"/ɔɪl/", pos:"n.", cn:"食用油；石油；燃油"},
+    {en:"pan", phonetic:"/pæn/", pos:"n.", cn:"平底锅；烤盘"},
+    {en:"put sth back", phonetic:"/pʊt sth bæk/", pos:"phr.", cn:"将…… 放回"},
+    {en:"mix ... with ...", phonetic:"/mɪks ... wɪð .../", pos:"phr.", cn:"（使）…… 和…… 混合"},
+    {en:"simple", phonetic:"/ˈsɪmpl/", pos:"adj.", cn:"简单的；朴素的"},
+    {en:"ingredient", phonetic:"/ɪnˈɡriːdiənt/", pos:"n.", cn:"材料；食材"},
+    {en:"instruction", phonetic:"/ɪnˈstrʌkʃn/", pos:"n.", cn:"(pl.) 用法说明；操作指南"},
+    {en:"mess", phonetic:"/mes/", pos:"n.", cn:"脏乱；凌乱"},
+    {en:"pretty", phonetic:"/ˈprɪti/", pos:"adj. adv.", cn:"漂亮的；美丽的；相当；十分；非常"},
+    {en:"Christmas", phonetic:"/ˈkrɪsməs/", pos:"n.", cn:"圣诞节"},
+    {en:"pancake", phonetic:"/ˈpænkeɪk/", pos:"n.", cn:"烙饼；薄饼"},
+  ] },
+  { name: "Level 9", words: [
+    {en:"dream", phonetic:"/driːm/", pos:"n. v.", cn:"梦想；梦；(dreamt /dremt/ 或 dreamed)；做梦；梦见；梦想"},
+    {en:"university", phonetic:"/ˌjuːnɪˈvɜːsəti/", pos:"n.", cn:"（综合性）大学；高等学府"},
+    {en:"go boating", phonetic:"/ɡəʊ ˈbəʊtɪŋ/", pos:"phr.", cn:"去划船"},
+    {en:"memory", phonetic:"/ˈmeməri/", pos:"n.", cn:"回忆；记忆"},
+    {en:"visible", phonetic:"/ˈvɪzəbl/", pos:"adj.", cn:"看得见的；可见的"},
+    {en:"along with sb / sth", phonetic:"/əˈlɒŋ wɪð sb / sth/", pos:"phr.", cn:"除…… 以外（还）；与…… 同样地"},
+    {en:"pumpkin", phonetic:"/ˈpʌmpkɪn/", pos:"n.", cn:"南瓜"},
+    {en:"pie", phonetic:"/paɪ/", pos:"n.", cn:"果馅饼；肉馅饼"},
+    {en:"warm up", phonetic:"/wɔːm ʌp/", pos:"phr.", cn:"（使）活跃起来；热身；预热"},
+    {en:"cinnamon", phonetic:"/ˈsɪnəmən/", pos:"n.", cn:"肉桂皮；桂皮香料"},
+    {en:"fill ... with ...", phonetic:"/fɪl ... wɪð .../", pos:"phr.", cn:"（使）充满；（使）填满"},
+    {en:"sweetness", phonetic:"/ˈswiːtnəs/", pos:"n.", cn:"甜；芬芳；愉悦"},
+    {en:"college", phonetic:"/ˈkɒlɪdʒ/", pos:"n.", cn:"学院；大学"},
+    {en:"host", phonetic:"/həʊst/", pos:"n. v.", cn:"主人；东道主；主办；主持（活动）"},
+    {en:"hostess", phonetic:"/ˈhəʊstəs/", pos:"n.", cn:"女主人；女房东"},
+    {en:"recipe", phonetic:"/ˈresəpi/", pos:"n.", cn:"食谱；烹饪法"},
+    {en:"cream", phonetic:"/kriːm/", pos:"n.", cn:"奶油；护肤霜；奶油色"},
+    {en:"crust", phonetic:"/krʌst/", pos:"n.", cn:"糕饼酥皮；面包皮"},
+    {en:"mixture", phonetic:"/ˈmɪkstʃə(r)/", pos:"n.", cn:"混合物；结合体"},
+    {en:"least", phonetic:"/liːst/", pos:"adv.&pron. n.", cn:"最小；最少；最小；最少"},
+  ] },
+  { name: "Level 10", words: [
+    {en:"at least", phonetic:"/æt liːst/", pos:"phr.", cn:"至少"},
+    {en:"secret", phonetic:"/ˈsiːkrət/", pos:"n. adj.", cn:"诀窍；秘密；秘密的；隐秘的"},
+    {en:"according to", phonetic:"/əˈkɔːdɪŋ tuː/", pos:"phr.", cn:"根据；依照"},
+    {en:"whenever", phonetic:"/wenˈevə(r)/", pos:"adv.&conj.", cn:"每当；在任何…… 的时候"},
+    {en:"item", phonetic:"/ˈaɪtəm/", pos:"n.", cn:"项目"},
+    {en:"spaghetti", phonetic:"/spəˈɡeti/", pos:"n.", cn:"意大利细面条"},
+    {en:"spoon", phonetic:"/spuːn/", pos:"n.", cn:"(= spoonful)一勺的量；勺"},
+    {en:"slice", phonetic:"/slaɪs/", pos:"n. v.", cn:"薄片；片；把…… 切成薄片；切；割"},
+    {en:"couple", phonetic:"/ˈkʌpl/", pos:"n.", cn:"夫妻；情侣；两人"},
+    {en:"island", phonetic:"/ˈaɪlənd/", pos:"n.", cn:"岛"},
+    {en:"wife", phonetic:"/waɪf/", pos:"n.", cn:"(pl. wives /waɪvz/) 妻子"},
+    {en:"separate", phonetic:"/ˈseprət/", pos:"adj. v.", cn:"单独的；分开的；（使）分开；（使）分离"},
+    {en:"born", phonetic:"/bɔːn/", pos:"v. adj.", cn:"出生；出世；天生（有某方面才能）的"},
+    {en:"one by one", phonetic:"/wʌn baɪ wʌn/", pos:"phr.", cn:"逐个地；逐一地"},
+    {en:"Thanksgiving", phonetic:"/ˌθæŋksˈɡɪvɪŋ/", pos:"n.", cn:"感恩节"},
+    {en:"yourself", phonetic:"/jɔːˈself/", pos:"pron.", cn:"你自己；您自己；（复数形式 yourselves /jɔːˈselvz/ ）"},
+    {en:"engineer", phonetic:"/ˌendʒɪˈnɪə(r)/", pos:"n.", cn:"工程师；技师"},
+    {en:"fashion", phonetic:"/ˈfæʃn/", pos:"n.", cn:"时装业；时尚"},
+    {en:"designer", phonetic:"/dɪˈzaɪnə(r)/", pos:"n.", cn:"设计师"},
+    {en:"director", phonetic:"/dəˈrektə(r); daɪˈrektə(r)/", pos:"n.", cn:"导演；主任；董事"},
+  ] },
+  { name: "Level 11", words: [
+    {en:"musician", phonetic:"/mjuˈzɪʃn/", pos:"n.", cn:"音乐家；乐师"},
+    {en:"fireman", phonetic:"/ˈfaɪəmən/", pos:"n.", cn:"(pl. firemen /ˈfaɪəmən/) 消防队员"},
+    {en:"AI", phonetic:"/ˌeɪ ˈaɪ/", pos:"n.", cn:"人工智能；（= artificial intelligence /ˌɑːtɪˈfɪʃl ɪnˈtelɪdʒəns/ ）"},
+    {en:"essay", phonetic:"/ˈeseɪ/", pos:"n.", cn:"小品文；文章"},
+    {en:"classic", phonetic:"/ˈklæsɪk/", pos:"n. adj.", cn:"经典作品；名著；最优秀的；古典的"},
+    {en:"keep on doing sth", phonetic:"/kiːp ɒn ˈduːɪŋ sth/", pos:"phr.", cn:"继续做；反复做"},
+    {en:"make sure", phonetic:"/meɪk ʃʊə(r)/", pos:"phr.", cn:"确保；保证"},
+    {en:"try one's best", phonetic:"/traɪ wʌnz best/", pos:"phr.", cn:"尽最大努力"},
+    {en:"literature", phonetic:"/ˈlɪtrətʃə(r)/", pos:"n.", cn:"文学；文献"},
+    {en:"athlete", phonetic:"/ˈæθliːt/", pos:"n.", cn:"运动员"},
+    {en:"photographer", phonetic:"/fəˈtɒɡrəfə(r)/", pos:"n.", cn:"摄影师；拍照者"},
+    {en:"painter", phonetic:"/ˈpeɪntə(r)/", pos:"n.", cn:"画家；油漆匠"},
+    {en:"businessman", phonetic:"/ˈbɪznəsmæn/", pos:"n.", cn:"商界人士；企业家"},
+    {en:"actress", phonetic:"/ˈæktrəs/", pos:"n.", cn:"女演员"},
+    {en:"lawyer", phonetic:"/ˈlɔːjə(r)/", pos:"n.", cn:"律师"},
+    {en:"law", phonetic:"/lɔː/", pos:"n.", cn:"法律；法规"},
+    {en:"bath", phonetic:"/bɑːθ/", pos:"n.", cn:"洗澡；浴缸"},
+    {en:"miss", phonetic:"/mɪs/", pos:"v.", cn:"想念；错过"},
+    {en:"be tired of", phonetic:"/biː ˈtaɪəd ɒv/", pos:"phr.", cn:"对…… 感到厌倦"},
+    {en:"able", phonetic:"/ˈeɪbl/", pos:"adj.", cn:"能够；有才能的"},
+  ] },
+  { name: "Level 12", words: [
+    {en:"stick", phonetic:"/stɪk/", pos:"v. n.", cn:"(stuck /stʌk/) 粘贴；将…… 刺入；枝条；棍"},
+    {en:"stick to sth", phonetic:"/stɪk tuː sth/", pos:"phr.", cn:"坚持；维持"},
+    {en:"resolution", phonetic:"/ˌrezəˈluːʃn/", pos:"n.", cn:"决定；决议"},
+    {en:"have (...) to do with sb / sth", phonetic:"/hæv (...) tuː duː wɪð sb / sth/", pos:"phr.", cn:"与…… 有关系"},
+    {en:"mini-goal", phonetic:"/ˈmɪni ɡəʊl/", pos:"n.", cn:"小目标"},
+    {en:"achieve", phonetic:"/əˈtʃiːv/", pos:"v.", cn:"（经过努力）达到；完成"},
+    {en:"physical", phonetic:"/ˈfɪzɪkl/", pos:"adj.", cn:"身体的；物质的"},
+    {en:"health", phonetic:"/helθ/", pos:"n.", cn:"健康"},
+    {en:"healthily", phonetic:"/ˈhelθɪli/", pos:"adv.", cn:"健康地"},
+    {en:"take up", phonetic:"/teɪk ʌp/", pos:"phr.", cn:"开始学；开始从事"},
+    {en:"photography", phonetic:"/fəˈtɒɡrəfi/", pos:"n.", cn:"照相术；摄影"},
+    {en:"self-improvement", phonetic:"/ˌself ɪmˈpruːvmənt/", pos:"n.", cn:"自我改进；自我提高"},
+    {en:"confident", phonetic:"/ˈkɒnfɪdənt/", pos:"adj.", cn:"自信的；肯定的"},
+    {en:"organized", phonetic:"/ˈɔːɡənaɪzd/", pos:"adj.", cn:"有条理的；有组织的（= organised ）"},
+    {en:"wisely", phonetic:"/ˈwaɪzli/", pos:"adv.", cn:"聪明地；明智地"},
+    {en:"possible", phonetic:"/ˈpɒsəbl/", pos:"adj.", cn:"可能的；合理的"},
+    {en:"paragraph", phonetic:"/ˈpærəɡrɑːf/", pos:"n.", cn:"段；段落"},
+    {en:"introduce", phonetic:"/ˌɪntrəˈdjuːs/", pos:"v.", cn:"介绍；引见；引进"},
+    {en:"meaning", phonetic:"/ˈmiːnɪŋ/", pos:"n.", cn:"意义；含义"},
+    {en:"fail", phonetic:"/feɪl/", pos:"v.", cn:"未能（做到）；失败"},
+  ] },
+  { name: "Level 13", words: [
+    {en:"ahead", phonetic:"/əˈhed/", pos:"adv.", cn:"提前；在前面"},
+    {en:"put out", phonetic:"/pʊt aʊt/", pos:"phr.", cn:"扑灭；把…… 摆好"},
+    {en:"design", phonetic:"/dɪˈzaɪn/", pos:"v. n.", cn:"设计；计划；设计；花纹"},
+    {en:"bridge", phonetic:"/brɪdʒ/", pos:"n.", cn:"桥"},
+    {en:"final", phonetic:"/ˈfaɪnl/", pos:"adj. n.", cn:"最后的；最终的；决赛"},
+    {en:"confidence", phonetic:"/ˈkɒnfɪdəns/", pos:"n.", cn:"信心；信任"},
+    {en:"draw to a close", phonetic:"/drɔː tuː ə kləʊz/", pos:"phr.", cn:"即将结束；即将完成"},
+    {en:"form", phonetic:"/fɔːm/", pos:"v. n.", cn:"（使）形成；组成；类型；形式"},
+    {en:"relationship", phonetic:"/rɪˈleɪʃnʃɪp/", pos:"n.", cn:"关系；联系"},
+    {en:"push-up", phonetic:"/ˈpʊʃ ʌp/", pos:"n.", cn:"俯卧撑"},
+    {en:"energetic", phonetic:"/ˌenəˈdʒetɪk/", pos:"adj.", cn:"精力充沛的；充满活力的"},
+    {en:"last but not least", phonetic:"/lɑːst bʌt nɒt liːst/", pos:"phr.", cn:"最后但同等重要的"},
+    {en:"prediction", phonetic:"/prɪˈdɪkʃn/", pos:"n.", cn:"预测；预言"},
+    {en:"outer", phonetic:"/ˈaʊtə(r)/", pos:"adj.", cn:"外围的；外表的"},
+    {en:"outer space", phonetic:"/ˈaʊtə(r) speɪs/", pos:"n.", cn:"太空；外层空间（= space ）"},
+    {en:"worse", phonetic:"/wɜːs/", pos:"adj. adv.", cn:"（bad 的比较级）更差的；更糟的；更坏的；（badly 的比较级）更差；更糟；更坏"},
+    {en:"take over", phonetic:"/teɪk ˈəʊvə(r)/", pos:"phr.", cn:"接替；接管；接收"},
+    {en:"sci-fi", phonetic:"/ˈsaɪ faɪ/", pos:"n.", cn:"科幻小说（或影片等）（= science fiction ）"},
+    {en:"ticket", phonetic:"/ˈtɪkɪt/", pos:"n.", cn:"票；券"},
+    {en:"positive", phonetic:"/ˈpɒzətɪv/", pos:"adj.", cn:"乐观的；积极的；良好的"},
+  ] },
+  { name: "Level 14", words: [
+    {en:"traffic", phonetic:"/ˈtræfɪk/", pos:"n.", cn:"交通；运输"},
+    {en:"trade", phonetic:"/treɪd/", pos:"v.", cn:"（非法）进行交易；做…… 买卖"},
+    {en:"technology", phonetic:"/tekˈnɒlədʒi/", pos:"n.", cn:"科技；工艺"},
+    {en:"video", phonetic:"/ˈvɪdiəʊ/", pos:"n. v.", cn:"视频；录像系统；录视频；给…… 录像"},
+    {en:"transport", phonetic:"/ˈtrænspɔːt/", pos:"n. v.", cn:"交通运输系统；旅行方式；运输；运送"},
+    {en:"system", phonetic:"/ˈsɪstəm/", pos:"n.", cn:"系统"},
+    {en:"efficient", phonetic:"/ɪˈfɪʃnt/", pos:"adj.", cn:"效率高的；有功效的"},
+    {en:"education", phonetic:"/ˌedʒuˈkeɪʃn/", pos:"n.", cn:"教育"},
+    {en:"length", phonetic:"/leŋθ/", pos:"n.", cn:"时长；长度"},
+    {en:"topic", phonetic:"/ˈtɒpɪk/", pos:"n.", cn:"话题；题目；标题"},
+    {en:"partner", phonetic:"/ˈpɑːtnə(r)/", pos:"n.", cn:"搭档；同伴"},
+    {en:"shall", phonetic:"/ʃəl; ʃæl/", pos:"modal v.", cn:"将要；将会；（过去式 should /ʃʊd/ ）"},
+    {en:"pass", phonetic:"/pɑːs/", pos:"v. n.", cn:"及格；通过；及格；通行证"},
+    {en:"winner", phonetic:"/ˈwɪnə(r)/", pos:"n.", cn:"优胜者；成功者"},
+    {en:"cure", phonetic:"/kjʊə(r)/", pos:"n. v.", cn:"药物；疗法；治愈；治好"},
+    {en:"cancer", phonetic:"/ˈkænsə(r)/", pos:"n.", cn:"癌症"},
+    {en:"concert", phonetic:"/ˈkɒnsət/", pos:"n.", cn:"音乐会；演奏会"},
+    {en:"cash", phonetic:"/kæʃ/", pos:"n. v.", cn:"现金；金钱；兑现"},
+    {en:"wallet", phonetic:"/ˈwɒlɪt/", pos:"n.", cn:"钱包；皮夹"},
+    {en:"guest", phonetic:"/ɡest/", pos:"n.", cn:"客人；宾客"},
+  ] },
+  { name: "Level 15", words: [
+    {en:"author", phonetic:"/ˈɔːθə(r)/", pos:"n.", cn:"作者；作家"},
+    {en:"best-selling", phonetic:"/ˌbest ˈselɪŋ/", pos:"adj.", cn:"畅销的"},
+    {en:"futurist", phonetic:"/ˈfjuːtʃərɪst/", pos:"n.", cn:"未来学家"},
+    {en:"everywhere", phonetic:"/ˈevriweə(r)/", pos:"adv. pron. conj.", cn:"到处；所有地方；到处；所有地方；到处；所有地方"},
+    {en:"service", phonetic:"/ˈsɜːvɪs/", pos:"n.", cn:"服务；公共服务"},
+    {en:"disaster", phonetic:"/dɪˈzɑːstə(r)/", pos:"n.", cn:"灾难；不幸"},
+    {en:"emergency", phonetic:"/iˈmɜːdʒənsi/", pos:"n.", cn:"突发事件；紧急情况"},
+    {en:"disappear", phonetic:"/ˌdɪsəˈpɪə(r)/", pos:"v.", cn:"消失；不见"},
+    {en:"challenging", phonetic:"/ˈtʃælɪndʒɪŋ/", pos:"adj.", cn:"挑战性的"},
+    {en:"pilot", phonetic:"/ˈpaɪlət/", pos:"n.", cn:"飞行员；领航员"},
+    {en:"expert", phonetic:"/ˈekspɜːt/", pos:"n. adj.", cn:"专家；行家；熟练的；内行的"},
+    {en:"replace", phonetic:"/rɪˈpleɪs/", pos:"v.", cn:"代替；取代"},
+    {en:"creativity", phonetic:"/ˌkriːeɪˈtɪvəti/", pos:"n.", cn:"创造力"},
+    {en:"emotional", phonetic:"/ɪˈməʊʃənl/", pos:"adj.", cn:"情感的；情绪的"},
+    {en:"intelligence", phonetic:"/ɪnˈtelɪdʒəns/", pos:"n.", cn:"智力；智慧"},
+    {en:"emotional intelligence", phonetic:"/ɪˈməʊʃənl ɪnˈtelɪdʒəns/", pos:"n.", cn:"情绪智力"},
+    {en:"mention", phonetic:"/ˈmenʃn/", pos:"v.", cn:"提到；写到"},
+    {en:"refrigerator", phonetic:"/rɪˈfrɪdʒəreɪtə(r)/", pos:"n.", cn:"冰箱（= fridge /frɪdʒ/ ）"},
+    {en:"accept", phonetic:"/əkˈsept/", pos:"v.", cn:"接受；相信"},
+    {en:"influence", phonetic:"/ˈɪnfluəns/", pos:"v. n.", cn:"影响；对…… 起作用；影响；作用"},
+  ] },
+  { name: "Level 16", words: [
+    {en:"creative", phonetic:"/kriːˈeɪtɪv/", pos:"adj.", cn:"创造性的；创作的"},
+    {en:"impossible", phonetic:"/ɪmˈpɒsəbl/", pos:"adj.", cn:"不可能的"},
+    {en:"vs", phonetic:"/vɜːsəs/", pos:"prep.", cn:"(= versus)（表示双方对阵）对；对抗"},
+    {en:"quality", phonetic:"/ˈkwɒləti/", pos:"n. adj.", cn:"素质；质量；品质；优质的；高质量的"},
+    {en:"develop", phonetic:"/dɪˈveləp/", pos:"v.", cn:"增强；发展；开发"},
+    {en:"German", phonetic:"/ˈdʒɜːmən/", pos:"n. adj.", cn:"德语；德国人；德国的"},
+    {en:"valuable", phonetic:"/ˈvæljuəbl/", pos:"adj.", cn:"很有用的；宝贵的"},
+    {en:"challenge", phonetic:"/ˈtʃælɪndʒ/", pos:"n. v.", cn:"挑战；质疑；向（某人）挑战；对…… 怀疑"},
+    {en:"public", phonetic:"/ˈpʌblɪk/", pos:"adj.", cn:"公共的；公众的"},
+    {en:"medical", phonetic:"/ˈmedɪkl/", pos:"adj.", cn:"医学的；医疗的"},
+    {en:"industry", phonetic:"/ˈɪndəstri/", pos:"n.", cn:"行业；工业"},
+    {en:"task", phonetic:"/tɑːsk/", pos:"n.", cn:"任务；工作"},
+    {en:"depend", phonetic:"/dɪˈpend/", pos:"v.", cn:"取决于；依靠"},
+    {en:"depend on / upon", phonetic:"/dɪˈpend ɒn / əˈpɒn/", pos:"phr.", cn:"取决于；依靠"},
+    {en:"communication", phonetic:"/kəˌmjuːnɪˈkeɪʃn/", pos:"n.", cn:"表达；交流"},
+    {en:"face to face", phonetic:"/feɪs tuː feɪs/", pos:"phr.", cn:"面对面"},
+    {en:"text message", phonetic:"/ˈtekst mesɪdʒ/", pos:"n.", cn:"（手机）短信息；短信"},
+    {en:"sign", phonetic:"/saɪn/", pos:"n. v.", cn:"手势；迹象；标志；签（名）；签字"},
+    {en:"speaker", phonetic:"/ˈspiːkə(r)/", pos:"n.", cn:"说话者；发言者"},
+    {en:"rehearsal", phonetic:"/rɪˈhɜːsl/", pos:"n.", cn:"排演；排练"},
+  ] },
+  { name: "Level 17", words: [
+    {en:"show sb around", phonetic:"/ʃəʊ sb əˈraʊnd/", pos:"phr.", cn:"领某人参观"},
+    {en:"local", phonetic:"/ˈləʊkl/", pos:"adj. n.", cn:"当地的；地方的；当地人；本地人"},
+    {en:"face-to-face", phonetic:"/feɪs tuː feɪs/", pos:"adj.", cn:"面对面的"},
+    {en:"professor", phonetic:"/prəˈfesə(r)/", pos:"n.", cn:"教授"},
+    {en:"in person", phonetic:"/ɪn ˈpɜːsn/", pos:"phr.", cn:"亲自；亲身"},
+    {en:"speech", phonetic:"/spiːtʃ/", pos:"n.", cn:"演说；发言"},
+    {en:"argue", phonetic:"/ˈɑːɡjuː/", pos:"v.", cn:"争论；争吵"},
+    {en:"make up (with sb)", phonetic:"/meɪk ʌp (wɪð sb)/", pos:"phr.", cn:"与…… 言归于好"},
+    {en:"prefer", phonetic:"/prɪˈfɜː(r)/", pos:"v.", cn:"较喜欢"},
+    {en:"calm", phonetic:"/kɑːm/", pos:"adj. v.", cn:"镇静的；沉着的；使平静；使镇静"},
+    {en:"worry about", phonetic:"/ˈwʌri əˈbaʊt/", pos:"phr.", cn:"为…… 担心"},
+    {en:"expression", phonetic:"/ɪkˈspreʃn/", pos:"n.", cn:"表达方式；表达"},
+    {en:"chance", phonetic:"/tʃɑːns/", pos:"n. adj.", cn:"机会；可能性；意外的；偶然的"},
+    {en:"meeting", phonetic:"/ˈmiːtɪŋ/", pos:"n.", cn:"会面；会议"},
+    {en:"difficulty", phonetic:"/ˈdɪfɪkəlti/", pos:"n.", cn:"困难；难题"},
+    {en:"right away", phonetic:"/raɪt əˈweɪ/", pos:"phr.", cn:"立即；马上"},
+    {en:"line", phonetic:"/laɪn/", pos:"n.", cn:"字行；便条；线"},
+    {en:"drop sb a line", phonetic:"/drɒp sb ə laɪn/", pos:"phr.", cn:"给…… 写信"},
+    {en:"detail", phonetic:"/ˈdiːteɪl/", pos:"n.", cn:"细节；详情"},
+    {en:"reunion", phonetic:"/ˌriːˈjuːniən/", pos:"n.", cn:"团聚；重逢；聚会"},
+  ] },
+  { name: "Level 18", words: [
+    {en:"seriously", phonetic:"/ˈsɪəriəsli/", pos:"adv.", cn:"严肃地；认真地"},
+    {en:"training", phonetic:"/ˈtreɪnɪŋ/", pos:"n.", cn:"训练；培训"},
+    {en:"nervous", phonetic:"/ˈnɜːvəs/", pos:"adj.", cn:"担忧的；焦虑的；胆怯的"},
+    {en:"stranger", phonetic:"/ˈstreɪndʒə(r)/", pos:"n.", cn:"陌生人"},
+    {en:"tip", phonetic:"/tɪp/", pos:"n. v.", cn:"指点；实用的提示；尖端；（使）倾斜；倒出；给小费"},
+    {en:"carefully", phonetic:"/ˈkeəfəli/", pos:"adv.", cn:"认真地；仔细地；小心地"},
+    {en:"show interest in sth", phonetic:"/ʃəʊ ˈɪntrəst ɪn sth/", pos:"phr.", cn:"对…… 表现出兴趣"},
+    {en:"listener", phonetic:"/ˈlɪsənə(r)/", pos:"n.", cn:"听者"},
+    {en:"point", phonetic:"/pɔɪnt/", pos:"n. v.", cn:"观点；重点；指向；瞄准"},
+    {en:"surely", phonetic:"/ˈʃʊəli/", pos:"adv.", cn:"想必；必定"},
+    {en:"continue", phonetic:"/kənˈtɪnjuː/", pos:"v.", cn:"持续；继续做"},
+    {en:"impolite", phonetic:"/ˌɪmpəˈlaɪt/", pos:"adj.", cn:"不礼貌的；粗鲁的"},
+    {en:"personal", phonetic:"/ˈpɜːsənl/", pos:"adj.", cn:"个人的；私人的"},
+    {en:"argue with sb", phonetic:"/ˈɑːɡjuː wɪð sb/", pos:"phr.", cn:"与某人争论"},
+    {en:"move on (to sth)", phonetic:"/muːv ɒn (tuː sth)/", pos:"phr.", cn:"换话题；开始做（别的事）"},
+    {en:"sincere", phonetic:"/sɪnˈsɪə(r)/", pos:"adj.", cn:"真诚的；诚实的"},
+    {en:"find out", phonetic:"/faɪnd aʊt/", pos:"phr.", cn:"查明；弄清（情况）"},
+    {en:"pay", phonetic:"/peɪ/", pos:"v. n.", cn:"(paid /peɪd/) 付费；交纳；偿还；工资；薪水"},
+    {en:"attention", phonetic:"/əˈtenʃn/", pos:"n.", cn:"注意；专心；关注"},
+    {en:"pay attention (to ...)", phonetic:"/peɪ əˈtenʃn (tuː ...)/", pos:"phr.", cn:"注意；关注"},
+  ] },
+  { name: "Level 19", words: [
+    {en:"be yourself", phonetic:"/biː jɔːˈself/", pos:"phr.", cn:"行为自然；不做作"},
+    {en:"offer", phonetic:"/ˈɒfə(r)/", pos:"v. n.", cn:"提供；主动提出；主动提议；出价"},
+    {en:"reasonable", phonetic:"/ˈriːznəbl/", pos:"adj.", cn:"公平的；合理的"},
+    {en:"social", phonetic:"/ˈsəʊʃl/", pos:"adj. n.", cn:"社会的；社交的；联谊会；联欢会"},
+    {en:"medium", phonetic:"/ˈmiːdiəm/", pos:"n.", cn:"(pl. media /ˈmiːdiə/) 媒介；手段"},
+    {en:"social media", phonetic:"/ˈsəʊʃl ˈmiːdiə/", pos:"n.", cn:"社交媒体"},
+    {en:"trust", phonetic:"/trʌst/", pos:"n. v.", cn:"信任；相信；信任；相信"},
+    {en:"keep (...) away from ...", phonetic:"/kiːp (...) əˈweɪ frəm .../", pos:"phr.", cn:"（使）远离；避免…… 靠近"},
+    {en:"misunderstanding", phonetic:"/ˌmɪsʌndəˈstændɪŋ/", pos:"n.", cn:"误解；误会"},
+    {en:"event", phonetic:"/ɪˈvent/", pos:"n.", cn:"公开活动；重要事情"},
+    {en:"take place", phonetic:"/teɪk pleɪs/", pos:"phr.", cn:"发生；进行"},
+    {en:"cost", phonetic:"/kɒst/", pos:"n. v.", cn:"费用；价钱；代价；价格为；使损失；使付出努力"},
+    {en:"opportunity", phonetic:"/ˌɒpəˈtjuːnəti/", pos:"n.", cn:"机会；时机"},
+    {en:"benefit", phonetic:"/ˈbenɪfɪt/", pos:"v. n.", cn:"对…… 有用；使受益；益处；成效"},
+    {en:"benefit ... from ...", phonetic:"/ˈbenɪfɪt ... frəm .../", pos:"phr.", cn:"从…… 获益"},
+    {en:"reply", phonetic:"/rɪˈplaɪ/", pos:"n. v.", cn:"回答；回复；回答；回复"},
+    {en:"honour", phonetic:"/ˈɒnə(r)/", pos:"n. v.", cn:"荣幸；尊敬（= honor ）；给…… 荣誉；表彰（= honor ）"},
+    {en:"sincerely", phonetic:"/sɪnˈsɪəli/", pos:"adv.", cn:"真诚地；诚实地"},
+    {en:"opening", phonetic:"/ˈəʊpənɪŋ/", pos:"adj. n.", cn:"开篇的；开始的；开始；孔；洞"},
+    {en:"closing", phonetic:"/ˈkləʊzɪŋ/", pos:"adj. n.", cn:"结尾的；结束的；停业；关闭"},
+  ] },
+  { name: "Level 20", words: [
+    {en:"sentence", phonetic:"/ˈsentəns/", pos:"n. v.", cn:"句子；判决；判决；宣判"},
+    {en:"date", phonetic:"/deɪt/", pos:"n. v.", cn:"日期；日子；确定年代；注明日期"},
+    {en:"clause", phonetic:"/klɔːz/", pos:"n.", cn:"从句；分句"},
+  ] },
+];
+// 当前课时单词（由右上角课时选择器切换）
+let currentLevel = 0;
+function activeWordList() { return LEVELS[currentLevel].words; }
+
+// ===== 模式名称映射 =====
+const modeNames = {
+    heaven: "☁️ 天堂模式",
+    easy: "🟢 简单模式",
+    race: "🔴 挑战模式",
+    hell: "💀 地狱模式"
+};
+// ===== 全局变量 =====
+let gameMode = "easy";
+let removedMap = {};   // 每个课时各自记录被剔除（划掉）的单词下标：{课时下标: [词下标,...]}
+let keptWords = [];
+let selectedItem = null;
+let timer = null;
+let hellOpenCards = [];
+const MAX_OPEN = 6;
+const HELL_DELAY = 3000;
+let gameStartTime = 0;
+// ===== 页面切换 =====
+function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+function initLevels() {
+    const sel = document.getElementById("levelSelect");
+    sel.innerHTML = "";
+    LEVELS.forEach((lv, i) => {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = lv.name + "（" + lv.words.length + "词）";
+        sel.appendChild(opt);
+    });
+    sel.value = String(currentLevel);
+    sel.onchange = () => switchLevel(Number(sel.value));
+    renderWordTags();
+    renderLeaderboard();
+}
+function switchLevel(idx) {
+    playClickSound();
+    currentLevel = idx;
+    document.getElementById("levelSelect").value = String(currentLevel);
+    renderWordTags();
+    renderLeaderboard();
+}
+function getRemovedList() {
+    if (!removedMap[currentLevel]) removedMap[currentLevel] = [];
+    return removedMap[currentLevel];
+}
+function renderWordTags() {
+    const box = document.getElementById("tagBox");
+    box.innerHTML = "";
+    const removed = getRemovedList();
+    activeWordList().forEach((word, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "word-tag" + (removed.includes(idx) ? " remove" : "");
+        tag.innerText = word.en;
+        tag.dataset.index = idx;
+        tag.onclick = () => { playClickSound(); toggleRemove(tag, idx); };
+        box.appendChild(tag);
+    });
+    const tip = document.getElementById("selectTip");
+    if (tip) tip.innerText = "当前 " + LEVELS[currentLevel].name + "（共" + activeWordList().length + "词）：默认全部加入游戏，点击单词即可剔除（划掉）";
+}
+function toggleRemove(dom, index) {
+    const removed = getRemovedList();
+    if (dom.classList.contains("remove")) {
+        dom.classList.remove("remove");
+        removedMap[currentLevel] = removed.filter(i => i !== index);
+    } else {
+        dom.classList.add("remove");
+        removedMap[currentLevel] = removed.concat([index]);
+    }
+}
+// ===== 最佳用时排行榜（修复版：按模式独立存储，不掺单词数量）=====
+function getRecordKey(mode) {
+    return "wordGameBest_L" + currentLevel + "_" + mode;
+}
+function getRecord(mode) {
+    const raw = localStorage.getItem(getRecordKey(mode));
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch(e) {
+        return { time: parseFloat(raw), words: activeWordList().length };
+    }
+}
+function saveRecord(mode, time, words) {
+    localStorage.setItem(getRecordKey(mode), JSON.stringify({time: time, words: words}));
+}
+function renderLeaderboard() {
+    const grid = document.getElementById("leaderboardGrid");
+    const titleEl = document.getElementById("leaderboardTitle");
+    if (titleEl) titleEl.innerText = "🏆 最佳用时排行榜 · " + LEVELS[currentLevel].name;
+    grid.innerHTML = "";
+    const modes = ["heaven", "easy", "race", "hell"];
+    modes.forEach(mode => {
+        const record = getRecord(mode);
+        const item = document.createElement("div");
+        item.className = "leaderboard-item";
+        if (record) {
+            item.innerHTML = '<div class="mode-name">' + modeNames[mode] + '</div>' +
+                             '<div class="best-time">' + record.time + '秒</div>' +
+                             '<div class="best-words">(' + record.words + '词)</div>';
+        } else {
+            item.innerHTML = '<div class="mode-name">' + modeNames[mode] + '</div>' +
+                             '<div class="best-time no-record">暂无记录</div>';
+        }
+        grid.appendChild(item);
+    });
+}
+function clearLeaderboard() {
+    if (confirm("确定要清除全部最佳用时记录吗？")) {
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith("wordGameBest_")) {
+                localStorage.removeItem(key);
+            }
+        });
+        renderLeaderboard();
+    }
+}
+// ===== 开始游戏 =====
+function startGame(mode) {
+    playClickSound();
+    gameMode = mode;
+    keptWords = [];
+    const removed = getRemovedList();
+    activeWordList().forEach((word, idx) => {
+        if (!removed.includes(idx)) keptWords.push(word);
+    });
+    if (keptWords.length === 0) {
+        alert("所有单词都被剔除了！至少保留一个单词才能开始游戏");
+        return;
+    }
+    hellOpenCards = [];
+    startMatchGame();
+}
+function shuffle(arr) {
+    let temp = [...arr];
+    for (let i = temp.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [temp[i], temp[j]] = [temp[j], temp[i]];
+    }
+    return temp;
+}
+function startMatchGame() {
+    showPage("gamePage");
+    selectedItem = null;
+    clearInterval(timer);
+    gameStartTime = Date.now();
+    let enBox = document.getElementById("enBox");
+    let cnBox = document.getElementById("cnBox");
+    enBox.innerHTML = "";
+    cnBox.innerHTML = "";
+    let enList, cnList;
+    if (gameMode === 'heaven') {
+        enList = [...keptWords];
+        cnList = [...keptWords];
+    } else {
+        enList = shuffle(keptWords);
+        cnList = shuffle(keptWords);
+    }
+    enList.forEach(word => {
+        let div = document.createElement("div");
+        div.className = "item";
+        if (gameMode === 'hell') div.classList.add('hell-cover');
+        div.innerText = word.en;
+        div.dataset.en = word.en;
+        div.onclick = () => clickCard(div);
+        enBox.appendChild(div);
+    });
+    cnList.forEach(word => {
+        let div = document.createElement("div");
+        div.className = "item";
+        if (gameMode === 'hell') div.classList.add('hell-cover');
+        div.innerText = word.cn;
+        div.dataset.en = word.en;
+        div.onclick = () => clickCard(div);
+        cnBox.appendChild(div);
+    });
+    document.getElementById("resetBtn").onclick = () => { playClickSound(); startGame(gameMode); };
+    document.getElementById("statusText").innerText = LEVELS[currentLevel].name + " · 请开始配对单词（共" + keptWords.length + "组）";
+    document.getElementById("progressBar").style.width = "0%";
+    if (gameMode === "race") {
+        let totalTime = keptWords.length * 5;
+        let left = totalTime;
+        let bar = document.getElementById("progressBar");
+        bar.classList.add("time");
+        timer = setInterval(() => {
+            left--;
+            bar.style.width = (left / totalTime * 100) + "%";
+            document.getElementById("statusText").innerText = "剩余时间：" + left + "秒";
+            if (left <= 0) {
+                clearInterval(timer);
+                playErrorSound();
+                alert("⏰ 时间结束！挑战失败");
+                backToSelect();
+            }
+        }, 1000);
+    } else {
+        document.getElementById("progressBar").classList.remove("time");
+    }
+}
+
+function getActiveHellOpenCards(){
+    return hellOpenCards.filter(dom => !dom.classList.contains("matched"));
+}
+
+function clickCard(dom) {
+    if (dom.classList.contains("matched")) return;
+    if (gameMode === 'hell') {
+        if (!dom.classList.contains('hell-cover')) {
+            clickSelectItem(dom);
+            return;
+        }
+        const activeList = getActiveHellOpenCards();
+        if (activeList.length >= MAX_OPEN) {
+            document.getElementById("statusText").innerText = "⚠️ 最多同时翻开6张，请等待卡片闭合";
+            return;
+        }
+        playClickSound();
+        dom.classList.remove('hell-cover');
+        hellOpenCards.push(dom);
+        setTimeout(() => {
+            if (!dom.classList.contains('matched')) {
+                dom.classList.add('hell-cover');
+                hellOpenCards = hellOpenCards.filter(x => x !== dom);
+            }
+        }, HELL_DELAY);
+    } else {
+        playClickSound();
+        clickSelectItem(dom);
+    }
+}
+// ===== 双向点击配对 =====
+function clickSelectItem(dom) {
+    if (!selectedItem) {
+        document.querySelectorAll(".item").forEach(i => i.classList.remove("selected"));
+        selectedItem = dom;
+        dom.classList.add("selected");
+    } else {
+        if (selectedItem === dom) {
+            selectedItem.classList.remove("selected");
+            selectedItem = null;
+            return;
+        }
+        if (selectedItem.dataset.en === dom.dataset.en) {
+            selectedItem.classList.add("matched");
+            dom.classList.add("matched");
+            selectedItem.classList.remove("selected");
+            selectedItem = null;
+            playSuccessSound();
+            checkWin();
+        } else {
+            playErrorSound();
+            alert("❌ 配对错误，请重试");
+            selectedItem.classList.remove("selected");
+            selectedItem = null;
+        }
+    }
+}
+// ===== 通关检测 + 最佳用时记录 =====
+function checkWin() {
+    let matchedCount = document.querySelectorAll(".item.matched").length / 2;
+    let total = keptWords.length;
+    document.getElementById("progressBar").style.width = (matchedCount / total * 100) + "%";
+    if (matchedCount === total) {
+        clearInterval(timer);
+        playWinSound();
+        let usedMs = Date.now() - gameStartTime;
+        let usedSec = (usedMs / 1000).toFixed(1);
+        let wordCount = keptWords.length;
+        let oldRecord = getRecord(gameMode);
+        let isNewRecord = false;
+        if (!oldRecord || Number(usedSec) < Number(oldRecord.time)) {
+            saveRecord(gameMode, usedSec, wordCount);
+            isNewRecord = true;
+        }
+        setTimeout(() => {
+            if (isNewRecord) {
+                alert("🎉恭喜！所有单词配对闯关成功！\n本局用时：" + usedSec + "秒（" + wordCount + "词）\n✨刷新新纪录！太棒啦！");
+            } else {
+                alert("🎉恭喜！所有单词配对闯关成功！\n本局用时：" + usedSec + "秒（" + wordCount + "词）\n历史最佳：" + oldRecord.time + "秒（" + oldRecord.words + "词）");
+            }
+            backToSelect();
+        }, 600);
+    }
+}
+function backToSelect() {
+    playClickSound();
+    clearInterval(timer);
+    renderLeaderboard();
+    showPage("selectPage");
+}
+// ===== 启动：直接进入选词（划词）页 =====
+updateSoundBtn();
+initLevels();
+</script>
+</body>
+</html>
