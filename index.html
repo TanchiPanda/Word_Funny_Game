@@ -131,6 +131,26 @@
             color: #8888aa;
             line-height: 1.8;
         }
+        /* ========== 右下角设置入口 ========== */
+        .settings-toggle {
+            position: fixed;
+            bottom: 14px;
+            right: 14px;
+            z-index: 999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,215,0,0.5);
+            background: rgba(44,27,84,0.88);
+            color: #ffd700;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+        }
+        .settings-toggle:active { transform: scale(0.92) rotate(30deg); }
     </style>
 </head>
 <body>
@@ -156,6 +176,10 @@
 
     <div class="footnote">登录后可解锁全部课时与特色模式</div>
 </div>
+<!-- 右下角设置入口 -->
+<button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+</button>
 <script>
 // ===== 身份检测 =====
 const ACCESS_KEY = "wordGameAccess";
@@ -171,6 +195,9 @@ function renderStatus() {
 }
 function goLogin() {
     location.href = "login.html";
+}
+function goSettings() {
+    location.href = "settings.html";
 }
 function enterGame() {
     location.href = "match.html";

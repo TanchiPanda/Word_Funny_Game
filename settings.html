@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <title>单词闯关-设置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg,#2c1b54,#422880,#201440);
+            padding: 20px 12px 40px;
+            text-align: center;
+            overflow-x: hidden;
+            color: #fff;
+        }
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #4ecdc4;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            letter-spacing: 1px;
+            border-bottom: 2px dashed rgba(78,205,196,0.6);
+            padding-bottom: 2px;
+        }
+        .page-title {
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-bottom: 24px;
+            background: linear-gradient(90deg,#ffd700,#ff6b6b,#4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .card {
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(78,205,196,0.35);
+            border-radius: 18px;
+            padding: 22px 18px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .card-desc {
+            font-size: 13px;
+            color: #a8a8d8;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.12);
+        }
+        .row:last-of-type { border-bottom: none; }
+        .row .label { font-size: 15px; color: #e8e8f5; }
+        .row .value-text { font-size: 15px; color: #4ecdc4; font-weight: bold; }
+        .num-input {
+            width: 92px;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(255,215,0,0.45);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+        }
+        .num-input:focus {
+            border-color: #ffd700;
+            box-shadow: 0 0 12px rgba(255,215,0,0.3);
+        }
+        .num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        /* 开关 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 54px;
+            height: 30px;
+            flex: none;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.18);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .slider::before {
+            content: "";
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .switch input:checked + .slider { background: linear-gradient(90deg,#39d98a,#4ecdc4); }
+        .switch input:checked + .slider::before { transform: translateX(24px); }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .primary-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 13px 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg,#ffd700,#ff9500);
+            color: #222;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.35);
+            transition: transform 0.2s;
+        }
+        .primary-btn:active { transform: scale(0.97); }
+        .ghost-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 13px 16px;
+            border: 1.5px solid rgba(78,205,196,0.6);
+            border-radius: 12px;
+            background: rgba(78,205,196,0.12);
+            color: #4ecdc4;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: transform 0.2s;
+        }
+        .ghost-btn:active { transform: scale(0.97); }
+        .status-line {
+            margin-top: 14px;
+            font-size: 14px;
+            color: #ffd700;
+            font-weight: bold;
+            min-height: 20px;
+            line-height: 1.6;
+        }
+        /* 家长密码弹窗 */
+        .gate-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(10,5,30,0.72);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gate-mask.show { display: flex; }
+        .gate-box {
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(160deg,#3a2470,#2c1b54);
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 18px;
+            padding: 26px 22px 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .gate-title {
+            font-size: 19px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .gate-tip {
+            font-size: 14px;
+            color: #ddd;
+            line-height: 1.8;
+            margin-bottom: 14px;
+        }
+        .gate-input {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,215,0,0.35);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 10px;
+            outline: none;
+        }
+        .gate-input:focus {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+        .gate-input::placeholder { color: rgba(255,255,255,0.35); letter-spacing: 0; font-size: 15px; }
+        .gate-err {
+            color: #ff8888;
+            font-size: 13px;
+            min-height: 20px;
+            margin-top: 8px;
+        }
+        .gate-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+        .gate-btn {
+            flex: 1;
+            max-width: 140px;
+            padding: 12px 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .gate-btn.cancel {
+            background: rgba(255,255,255,0.12);
+            color: #ddd;
+            border: 1.5px solid rgba(255,255,255,0.2);
+        }
+        .gate-btn.ok {
+            background: linear-gradient(90deg,#ffd700,#ff9500);
+            color: #222;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.35);
+        }
+        .gate-btn:active { transform: scale(0.96); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a class="back-link" href="index.html">← 返回首页</a>
+    <div class="page-title">⚙️ 设置</div>
+
+    <!-- ========== 青少年模式 ========== -->
+    <div class="card">
+        <div class="card-title">🧒 青少年模式</div>
+        <div class="card-desc">设置单词游戏每日可玩时长，超过设定时间将自动退出游戏。<br>修改本设置需输入 4 位家长密码。</div>
+        <div class="row">
+            <span class="label">启用青少年模式</span>
+            <label class="switch">
+                <input type="checkbox" id="teenEnabled">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="row">
+            <span class="label">每日可玩时长（分钟）</span>
+            <input class="num-input" type="number" id="teenLimit" min="1" max="120" step="1" value="30">
+        </div>
+        <div class="row">
+            <span class="label">今日已用时长</span>
+            <span class="value-text" id="teenUsed">0 分 0 秒</span>
+        </div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" onclick="saveTeen()">💾 保存设置</button>
+            <button class="ghost-btn" type="button" onclick="resetTeenUsed()">🔄 重置今日时长</button>
+        </div>
+        <div class="status-line" id="teenStatus"></div>
+    </div>
+
+    <!-- ========== 数据管理 ========== -->
+    <div class="card">
+        <div class="card-title">💾 数据管理</div>
+        <div class="card-desc">导出或导入本站全部本地数据（排行榜、音效设置、青少年模式等），<br>登录状态与家长密码不会包含在内。</div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" onclick="exportData()">📤 导出全部数据</button>
+            <button class="ghost-btn" type="button" onclick="document.getElementById('importFile').click()">📥 导入数据</button>
+        </div>
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+        <div class="status-line" id="dataStatus"></div>
+    </div>
+</div>
+
+<!-- ========== 家长密码弹窗 ========== -->
+<div class="gate-mask" id="pinModal">
+    <div class="gate-box">
+        <div class="gate-title" id="pinTitle">家长验证</div>
+        <div class="gate-tip" id="pinTip">请输入 4 位家长密码</div>
+        <input class="gate-input" id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="4 位数字" autocomplete="off" oninput="this.value=this.value.replace(/\D/g,'')" onkeydown="if(event.key==='Enter')confirmPin()">
+        <div class="gate-err" id="pinErr"></div>
+        <div class="gate-btns">
+            <button class="gate-btn cancel" type="button" onclick="closePin()">取消</button>
+            <button class="gate-btn ok" type="button" onclick="confirmPin()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== 音效系统（全部离线生成）=====
+let audioCtx = null;
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+function playClickSound() {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 800; osc.type = 'square';
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.08);
+    } catch(e) {}
+}
+function playSuccessSound() {
+    try {
+        const ctx = getAudioCtx();
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = freq; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+            osc.start(ctx.currentTime + i * 0.1); osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+        });
+    } catch(e) {}
+}
+function playErrorSound() {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+        osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
+    } catch(e) {}
+}
+
+// ===== 常量（与 match.html / index.html / login.html 保持一致）=====
+const ACCESS_KEY = "wordGameAccess";   // 登录状态（导出/导入时跳过）
+const PIN_KEY = "wordGameParentPin";   // 家长密码（导出/导入时跳过）
+const TEEN_ENABLED = "wordGameTeenEnabled";
+const TEEN_LIMIT = "wordGameTeenLimit";
+const TEEN_USED = "wordGameTeenUsed";
+const TEEN_DATE = "wordGameTeenDate";
+const TEEN_START = "wordGameTeenStart";
+
+// ===== 家长密码散列（本地防窥，非加密）=====
+function hashPin(pin) {
+    let h = 5381;
+    const s = "wordgame|" + pin + "|salt2026";
+    for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    }
+    return "h" + h;
+}
+
+// ===== 密码弹窗 =====
+let pinMode = "verify";
+let pinCallback = null;
+function openPin(mode, cb) {
+    pinMode = mode;
+    pinCallback = cb;
+    document.getElementById("pinTitle").innerText = mode === "set" ? "设置家长密码" : "家长验证";
+    document.getElementById("pinTip").innerText = mode === "set"
+        ? "首次启用青少年模式，请设置 4 位家长密码（以后修改需验证）"
+        : "此操作需要家长验证，请输入 4 位家长密码";
+    document.getElementById("pinErr").innerText = "";
+    document.getElementById("pinInput").value = "";
+    document.getElementById("pinModal").classList.add("show");
+    document.getElementById("pinInput").focus();
+}
+function closePin() {
+    document.getElementById("pinModal").classList.remove("show");
+    pinCallback = null;
+}
+function confirmPin() {
+    const v = document.getElementById("pinInput").value.trim();
+    if (!/^\d{4}$/.test(v)) {
+        playErrorSound();
+        document.getElementById("pinErr").innerText = "请输入 4 位数字密码";
+        return;
+    }
+    const done = () => {
+        playSuccessSound();
+        document.getElementById("pinModal").classList.remove("show");
+        const cb = pinCallback;
+        pinCallback = null;
+        if (cb) cb(true);
+    };
+    if (pinMode === "set") {
+        localStorage.setItem(PIN_KEY, hashPin(v));
+        done();
+    } else {
+        const stored = localStorage.getItem(PIN_KEY);
+        if (stored === hashPin(v)) {
+            done();
+        } else {
+            playErrorSound();
+            document.getElementById("pinErr").innerText = "密码错误，请重试";
+            document.getElementById("pinInput").value = "";
+        }
+    }
+}
+
+// ===== 青少年模式 =====
+function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function teenUsedSec() {
+    // 跨天自动重置
+    if (localStorage.getItem(TEEN_DATE) !== todayStr()) {
+        localStorage.setItem(TEEN_DATE, todayStr());
+        localStorage.setItem(TEEN_USED, "0");
+        localStorage.removeItem(TEEN_START);
+        return 0;
+    }
+    let base = parseInt(localStorage.getItem(TEEN_USED) || "0", 10);
+    const start = parseInt(localStorage.getItem(TEEN_START) || "0", 10);
+    if (start > 0) base += Math.floor((Date.now() - start) / 1000);
+    return base;
+}
+function renderTeen() {
+    const enabled = localStorage.getItem(TEEN_ENABLED) === "1";
+    const limit = parseInt(localStorage.getItem(TEEN_LIMIT) || "30", 10);
+    document.getElementById("teenEnabled").checked = enabled;
+    document.getElementById("teenLimit").value = limit;
+    const used = teenUsedSec();
+    document.getElementById("teenUsed").innerText = Math.floor(used / 60) + " 分 " + (used % 60) + " 秒";
+    const stateEl = document.getElementById("teenStatus");
+    stateEl.innerText = enabled
+        ? "🟢 青少年模式已开启 · 每日限 " + limit + " 分钟"
+        : "⚪ 青少年模式未开启";
+}
+
+// ===== 保存 / 重置（均需家长密码）=====
+function saveTeen() {
+    playClickSound();
+    const enabled = document.getElementById("teenEnabled").checked;
+    const limit = parseInt(document.getElementById("teenLimit").value, 10);
+    if (!limit || isNaN(limit) || limit < 1 || limit > 120) {
+        playErrorSound();
+        alert("请输入 1~120 之间的分钟数");
+        return;
+    }
+    const doSave = () => {
+        localStorage.setItem(TEEN_ENABLED, enabled ? "1" : "0");
+        localStorage.setItem(TEEN_LIMIT, String(limit));
+        // 修改限时后开始新的可玩周期
+        localStorage.setItem(TEEN_DATE, todayStr());
+        localStorage.setItem(TEEN_USED, "0");
+        localStorage.removeItem(TEEN_START);
+        renderTeen();
+        document.getElementById("dataStatus").innerText = "✅ 青少年模式设置已保存";
+    };
+    if (!localStorage.getItem(PIN_KEY)) {
+        openPin("set", ok => { if (ok) doSave(); });
+    } else {
+        openPin("verify", ok => { if (ok) doSave(); });
+    }
+}
+function resetTeenUsed() {
+    playClickSound();
+    const doReset = () => {
+        localStorage.setItem(TEEN_DATE, todayStr());
+        localStorage.setItem(TEEN_USED, "0");
+        localStorage.removeItem(TEEN_START);
+        renderTeen();
+        document.getElementById("dataStatus").innerText = "✅ 今日已用时长已重置";
+    };
+    if (!localStorage.getItem(PIN_KEY)) {
+        openPin("set", ok => { if (ok) doReset(); });
+    } else {
+        openPin("verify", ok => { if (ok) doReset(); });
+    }
+}
+
+// ===== 数据导出 / 导入 =====
+const SKIP_KEYS = [ACCESS_KEY, PIN_KEY];
+function exportData() {
+    playClickSound();
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (SKIP_KEYS.includes(k)) continue;
+        data[k] = localStorage.getItem(k);
+    }
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    const stamp = String(d.getFullYear()) + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    a.href = url;
+    a.download = "word-game-backup-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    document.getElementById("dataStatus").innerText = "📤 已导出 " + Object.keys(data).length + " 项数据（不含登录状态与家长密码）";
+}
+function importData(event) {
+    playClickSound();
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("bad");
+            let count = 0, skipped = 0;
+            Object.keys(data).forEach(k => {
+                if (SKIP_KEYS.includes(k)) { skipped++; return; }
+                localStorage.setItem(k, String(data[k]));
+                count++;
+            });
+            playSuccessSound();
+            document.getElementById("dataStatus").innerText = "✅ 导入成功：" + count + " 项（跳过受保护 " + skipped + " 项）";
+            renderTeen();
+        } catch (e) {
+            playErrorSound();
+            document.getElementById("dataStatus").innerText = "❌ 导入失败：文件格式不正确";
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+}
+
+// ===== 启动 =====
+renderTeen();
+</script>
+</body>
+</html>
