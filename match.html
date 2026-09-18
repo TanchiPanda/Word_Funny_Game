@@ -375,6 +375,26 @@
             color: #a8a8d8;
             border-color: rgba(255,255,255,0.25);
         }
+        /* ========== 右下角设置入口 ========== */
+        .settings-toggle {
+            position: fixed;
+            bottom: 14px;
+            right: 14px;
+            z-index: 999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,215,0,0.5);
+            background: rgba(44,27,84,0.88);
+            color: #ffd700;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+        }
+        .settings-toggle:active { transform: scale(0.92) rotate(30deg); }
         /* ========== 身份提示条（客人模式） ========== */
         .access-bar {
             display: flex;
@@ -516,6 +536,10 @@
 <div class="container">
     <!-- ========== 全局音效开关（固定左上角，所有页面可用） ========== -->
     <button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()" aria-label="音效开关" title="点击开启或关闭音效"></button>
+    <!-- ========== 设置入口（固定右下角，所有页面可用） ========== -->
+    <button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
     <!-- ========== 身份提示条（客人模式 / 已解锁） ========== -->
     <div class="access-bar hidden" id="accessBar">
         <span class="access-label" id="accessLabel">👤 客人模式</span>
@@ -1133,10 +1157,75 @@ function backToSelect() {
     renderLeaderboard();
     showPage("selectPage");
 }
+function goSettings() {
+    playClickSound();
+    location.href = "settings.html";
+}
+// ===== 青少年模式（每日可玩时长，超时自动退出）=====
+const TEEN_ENABLED = "wordGameTeenEnabled";
+const TEEN_LIMIT = "wordGameTeenLimit";
+const TEEN_USED = "wordGameTeenUsed";
+const TEEN_DATE = "wordGameTeenDate";
+const TEEN_START = "wordGameTeenStart";
+let teenTimer = null;
+function teenToday() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function teenEnabledFlag() {
+    return localStorage.getItem(TEEN_ENABLED) === "1";
+}
+function teenUsedSec() {
+    // 跨天自动重置
+    if (localStorage.getItem(TEEN_DATE) !== teenToday()) {
+        localStorage.setItem(TEEN_DATE, teenToday());
+        localStorage.setItem(TEEN_USED, "0");
+        localStorage.removeItem(TEEN_START);
+        return 0;
+    }
+    let base = parseInt(localStorage.getItem(TEEN_USED) || "0", 10);
+    const start = parseInt(localStorage.getItem(TEEN_START) || "0", 10);
+    if (start > 0) base += Math.floor((Date.now() - start) / 1000);
+    return base;
+}
+function teenPersist() {
+    // 离开页面前把当前会话用时累计进已用时长
+    if (localStorage.getItem(TEEN_START)) {
+        localStorage.setItem(TEEN_USED, String(teenUsedSec()));
+        localStorage.removeItem(TEEN_START);
+    }
+}
+function teenExit(msg) {
+    teenPersist();
+    clearInterval(timer);
+    clearInterval(teenTimer);
+    teenTimer = null;
+    alert(msg);
+    location.href = "index.html";
+}
+function teenStart() {
+    if (!teenEnabledFlag()) return;
+    const limitSec = (parseInt(localStorage.getItem(TEEN_LIMIT) || "30", 10)) * 60;
+    if (teenUsedSec() >= limitSec) {
+        teenExit("⏰ 青少年模式今日可玩时长已用完，已自动退出");
+        return;
+    }
+    if (!localStorage.getItem(TEEN_START)) {
+        localStorage.setItem(TEEN_START, String(Date.now()));
+    }
+    teenTimer = setInterval(() => {
+        const curLimitSec = (parseInt(localStorage.getItem(TEEN_LIMIT) || "30", 10)) * 60;
+        if (teenUsedSec() >= curLimitSec) {
+            teenExit("⏰ 青少年模式今日可玩时长已用完，已自动退出");
+        }
+    }, 1000);
+}
+window.addEventListener("pagehide", teenPersist);
 // ===== 启动：直接进入选词（划词）页 =====
 updateSoundBtn();
 renderAccessUI();
 initLevels();
+teenStart();
 </script>
 </body>
 </html>
