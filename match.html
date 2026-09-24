@@ -54,6 +54,35 @@
             margin-bottom: 14px;
         }
         .select-header h2 { margin-bottom: 0; }
+        /* 当前词本/课时只读展示条 */
+        .current-book-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 0 0 6px;
+        }
+        .current-book-banner .cb-name {
+            background: rgba(255,215,0,0.15);
+            border: 1.5px solid rgba(255,215,0,0.5);
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 15px;
+            padding: 7px 14px;
+            border-radius: 10px;
+            letter-spacing: 1px;
+        }
+        .current-book-banner .cb-level {
+            background: rgba(78,205,196,0.15);
+            border: 1.5px solid rgba(78,205,196,0.5);
+            color: #4ecdc4;
+            font-weight: bold;
+            font-size: 15px;
+            padding: 7px 14px;
+            border-radius: 10px;
+            letter-spacing: 1px;
+        }
         .select-controls {
             position: absolute;
             right: 0;
@@ -550,16 +579,10 @@
     <div id="selectPage" class="page active">
         <div class="select-header">
             <h2>📚 剔除你不需要练习的单词</h2>
-            <div class="select-controls">
-                <div class="select-pill">
-                    <label for="bookSelect">单词本</label>
-                    <select id="bookSelect" aria-label="单词本选择"></select>
-                </div>
-                <div class="select-pill">
-                    <label for="levelSelect">课时</label>
-                    <select id="levelSelect" aria-label="课时选择"></select>
-                </div>
-            </div>
+        </div>
+        <div class="current-book-banner" id="currentBookBanner">
+            <span class="cb-name" id="cbName"></span>
+            <span class="cb-level" id="cbLevel"></span>
         </div>
         <div class="tip-info" id="selectTip">默认本课时全部单词都将加入游戏，点击单词即可剔除（划掉）</div>
         <div class="word-tag-wrap" id="tagBox"></div>
@@ -774,7 +797,9 @@ function unlockFull() {
     localStorage.setItem(ACCESS_KEY, "full");
     playUnlockSound();
     renderAccessUI();
-    renderLevelSelect();
+    const levelSel = document.getElementById("levelSelect");
+    if (levelSel) renderLevelSelect();
+    renderCurrentBanner();
     renderLeaderboard();
 }
 // ===== 密码解锁弹窗 =====
@@ -834,10 +859,19 @@ function switchBook(idx) {
     renderSelectTip();
 }
 function initLevels() {
-    renderBookSelect();
-    renderLevelSelect();
+    loadCurrentSelection();
+    renderCurrentBanner();
     renderWordTags();
     renderLeaderboard();
+}
+// 渲染当前词本/课时只读展示条
+function renderCurrentBanner() {
+    const book = activeBook();
+    const lv = book.levels[currentLevel];
+    const nameEl = document.getElementById("cbName");
+    const levelEl = document.getElementById("cbLevel");
+    if (nameEl) nameEl.innerText = "📖 " + book.name + (book.free ? "（免费）" : "");
+    if (levelEl) levelEl.innerText = "🏷 " + lv.name + "（" + lv.words.length + "词）";
 }
 function renderLevelSelect() {
     const sel = document.getElementById("levelSelect");
@@ -870,13 +904,15 @@ function renderLevelSelect() {
 }
 function switchLevel(idx) {
     if (!guestCanReach(idx)) {
-        document.getElementById("levelSelect").value = String(currentLevel);
         openGate({ type: "level", idx: idx });
         return;
     }
     playClickSound();
     currentLevel = idx;
-    document.getElementById("levelSelect").value = String(currentLevel);
+    saveCurrentSelection();
+    const levelSel = document.getElementById("levelSelect");
+    if (levelSel) levelSel.value = String(currentLevel);
+    renderCurrentBanner();
     renderWordTags();
     renderLeaderboard();
 }

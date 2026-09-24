@@ -131,6 +131,56 @@
             color: #8888aa;
             line-height: 1.8;
         }
+        /* ========== 当前词本/课时选择卡片 ========== */
+        .book-current-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto 26px;
+            padding: 14px 16px;
+            border: 2px solid rgba(255,215,0,0.45);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.08);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: left;
+        }
+        .book-current-card:active { transform: scale(0.97); }
+        .book-current-card .cover {
+            flex-shrink: 0;
+            width: 52px;
+            height: 64px;
+            border-radius: 10px;
+            background: linear-gradient(160deg,#c2185b,#880e4f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .book-current-card .bc-info { flex: 1; min-width: 0; }
+        .book-current-card .bc-book {
+            font-size: 17px;
+            font-weight: bold;
+            color: #ffd700;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .book-current-card .bc-level {
+            font-size: 13px;
+            color: #4ecdc4;
+            letter-spacing: 1px;
+        }
+        .book-current-card .bc-arrow {
+            flex-shrink: 0;
+            color: #a8a8d8;
+            font-size: 20px;
+        }
         /* ========== 右下角设置入口 ========== */
         .settings-toggle {
             position: fixed;
@@ -163,6 +213,16 @@
         <span class="icon">📚</span> 单词闯关连连看
     </button>
 
+    <!-- 当前词本/课时卡片：点击切换到 chooser.html -->
+    <div class="book-current-card" onclick="goChooser()" role="button" tabindex="0" aria-label="切换单词本与课时">
+        <div class="cover">📖</div>
+        <div class="bc-info">
+            <div class="bc-book" id="currentBookName">加载中…</div>
+            <div class="bc-level" id="currentLevelName">加载中…</div>
+        </div>
+        <div class="bc-arrow">›</div>
+    </div>
+
     <!-- 底部状态区：左侧身份状态，右侧登录（未登录时显示） -->
     <div class="status-area">
         <div class="status-box">
@@ -180,6 +240,7 @@
 <button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 </button>
+<script src="dict/wbook.js"></script>
 <script>
 // ===== 身份检测 =====
 const ACCESS_KEY = "wordGameAccess";
@@ -193,6 +254,17 @@ function renderStatus() {
     document.getElementById("loginBtn").classList.toggle("hidden", activated);
     document.getElementById("activatedText").style.display = activated ? "" : "none";
 }
+// ===== 当前词本/课时展示 =====
+function renderCurrentBook() {
+    loadCurrentSelection();
+    const book = activeBook();
+    const lv = book.levels[currentLevel];
+    document.getElementById("currentBookName").innerText = "《" + book.name + "》" + (book.free ? "（免费）" : "");
+    document.getElementById("currentLevelName").innerText = lv.name + " · 共" + lv.words.length + "词";
+}
+function goChooser() {
+    location.href = "dict/chooser.html";
+}
 function goLogin() {
     location.href = "login.html";
 }
@@ -204,6 +276,7 @@ function enterGame() {
 }
 // ===== 启动 =====
 renderStatus();
+renderCurrentBook();
 </script>
 </body>
 </html>
