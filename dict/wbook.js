@@ -2297,8 +2297,26 @@ const WORD_BOOKS = [
     ] },
   ] },
 ];
-// 当前单词本与课时（右上角切换）
+// 当前单词本与课时（由 dict/chooser.html 选择，持久化到 localStorage）
 let currentBook = 0;
 let currentLevel = 0;
 function activeBook() { return WORD_BOOKS[currentBook]; }
 function activeWordList() { return activeBook().levels[currentLevel].words; }
+// ===== 词本/课时选择持久化 =====
+const SEL_BOOK_KEY = "wordGameCurrentBook";
+const SEL_LEVEL_KEY = "wordGameCurrentLevel";
+function saveCurrentSelection() {
+    localStorage.setItem(SEL_BOOK_KEY, String(currentBook));
+    localStorage.setItem(SEL_LEVEL_KEY, String(currentLevel));
+}
+function loadCurrentSelection() {
+    const b = parseInt(localStorage.getItem(SEL_BOOK_KEY), 10);
+    const l = parseInt(localStorage.getItem(SEL_LEVEL_KEY), 10);
+    if (!isNaN(b) && WORD_BOOKS[b]) currentBook = b;
+    const maxLv = WORD_BOOKS[currentBook].levels.length - 1;
+    if (!isNaN(l) && l >= 0 && l <= maxLv) currentLevel = l;
+}
+// 统计词本总词数
+function bookTotalWords(book) {
+    return book.levels.reduce((sum, lv) => sum + lv.words.length, 0);
+}
