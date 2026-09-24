@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <title>选择单词本与课时</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg,#2c1b54,#422880,#201440);
+            padding: 20px 12px 40px;
+            color: #fff;
+        }
+        .wrap { max-width: 680px; margin: 0 auto; }
+        .page-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg,#ffd700,#ff6b6b,#4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .page-sub {
+            text-align: center;
+            color: #a8a8d8;
+            font-size: 13px;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+        }
+        /* 词本卡片 */
+        .book-card {
+            display: flex;
+            gap: 16px;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(78,205,196,0.35);
+            border-radius: 18px;
+            padding: 18px 16px;
+            margin-bottom: 18px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+        }
+        .book-card.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 0 2px rgba(255,215,0,0.35), 0 6px 24px rgba(0,0,0,0.3);
+        }
+        .cover {
+            flex-shrink: 0;
+            width: 80px;
+            min-height: 110px;
+            border-radius: 12px;
+            background: linear-gradient(160deg,#c2185b,#880e4f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        }
+        .book-info { flex: 1; min-width: 0; }
+        .book-name {
+            font-size: 19px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .book-name .free-tag {
+            font-size: 12px;
+            color: #39d98a;
+            border: 1px solid rgba(57,217,138,0.5);
+            border-radius: 6px;
+            padding: 1px 7px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .book-stats {
+            font-size: 13px;
+            color: #a8a8d8;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        /* 课时标签 */
+        .level-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .lv-tag {
+            padding: 7px 13px;
+            border-radius: 9px;
+            background: rgba(78,205,196,0.15);
+            border: 1.5px solid rgba(78,205,196,0.5);
+            color: #4ecdc4;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.15s;
+            letter-spacing: 1px;
+        }
+        .lv-tag:active { transform: scale(0.94); }
+        .lv-tag.selected {
+            background: rgba(255,215,0,0.22);
+            border-color: #ffd700;
+            color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.3);
+        }
+        .lv-tag.locked {
+            background: rgba(255,107,107,0.1);
+            border-color: rgba(255,107,107,0.4);
+            color: #999;
+        }
+        /* 底部按钮 */
+        .bottom-area {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .back-btn {
+            width: 100%;
+            max-width: 340px;
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(90deg,#6c5ce7,#a29bfe);
+            color: #fff;
+            font-size: 17px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(108,92,231,0.35);
+        }
+        .back-btn:active { transform: scale(0.97); }
+        /* 解锁弹窗 */
+        .gate-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(10,5,30,0.78);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gate-mask.show { display: flex; }
+        .gate-box {
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(160deg,#3a2470,#2c1b54);
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 18px;
+            padding: 26px 22px 20px;
+            text-align: center;
+        }
+        .gate-title { font-size: 19px; font-weight: bold; color: #ffd700; margin-bottom: 10px; letter-spacing: 2px; }
+        .gate-tip { font-size: 13px; color: #ddd; line-height: 1.8; margin-bottom: 14px; }
+        .gate-tip .hint-text { color: #ffd700; font-weight: bold; }
+        .gate-input {
+            width: 100%; padding: 12px; border-radius: 10px;
+            border: 2px solid rgba(255,215,0,0.35);
+            background: rgba(255,255,255,0.08); color: #fff;
+            font-size: 16px; text-align: center; outline: none;
+        }
+        .gate-input:focus { border-color: #ffd700; }
+        .gate-err { color: #ff8888; font-size: 13px; min-height: 18px; margin-top: 8px; }
+        .gate-btns { display: flex; gap: 10px; margin-top: 8px; }
+        .gate-btn { flex: 1; padding: 11px; border-radius: 10px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .gate-btn.cancel { background: rgba(255,255,255,0.12); color: #ddd; border: 1.5px solid rgba(255,255,255,0.2); }
+        .gate-btn.ok { background: linear-gradient(90deg,#ffd700,#ff9500); color: #222; }
+        .guest-tip {
+            text-align: center;
+            font-size: 12px;
+            color: #ff8888;
+            margin-top: 14px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="page-title">选择单词本与课时</div>
+    <div class="page-sub">点击课时标签即可切换，选择自动保存</div>
+    <div id="bookList"></div>
+    <div class="guest-tip" id="guestTip" style="display:none;">🔒 客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
+    <div class="bottom-area">
+        <button class="back-btn" onclick="goBack()">✅ 完成选择，返回首页</button>
+    </div>
+</div>
+<!-- 解锁弹窗 -->
+<div class="gate-mask" id="gateModal">
+    <div class="gate-box">
+        <div class="gate-title">🔒 此课时需要解锁</div>
+        <div class="gate-tip">请输入通关暗号解锁全部课时<br>提示：<span class="hint-text">二水在手</span></div>
+        <input class="gate-input" id="gateInput" placeholder="请输入通关暗号" onkeydown="if(event.key==='Enter')submitGate()">
+        <div class="gate-err" id="gateErr"></div>
+        <div class="gate-btns">
+            <button class="gate-btn cancel" onclick="closeGate()">取消</button>
+            <button class="gate-btn ok" onclick="submitGate()">确认解锁</button>
+        </div>
+    </div>
+</div>
+<script src="wbook.js"></script>
+<script>
+const ACCESS_KEY = "wordGameAccess";
+const GUEST_MAX_LEVEL = 2;
+function isGuest() { return localStorage.getItem(ACCESS_KEY) !== "full"; }
+function guestCanReach(book, levelIdx) {
+    if (!isGuest()) return true;
+    if (book.free) return true;
+    return levelIdx <= GUEST_MAX_LEVEL;
+}
+// 渲染词本列表
+function render() {
+    loadCurrentSelection();
+    const list = document.getElementById("bookList");
+    list.innerHTML = "";
+    const guest = isGuest();
+    document.getElementById("guestTip").style.display = guest ? "" : "none";
+    WORD_BOOKS.forEach((book, bi) => {
+        const card = document.createElement("div");
+        card.className = "book-card" + (bi === currentBook ? " active" : "");
+        const totalWords = bookTotalWords(book);
+        let levelsHtml = "";
+        book.levels.forEach((lv, li) => {
+            const reachable = guestCanReach(book, li);
+            const selected = (bi === currentBook && li === currentLevel);
+            if (reachable) {
+                levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
+            } else {
+                levelsHtml += `<span class="lv-tag locked" onclick="tryLocked(${bi},${li})">🔒${lv.name}</span>`;
+            }
+        });
+        card.innerHTML = `
+            <div class="cover">📖</div>
+            <div class="book-info">
+                <div class="book-name">${book.name}${book.free ? '<span class="free-tag">免费</span>' : ""}</div>
+                <div class="book-stats">共 ${book.levels.length} 课时 · ${totalWords} 词</div>
+                <div class="level-tags">${levelsHtml}</div>
+            </div>`;
+        list.appendChild(card);
+    });
+}
+// 选择课时
+function pickLevel(bi, li) {
+    currentBook = bi;
+    currentLevel = li;
+    saveCurrentSelection();
+    render();
+}
+// 锁定课时：尝试解锁
+let pendingPick = null;
+function tryLocked(bi, li) {
+    pendingPick = { bi, li };
+    document.getElementById("gateErr").innerText = "";
+    document.getElementById("gateInput").value = "";
+    document.getElementById("gateModal").classList.add("show");
+    document.getElementById("gateInput").focus();
+}
+function closeGate() {
+    pendingPick = null;
+    document.getElementById("gateModal").classList.remove("show");
+}
+function submitGate() {
+    const v = document.getElementById("gateInput").value.trim();
+    if (v === "满分有我") {
+        localStorage.setItem(ACCESS_KEY, "full");
+        const p = pendingPick;
+        pendingPick = null;
+        document.getElementById("gateModal").classList.remove("show");
+        if (p) pickLevel(p.bi, p.li);
+        else render();
+    } else {
+        document.getElementById("gateErr").innerText = "暗号错误！提示：二水在手";
+        document.getElementById("gateInput").value = "";
+    }
+}
+function goBack() {
+    saveCurrentSelection();
+    location.href = "../index.html";
+}
+render();
+</script>
+</body>
+</html>
