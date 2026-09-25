@@ -15,10 +15,18 @@ const GH_USER_KEY = "wordGameGitHubUser";
 const GH_TOKEN_KEY = "wordGameGitHubToken";
 
 function getCallbackUrl() {
-    // 自动拼接当前站点的 oauth-callback.html 地址
+    // oauth-callback.html 固定在站点根目录，需要从 dict/ 子目录正确回退到根
     const loc = window.location;
-    const base = loc.origin + loc.pathname.replace(/[^/]*$/, "");
-    return base + "oauth-callback.html";
+    const path = loc.pathname;
+    let root;
+    if (path.includes("/dict/")) {
+        // 当前在 dict/ 目录下，根目录为 dict/ 之前的部分
+        root = path.substring(0, path.indexOf("/dict/")) + "/";
+    } else {
+        // 当前在根目录，去掉文件名
+        root = path.replace(/[^/]*$/, "");
+    }
+    return loc.origin + root + "oauth-callback.html";
 }
 
 function isLoggedIn() {
