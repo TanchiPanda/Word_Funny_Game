@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>✏️ 单词拼写</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg,#1a1040 0%,#2d1b5e 50%,#1a1040 100%);
+    min-height: 100vh; color: #fff; padding: 14px;
+}
+.page { display: none; }
+.page.active { display: block; }
+
+/* 顶部栏 */
+.top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+}
+.back-btn {
+    padding: 8px 16px; border: none; border-radius: 10px;
+    background: rgba(255,255,255,0.1); color: #fff; font-size: 14px; cursor: pointer;
+}
+.back-btn:active { transform: scale(0.95); }
+.progress-text { font-size: 14px; color: #a8a8d8; }
+
+/* 词本横幅 */
+.book-banner {
+    background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,215,0,0.3);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+    text-align: center;
+}
+.book-banner .bn { font-size: 16px; color: #ffd700; font-weight: bold; }
+.book-banner .lv { font-size: 13px; color: #a8a8d8; margin-top: 4px; }
+
+/* 提示 */
+.tip {
+    text-align: center; font-size: 13px; color: #a8a8d8; margin-bottom: 14px; line-height: 1.6;
+}
+
+/* 单词标签（剔除） */
+.tag-wrap {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin-bottom: 16px;
+}
+.word-tag {
+    padding: 6px 14px; border-radius: 8px; background: rgba(78,205,196,0.15);
+    border: 1.5px solid rgba(78,205,196,0.4); color: #4ecdc4;
+    font-size: 14px; cursor: pointer; transition: 0.15s;
+}
+.word-tag.remove {
+    background: rgba(255,107,107,0.15); border-color: rgba(255,107,107,0.4);
+    color: #ff8888; text-decoration: line-through;
+}
+
+/* 模式按钮 */
+.mode-area {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 16px;
+}
+.mode-btn {
+    padding: 14px; border: none; border-radius: 12px; font-size: 16px;
+    font-weight: bold; cursor: pointer; transition: 0.15s;
+}
+.mode-btn:active { transform: scale(0.97); }
+.mode-btn.heaven { background: linear-gradient(90deg,#4ecdc4,#39d98a); color: #0d3b2e; }
+.mode-btn.easy { background: linear-gradient(90deg,#39d98a,#4ecdc4); color: #0d3b2e; }
+.mode-btn.hard { background: linear-gradient(90deg,#ff6b6b,#ee4c4c); color: #fff; }
+.mode-btn.hell { background: linear-gradient(90deg,#6c5ce7,#a29bfe); color: #fff; }
+.mode-btn.home { background: rgba(255,255,255,0.1); color: #a8a8d8; }
+.mode-btn.locked { opacity: 0.4; }
+
+/* ===== 游戏页 ===== */
+.word-display {
+    text-align: center; margin-bottom: 20px;
+}
+.word-cn {
+    font-size: 22px; color: #e8e8f5; line-height: 1.5; margin-bottom: 6px;
+}
+.word-pos {
+    display: inline-block; padding: 2px 10px; border-radius: 6px;
+    background: rgba(78,205,196,0.2); color: #4ecdc4; font-size: 13px;
+}
+
+/* 拼写输入区 */
+.spell-area {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    min-height: 60px; padding: 14px; margin-bottom: 16px;
+    background: rgba(255,255,255,0.04); border-radius: 14px;
+}
+.spell-slot {
+    width: 42px; height: 48px; border-radius: 8px;
+    border: 2px dashed rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: bold; color: #fff;
+    text-transform: lowercase;
+}
+.spell-slot.filled {
+    border: 2px solid rgba(255,215,0,0.5); background: rgba(255,215,0,0.1);
+}
+.spell-slot.correct {
+    border-color: #39d98a; background: rgba(57,217,138,0.2); color: #39d98a;
+}
+.spell-slot.wrong {
+    border-color: #ff6b6b; background: rgba(255,107,107,0.2); color: #ff6b6b;
+}
+
+/* 字母卡片 */
+.letters-area {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    margin-bottom: 18px;
+}
+.letter-tile {
+    width: 48px; height: 54px; border-radius: 10px;
+    border: none; font-size: 22px; font-weight: bold; cursor: pointer;
+    background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff;
+    transition: 0.15s; text-transform: lowercase;
+}
+.letter-tile:active { transform: scale(0.92); }
+.letter-tile.used { opacity: 0.2; pointer-events: none; }
+.letter-tile.space-tile {
+    background: rgba(255,255,255,0.1); width: 48px; color: transparent;
+}
+.letter-tile.symbol-tile {
+    background: rgba(255,215,0,0.25); color: #ffd700; width: auto; padding: 0 10px;
+}
+
+/* 游戏按钮 */
+.game-btn-area {
+    display: flex; gap: 10px; justify-content: center;
+}
+.game-btn {
+    flex: 1; max-width: 160px; padding: 14px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.15s;
+}
+.game-btn:active { transform: scale(0.97); }
+.game-btn:disabled { opacity: 0.4; }
+.game-btn.check { background: linear-gradient(90deg,#ffd700,#ff9500); color: #222; }
+.game-btn.retry { background: rgba(255,107,107,0.2); color: #ff8888; }
+.game-btn.next { background: linear-gradient(90deg,#39d98a,#4ecdc4); color: #0d3b2e; }
+.game-btn.home { background: rgba(255,255,255,0.1); color: #a8a8d8; }
+
+/* 计时器 */
+.timer-bar {
+    text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 12px;
+    color: #ffd700;
+}
+.timer-bar.danger { color: #ff6b6b; animation: blink 0.5s infinite; }
+@keyframes blink { 50% { opacity: 0.4; } }
+
+/* 音效/设置浮动按钮 */
+.float-toggle {
+    position: fixed; top: 12px; height: 40px; z-index: 999;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 12px; border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    background: rgba(44,27,84,0.88); color: #fff;
+    font-size: 12px; cursor: pointer; backdrop-filter: blur(8px);
+}
+.float-toggle.sound { left: 12px; }
+.float-toggle.settings { right: 12px; }
+.float-toggle:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<button class="float-toggle sound" id="soundToggle" type="button" onclick="toggleSound()">音效</button>
+<button class="float-toggle settings" type="button" onclick="location.href='settings.html'">⚙️</button>
+
+<!-- ===== 选词页 ===== -->
+<div id="selectPage" class="page active">
+    <div class="top-bar">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <div class="progress-text" id="selProgress"></div>
+    </div>
+    <div class="book-banner">
+        <div class="bn" id="selBook"></div>
+        <div class="lv" id="selLevel"></div>
+    </div>
+    <div class="tip">点击单词可剔除（划掉），未剔除的单词将进入拼写练习</div>
+    <div class="tag-wrap" id="tagBox"></div>
+    <div class="mode-area">
+        <button class="mode-btn heaven" onclick="startGame('heaven')">☁️ 天堂模式（字母已排好）</button>
+        <button class="mode-btn easy" onclick="startGame('easy')">🟢 简单模式</button>
+        <button class="mode-btn hard" id="hardBtn" onclick="startGame('hard')">🔴 困难模式（每词20秒）</button>
+        <button class="mode-btn hell" id="hellBtn" onclick="startGame('hell')">💀 地狱模式（字母自动隐藏）</button>
+        <button class="mode-btn home" onclick="location.href='index.html'">🏠 返回首页</button>
+    </div>
+</div>
+
+<!-- ===== 游戏页 ===== -->
+<div id="gamePage" class="page">
+    <div class="top-bar">
+        <button class="back-btn" onclick="backToSelect()">← 返回选词</button>
+        <div class="progress-text" id="gameProgress"></div>
+    </div>
+    <div class="timer-bar" id="timerBar" style="display:none;"></div>
+    <div class="word-display">
+        <div class="word-cn" id="wordCn"></div>
+        <div class="word-pos" id="wordPos"></div>
+    </div>
+    <div class="spell-area" id="spellArea"></div>
+    <div class="letters-area" id="lettersArea"></div>
+    <div class="game-btn-area">
+        <button class="game-btn retry" id="retryBtn" onclick="retryWord()" disabled>↺ Retry</button>
+        <button class="game-btn check" id="checkBtn" onclick="checkWord()">✓ Check</button>
+        <button class="game-btn next" id="nextBtn" onclick="nextWord()" disabled>Next →</button>
+    </div>
+</div>
+
+<script src="dict/wbook.js?v=20260925b"></script>
+<script src="dict/sync.js?v=20260925b"></script>
+<script src="dict/auth.js?v=20260925b"></script>
+<script>
+// ===== 音效 =====
+let audioCtx = null;
+let soundEnabled = (localStorage.getItem("wordGameSoundEnabled") !== "0");
+function getAudioCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playClickSound() { if (!soundEnabled) return; try { const c=getAudioCtx(); const o=c.createOscillator(); const g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=800; o.type='square'; g.gain.setValueAtTime(0.08,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.08); o.start(c.currentTime); o.stop(c.currentTime+0.08);} catch(e){} }
+function playSuccessSound() { if (!soundEnabled) return; try { const c=getAudioCtx(); [523,659,784].forEach((f,i)=>{ const o=c.createOscillator(); const g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=f; o.type='sine'; g.gain.setValueAtTime(0.2,c.currentTime+i*0.1); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.1+0.3); o.start(c.currentTime+i*0.1); o.stop(c.currentTime+i*0.1+0.3);});} catch(e){} }
+function playErrorSound() { if (!soundEnabled) return; try { const c=getAudioCtx(); const o=c.createOscillator(); const g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.setValueAtTime(200,c.currentTime); o.frequency.exponentialRampToValueAtTime(100,c.currentTime+0.3); o.type='sawtooth'; g.gain.setValueAtTime(0.15,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.35); o.start(c.currentTime); o.stop(c.currentTime+0.35);} catch(e){} }
+function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem("wordGameSoundEnabled", soundEnabled?"1":"0"); document.getElementById("soundToggle").innerText = soundEnabled?"音效开":"音效关"; if (soundEnabled) playClickSound(); syncPushDebounced(); }
+
+// ===== 数据 =====
+loadCurrentSelection();
+let removedMap = {};
+const LOCKED_MODES = ["hard", "hell"];
+const GUEST_MAX_LEVEL = 2;
+function isGuest() { return !isLoggedIn(); }
+function guestCanReach(levelIdx) { if (!isGuest()) return true; if (activeBook().free) return true; return levelIdx <= GUEST_MAX_LEVEL; }
+function getRemovedList() { if (!removedMap[currentBook]) removedMap[currentBook]={}; if (!removedMap[currentBook][currentLevel]) removedMap[currentBook][currentLevel]=[]; return removedMap[currentBook][currentLevel]; }
+
+// ===== 选词页渲染 =====
+function renderSelect() {
+    const book = activeBook();
+    const lv = book.levels[currentLevel];
+    document.getElementById("selBook").innerText = "《" + book.name + "》";
+    document.getElementById("selLevel").innerText = lv.name + " · 共" + lv.words.length + "词";
+    document.getElementById("selProgress").innerText = "客人模式" + (isGuest() ? "" : " · 已登录");
+    const removed = getRemovedList();
+    const box = document.getElementById("tagBox");
+    box.innerHTML = "";
+    lv.words.forEach((w, i) => {
+        const tag = document.createElement("div");
+        tag.className = "word-tag" + (removed.includes(i) ? " remove" : "");
+        tag.innerText = w.en;
+        tag.onclick = () => {
+            playClickSound();
+            const r = getRemovedList();
+            if (r.includes(i)) removedMap[currentBook][currentLevel] = r.filter(x => x !== i);
+            else removedMap[currentBook][currentLevel] = r.concat([i]);
+            renderSelect();
+        };
+        box.appendChild(tag);
+    });
+    // 锁定模式
+    document.getElementById("hardBtn").classList.toggle("locked", isGuest());
+    document.getElementById("hellBtn").classList.toggle("locked", isGuest());
+}
+
+// ===== 游戏状态 =====
+let gameWords = [];
+let gameIdx = 0;
+let gameMode = "easy";
+let selectedTiles = []; // { tileEl, letter }
+let timerInt = null;
+let timeLeft = 0;
+
+function startGame(mode) {
+    playClickSound();
+    if (isGuest() && LOCKED_MODES.includes(mode)) { loginWithGitHub(); return; }
+    gameMode = mode;
+    const removed = getRemovedList();
+    gameWords = [];
+    activeBook().levels[currentLevel].words.forEach((w, i) => {
+        if (!removed.includes(i)) gameWords.push(w);
+    });
+    if (gameWords.length === 0) { alert("所有单词都被剔除了！"); return; }
+    gameIdx = 0;
+    document.getElementById("selectPage").classList.remove("active");
+    document.getElementById("gamePage").classList.add("active");
+    loadWord();
+}
+
+function backToSelect() {
+    stopTimer();
+    document.getElementById("gamePage").classList.remove("active");
+    document.getElementById("selectPage").classList.add("active");
+    renderSelect();
+}
+
+// 把单词拆成字母 token（保留空格和特殊符号）
+function splitLetters(word) {
+    const tokens = [];
+    let i = 0;
+    while (i < word.length) {
+        const ch = word[i];
+        if (ch === " ") { tokens.push({ ch: " ", type: "space" }); i++; }
+        else if (/[a-zA-Z]/.test(ch)) { tokens.push({ ch: ch.toLowerCase(), type: "letter" }); i++; }
+        else { tokens.push({ ch: ch, type: "symbol" }); i++; }
+    }
+    return tokens;
+}
+
+function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function loadWord() {
+    stopTimer();
+    selectedTiles = [];
+    const w = gameWords[gameIdx];
+    document.getElementById("gameProgress").innerText = (gameIdx + 1) + " / " + gameWords.length;
+    document.getElementById("wordCn").innerText = w.cn;
+    document.getElementById("wordPos").innerText = w.pos || "";
+    // 拼写槽
+    const tokens = splitLetters(w.en);
+    const spellArea = document.getElementById("spellArea");
+    spellArea.innerHTML = "";
+    tokens.forEach((t, i) => {
+        const slot = document.createElement("div");
+        slot.className = "spell-slot";
+        slot.dataset.idx = i;
+        slot.dataset.type = t.type;
+        if (t.type === "space") { slot.style.width = "24px"; slot.style.border = "none"; }
+        else if (t.type === "symbol") { slot.style.width = "28px"; slot.style.fontSize = "16px"; }
+        spellArea.appendChild(slot);
+    });
+    // 字母卡片
+    const lettersArea = document.getElementById("lettersArea");
+    lettersArea.innerHTML = "";
+    let tiles;
+    if (gameMode === "heaven") {
+        // 天堂：按顺序排好
+        tiles = tokens.map((t, i) => ({ ch: t.ch, type: t.type, origIdx: i }));
+    } else {
+        // 简单/困难/地狱：打乱
+        const letterTokens = tokens.map((t, i) => ({ ch: t.ch, type: t.type, origIdx: i })).filter(t => t.type === "letter");
+        const otherTokens = tokens.map((t, i) => ({ ch: t.ch, type: t.type, origIdx: i })).filter(t => t.type !== "letter");
+        const shuffledLetters = shuffle(letterTokens);
+        tiles = shuffledLetters.concat(otherTokens);
+        // 再整体洗牌（保持字母和符号分散）
+        tiles = shuffle(tiles);
+    }
+    tiles.forEach((t) => {
+        const tile = document.createElement("button");
+        tile.className = "letter-tile";
+        if (t.type === "space") tile.classList.add("space-tile");
+        else if (t.type === "symbol") { tile.classList.add("symbol-tile"); tile.innerText = t.ch; }
+        else tile.innerText = t.ch;
+        tile.dataset.origIdx = t.origIdx;
+        tile.onclick = () => onTileClick(tile);
+        lettersArea.appendChild(tile);
+    });
+    // 按钮状态
+    document.getElementById("checkBtn").disabled = false;
+    document.getElementById("retryBtn").disabled = true;
+    document.getElementById("nextBtn").disabled = true;
+    // 困难模式：计时
+    if (gameMode === "hard") startTimer(20);
+    // 地狱模式：字母几秒后隐藏
+    if (gameMode === "hell") setTimeout(() => hideLetters(), 5000);
+}
+
+function onTileClick(tile) {
+    if (tile.classList.contains("used")) return;
+    playClickSound();
+    tile.classList.add("used");
+    selectedTiles.push(tile);
+    // 填入第一个空槽
+    const slots = document.querySelectorAll("#spellArea .spell-slot");
+    for (let i = 0; i < slots.length; i++) {
+        if (!slots[i].classList.contains("filled") && !slots[i].classList.contains("correct")) {
+            slots[i].classList.add("filled");
+            slots[i].innerText = tile.innerText;
+            slots[i].dataset.tileIdx = selectedTiles.length - 1;
+            break;
+        }
+    }
+}
+
+function checkWord() {
+    const w = gameWords[gameIdx];
+    const tokens = splitLetters(w.en);
+    const slots = document.querySelectorAll("#spellArea .spell-slot");
+    let allCorrect = true;
+    let filledCount = 0;
+    slots.forEach((slot, i) => {
+        if (slot.dataset.type === "space" || slot.dataset.type === "symbol") return;
+        filledCount++;
+        const expected = tokens[i].ch;
+        const actual = slot.innerText.toLowerCase();
+        if (actual === expected) {
+            slot.classList.add("correct");
+        } else {
+            slot.classList.add("wrong");
+            allCorrect = false;
+        }
+    });
+    if (allCorrect && filledCount > 0) {
+        playSuccessSound();
+        document.getElementById("checkBtn").disabled = true;
+        document.getElementById("nextBtn").disabled = false;
+        stopTimer();
+        syncPushDebounced();
+    } else {
+        playErrorSound();
+        document.getElementById("retryBtn").disabled = false;
+    }
+}
+
+function retryWord() {
+    playClickSound();
+    const slots = document.querySelectorAll("#spellArea .spell-slot");
+    slots.forEach(s => { s.classList.remove("filled","correct","wrong"); s.innerText=""; });
+    document.querySelectorAll(".letter-tile.used").forEach(t => t.classList.remove("used"));
+    selectedTiles = [];
+    document.getElementById("retryBtn").disabled = true;
+    document.getElementById("checkBtn").disabled = false;
+}
+
+function nextWord() {
+    playClickSound();
+    gameIdx++;
+    if (gameIdx >= gameWords.length) {
+        alert("🎉 全部完成！共练习 " + gameWords.length + " 个单词");
+        backToSelect();
+        return;
+    }
+    loadWord();
+}
+
+// 计时器
+function startTimer(sec) {
+    stopTimer();
+    timeLeft = sec;
+    const bar = document.getElementById("timerBar");
+    bar.style.display = "block";
+    bar.innerText = "⏱ " + timeLeft + "s";
+    timerInt = setInterval(() => {
+        timeLeft--;
+        bar.innerText = "⏱ " + timeLeft + "s";
+        bar.classList.toggle("danger", timeLeft <= 5);
+        if (timeLeft <= 0) {
+            stopTimer();
+            playErrorSound();
+            alert("⏰ 时间到！正确答案：" + gameWords[gameIdx].en);
+            nextWord();
+        }
+    }, 1000);
+}
+function stopTimer() {
+    if (timerInt) { clearInterval(timerInt); timerInt = null; }
+    document.getElementById("timerBar").style.display = "none";
+    document.getElementById("timerBar").classList.remove("danger");
+}
+
+// 地狱模式：隐藏字母
+function hideLetters() {
+    document.querySelectorAll(".letter-tile").forEach(t => {
+        if (!t.classList.contains("used")) {
+            t.style.visibility = "hidden";
+            // 3秒后显示
+            setTimeout(() => { t.style.visibility = "visible"; }, 3000);
+        }
+    });
+}
+
+// ===== 启动 =====
+renderSelect();
+if (isSyncEnabled()) {
+    syncPull().then(() => { renderSelect(); loadCurrentSelection(); });
+}
+</script>
+</body>
+</html>

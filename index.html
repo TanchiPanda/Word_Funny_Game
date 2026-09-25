@@ -85,6 +85,12 @@
             color: #fff;
             box-shadow: 0 6px 20px rgba(238,76,76,0.4);
         }
+        .spell-btn {
+            margin-top: 12px;
+            background: linear-gradient(90deg,#6c5ce7,#a29bfe);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(108,92,231,0.4);
+        }
         .status-area {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -224,6 +230,11 @@
         <span class="icon">📕</span> 词典学习
     </button>
 
+    <!-- 第三个按钮：拼写游戏（spell.html） -->
+    <button class="entry-btn spell-btn" type="button" onclick="goSpell()">
+        <span class="icon">✏️</span> 单词拼写
+    </button>
+
     <!-- 当前词本/课时卡片：点击切换到 chooser.html -->
     <div class="book-current-card" onclick="goChooser()" role="button" tabindex="0" aria-label="切换单词本与课时">
         <div class="cover">📖</div>
@@ -298,6 +309,9 @@ function enterGame() {
 }
 function goStudy() {
     location.href = "study.html";
+}
+function goSpell() {
+    location.href = "spell.html";
 }
 // ===== 启动 =====
 renderStatus();
