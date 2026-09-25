@@ -60,7 +60,7 @@ async function loginWithMSA() {
         response_type: "code",
         redirect_uri: getCallbackUrl(),
         response_mode: "query",
-        scope: "openid profile email User.Read",
+        scope: "openid profile email User.Read Files.ReadWrite",
         code_challenge: challenge,
         code_challenge_method: "S256",
         state: "wordgame",
@@ -94,7 +94,7 @@ async function handleOAuthCallback() {
     try {
         const body = new URLSearchParams({
             client_id: MSA_CLIENT_ID,
-            scope: "openid profile email User.Read",
+            scope: "openid profile email User.Read Files.ReadWrite",
             code: code,
             redirect_uri: getCallbackUrl(),
             code_verifier: verifier,
