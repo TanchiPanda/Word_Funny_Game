@@ -79,6 +79,12 @@
         .entry-btn .icon {
             font-size: 24px;
         }
+        .study-btn {
+            margin-top: 12px;
+            background: linear-gradient(90deg,#ff6b6b,#ee4c4c);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(238,76,76,0.4);
+        }
         .status-area {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -213,6 +219,11 @@
         <span class="icon">📚</span> 单词闯关连连看
     </button>
 
+    <!-- 第二个按钮：词典学习（study.html） -->
+    <button class="entry-btn study-btn" type="button" onclick="goStudy()">
+        <span class="icon">📕</span> 词典学习
+    </button>
+
     <!-- 当前词本/课时卡片：点击切换到 chooser.html -->
     <div class="book-current-card" onclick="goChooser()" role="button" tabindex="0" aria-label="切换单词本与课时">
         <div class="cover">📖</div>
@@ -273,6 +284,9 @@ function goSettings() {
 }
 function enterGame() {
     location.href = "match.html";
+}
+function goStudy() {
+    location.href = "study.html";
 }
 // ===== 启动 =====
 renderStatus();
