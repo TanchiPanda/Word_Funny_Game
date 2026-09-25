@@ -404,6 +404,41 @@
             color: #a8a8d8;
             border-color: rgba(255,255,255,0.25);
         }
+        /* ========== 同步状态灯 ========== */
+        .sync-status {
+            position: fixed;
+            top: 14px;
+            left: 150px;
+            z-index: 999;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            height: 44px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            background: rgba(44,27,84,0.88);
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: default;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+        }
+        .sync-status .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex: none;
+        }
+        .sync-status.off .dot { background: #888; }
+        .sync-status.off { color: #aaa; }
+        .sync-status.idle .dot { background: #39d98a; box-shadow: 0 0 8px #39d98a; }
+        .sync-status.idle { color: #39d98a; }
+        .sync-status.syncing .dot { background: #ffd700; box-shadow: 0 0 8px #ffd700; animation: syncPulse 1s infinite; }
+        .sync-status.syncing { color: #ffd700; }
+        .sync-status.error .dot { background: #ff6b6b; box-shadow: 0 0 8px #ff6b6b; }
+        .sync-status.error { color: #ff8888; cursor: pointer; }
+        @keyframes syncPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         /* ========== 右下角设置入口 ========== */
         .settings-toggle {
             position: fixed;
@@ -565,6 +600,10 @@
 <div class="container">
     <!-- ========== 全局音效开关（固定左上角，所有页面可用） ========== -->
     <button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()" aria-label="音效开关" title="点击开启或关闭音效"></button>
+    <!-- ========== 同步状态灯 ========== -->
+    <div id="syncStatusPill" class="sync-status off" onclick="onSyncPillClick()" title="同步状态">
+        <span class="dot"></span><span id="syncStatusText">同步关闭</span>
+    </div>
     <!-- ========== 设置入口（固定右下角，所有页面可用） ========== -->
     <button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -639,6 +678,7 @@
     </div>
 </div>
 <script src="dict/wbook.js"></script>
+<script src="dict/sync.js"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -657,6 +697,7 @@ function toggleSound() {
     localStorage.setItem("wordGameSoundEnabled", soundEnabled ? "1" : "0");
     updateSoundBtn();
     if (soundEnabled) playClickSound();
+    syncPushDebounced();
 }
 function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -910,6 +951,7 @@ function switchLevel(idx) {
     playClickSound();
     currentLevel = idx;
     saveCurrentSelection();
+    syncPushDebounced();
     const levelSel = document.getElementById("levelSelect");
     if (levelSel) levelSel.value = String(currentLevel);
     renderCurrentBanner();
@@ -971,6 +1013,7 @@ function getRecord(mode) {
 }
 function saveRecord(mode, time, words) {
     localStorage.setItem(getRecordKey(mode), JSON.stringify({time: time, words: words}));
+    syncPushDebounced();
 }
 function renderLeaderboard() {
     const grid = document.getElementById("leaderboardGrid");
@@ -1257,11 +1300,42 @@ function teenStart() {
     }, 1000);
 }
 window.addEventListener("pagehide", teenPersist);
+// ===== 同步状态灯 UI =====
+function updateSyncPill(state, error, lastOk) {
+    const pill = document.getElementById("syncStatusPill");
+    const text = document.getElementById("syncStatusText");
+    if (!pill) return;
+    pill.className = "sync-status " + state;
+    if (state === "off") text.innerText = "同步关闭";
+    else if (state === "idle") text.innerText = "已同步" + (lastOk ? " " + lastOk : "");
+    else if (state === "syncing") text.innerText = "同步中…";
+    else if (state === "error") text.innerText = "同步错误";
+}
+function onSyncPillClick() {
+    const s = getSyncState();
+    if (s.state === "error") {
+        syncDiagnose().then(report => alert("===== 同步诊断 =====\n" + report));
+    }
+}
+onSyncStateChange(updateSyncPill);
+// 如果同步已启用但还没 pull，先拉一次
+if (!isSyncEnabled()) setSyncState("off");
 // ===== 启动：直接进入选词（划词）页 =====
 updateSoundBtn();
+loadCurrentSelection();
 renderAccessUI();
 initLevels();
 teenStart();
+// WebDAV：进入时异步拉取远端配置，拉取后刷新界面
+if (isSyncEnabled()) {
+    syncPull().then(() => {
+        loadCurrentSelection();
+        renderCurrentBanner();
+        renderWordTags();
+        renderLeaderboard();
+        renderAccessUI();
+    });
+}
 </script>
 </body>
 </html>

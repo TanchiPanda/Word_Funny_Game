@@ -259,6 +259,63 @@
             box-shadow: 0 4px 15px rgba(255,215,0,0.35);
         }
         .gate-btn:active { transform: scale(0.96); }
+        /* WebDAV 输入框 */
+        .dav-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(78,205,196,0.4);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .dav-input:focus { border-color: #4ecdc4; }
+        .dav-input::placeholder { color: rgba(255,255,255,0.35); }
+        .dav-row { margin-bottom: 12px; }
+        .dav-row .dav-label {
+            display: block;
+            font-size: 13px;
+            color: #a8a8d8;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        .dav-checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #e8e8f5;
+        }
+        .dav-checkbox-row input[type="checkbox"] {
+            width: 18px; height: 18px;
+            accent-color: #39d98a;
+        }
+        /* 同步状态行 */
+        .sync-status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .sync-status-row .dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            flex: none;
+            background: #888;
+        }
+        .sync-status-row.off { color: #aaa; }
+        .sync-status-row.idle { color: #39d98a; }
+        .sync-status-row.idle .dot { background: #39d98a; box-shadow: 0 0 10px #39d98a; }
+        .sync-status-row.syncing { color: #ffd700; }
+        .sync-status-row.syncing .dot { background: #ffd700; box-shadow: 0 0 10px #ffd700; animation: dotPulse 1s infinite; }
+        .sync-status-row.error { color: #ff8888; }
+        .sync-status-row.error .dot { background: #ff6b6b; box-shadow: 0 0 10px #ff6b6b; }
+        @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
 </head>
 <body>
@@ -303,6 +360,54 @@
         <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
         <div class="status-line" id="dataStatus"></div>
     </div>
+
+    <!-- ========== WebDAV 云同步 ========== -->
+    <div class="card">
+        <div class="card-title">☁️ WebDAV 云同步</div>
+        <div class="card-desc">将游戏进度、排行榜、设置等同步到你的 WebDAV 网盘。<br>进入游戏时自动拉取，数据变更时自动推送。同步失败不影响本地使用。</div>
+        <div class="row">
+            <span class="label">启用 WebDAV 同步</span>
+            <label class="switch">
+                <input type="checkbox" id="davEnabled">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="dav-row">
+            <label class="dav-label">WebDAV 文件地址（.json 文件完整 URL）</label>
+            <input class="dav-input" type="text" id="davUrl" placeholder="https://dav.example.com/wordgame/sync.json">
+        </div>
+        <div class="dav-row">
+            <label class="dav-label">用户名</label>
+            <input class="dav-input" type="text" id="davUser" placeholder="WebDAV 用户名">
+        </div>
+        <div class="dav-row">
+            <label class="dav-label">密码</label>
+            <input class="dav-input" type="password" id="davPass" placeholder="WebDAV 密码">
+        </div>
+        <div class="dav-checkbox-row">
+            <input type="checkbox" id="davInsecure">
+            <span>不使用 HTTPS（无 TLS，仅局域网/调试用）</span>
+        </div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" onclick="saveDav()">💾 保存同步配置</button>
+            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
+        </div>
+        <div class="status-line" id="davStatus"></div>
+    </div>
+
+    <!-- ========== 同步状态 ========== -->
+    <div class="card">
+        <div class="card-title">📡 同步状态</div>
+        <div class="sync-status-row" id="settingsSyncRow">
+            <span class="dot" id="settingsSyncDot"></span>
+            <span id="settingsSyncText">同步未开启</span>
+        </div>
+        <div id="settingsSyncDetail" style="font-size:13px;color:#a8a8d8;margin-top:8px;display:none;"></div>
+        <div class="btn-group" id="settingsSyncBtns" style="display:none;">
+            <button class="ghost-btn" type="button" onclick="runDiagnose()">🔍 诊断连接</button>
+            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 重新同步</button>
+        </div>
+    </div>
 </div>
 
 <!-- ========== 家长密码弹窗 ========== -->
@@ -319,6 +424,7 @@
     </div>
 </div>
 
+<script src="dict/sync.js"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -485,6 +591,7 @@ function saveTeen() {
         localStorage.removeItem(TEEN_START);
         renderTeen();
         document.getElementById("dataStatus").innerText = "✅ 青少年模式设置已保存";
+        syncPush();
     };
     if (!localStorage.getItem(PIN_KEY)) {
         openPin("set", ok => { if (ok) doSave(); });
@@ -559,8 +666,87 @@ function importData(event) {
     event.target.value = "";
 }
 
+// ===== WebDAV 配置 =====
+function renderDav() {
+    document.getElementById("davEnabled").checked = isSyncEnabled();
+    document.getElementById("davUrl").value = localStorage.getItem(SYNC_URL) || "";
+    document.getElementById("davUser").value = localStorage.getItem(SYNC_USER) || "";
+    document.getElementById("davPass").value = localStorage.getItem(SYNC_PASS) || "";
+    document.getElementById("davInsecure").checked = localStorage.getItem(SYNC_INSECURE) === "1";
+}
+function saveDav() {
+    playClickSound();
+    const enabled = document.getElementById("davEnabled").checked;
+    const url = document.getElementById("davUrl").value.trim();
+    const user = document.getElementById("davUser").value.trim();
+    const pass = document.getElementById("davPass").value;
+    const insecure = document.getElementById("davInsecure").checked;
+    if (enabled && !url) {
+        playErrorSound();
+        document.getElementById("davStatus").innerText = "⚠️ 启用同步请填写 WebDAV 文件地址";
+        return;
+    }
+    if (url && !/^https?:\/\/.+/.test(url)) {
+        playErrorSound();
+        document.getElementById("davStatus").innerText = "⚠️ 地址需以 http:// 或 https:// 开头";
+        return;
+    }
+    if (url && /^http:\/\//.test(url) && !insecure) {
+        playErrorSound();
+        document.getElementById("davStatus").innerText = "⚠️ 检测到 HTTP 地址，请勾选「不使用 HTTPS」以确认";
+        return;
+    }
+    localStorage.setItem(SYNC_ENABLED, enabled ? "1" : "0");
+    localStorage.setItem(SYNC_URL, url);
+    localStorage.setItem(SYNC_USER, user);
+    localStorage.setItem(SYNC_PASS, pass);
+    localStorage.setItem(SYNC_INSECURE, insecure ? "1" : "0");
+    playSuccessSound();
+    document.getElementById("davStatus").innerText = "✅ 同步配置已保存";
+}
+function manualSync() {
+    playClickSound();
+    if (!isSyncEnabled()) {
+        document.getElementById("davStatus").innerText = "⚠️ 请先启用 WebDAV 同步";
+        return;
+    }
+    const statusEl = document.getElementById("davStatus");
+    syncPush(msg => statusEl.innerText = msg);
+}
+
+// ===== 同步状态 UI =====
+function updateSettingsSyncRow(state, error, lastOk) {
+    const row = document.getElementById("settingsSyncRow");
+    const text = document.getElementById("settingsSyncText");
+    const detail = document.getElementById("settingsSyncDetail");
+    const btns = document.getElementById("settingsSyncBtns");
+    if (!row) return;
+    row.className = "sync-status-row " + state;
+    const labels = {
+        off: "同步未开启",
+        idle: "已同步" + (lastOk ? " · " + lastOk : ""),
+        syncing: "正在同步…",
+        error: "同步错误"
+    };
+    text.innerText = labels[state] || state;
+    if (state === "error" && error) {
+        detail.style.display = "block";
+        detail.innerText = "错误信息：" + error;
+    } else {
+        detail.style.display = "none";
+    }
+    btns.style.display = (state === "error" || state === "idle" || state === "syncing") ? "flex" : "none";
+}
+function runDiagnose() {
+    playClickSound();
+    syncDiagnose().then(report => alert("===== 同步诊断 =====\n" + report));
+}
+onSyncStateChange(updateSettingsSyncRow);
+
 // ===== 启动 =====
 renderTeen();
+renderDav();
+if (!isSyncEnabled()) setSyncState("off");
 </script>
 </body>
 </html>
