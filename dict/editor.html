@@ -57,7 +57,10 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
   <div class="row">
     <label>课时名称</label>
     <input type="text" id="levelName" placeholder="LV1">
+    <button class="btn btn-ghost" onclick="addLevel()">+ 增加课时</button>
+    <button class="btn btn-red" onclick="delLevel()">删除课时</button>
   </div>
+  <div id="levelTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('basic')">📊 表格编辑</div>
@@ -172,12 +175,54 @@ function loadCodeToBasic(){
   try{
     const data = JSON.parse(document.getElementById("codeInput").value);
     if(!Array.isArray(data)||!data.length) return;
+    if(currentLevelIdx >= data.length) currentLevelIdx = data.length - 1;
     document.getElementById("levelName").value = data[currentLevelIdx]?.name || "LV1";
     const words = data[currentLevelIdx]?.words || [];
     const tbody = document.getElementById("wordRows");
     tbody.innerHTML = "";
     words.forEach(w=>addRow(w));
     if(!words.length) addRow();
+    renderLevelTabs();
+  }catch(e){}
+}
+
+function renderLevelTabs(){
+  try{
+    const data = JSON.parse(document.getElementById("codeInput").value);
+    const el = document.getElementById("levelTabs");
+    el.innerHTML = data.map((l,i)=>
+      `<button class="btn ${i===currentLevelIdx?'btn-primary':'btn-ghost'}" onclick="switchLevel(${i})">${l.name||'课时'+(i+1)}</button>`
+    ).join("");
+  }catch(e){}
+}
+
+function switchLevel(i){
+  saveBasicToCode();
+  currentLevelIdx = i;
+  loadCodeToBasic();
+}
+
+function addLevel(){
+  saveBasicToCode();
+  try{
+    const data = JSON.parse(document.getElementById("codeInput").value);
+    if(!Array.isArray(data)) data = [];
+    data.push({name:"LV"+(data.length+1), words:[]});
+    currentLevelIdx = data.length - 1;
+    document.getElementById("codeInput").value = JSON.stringify(data, null, 2);
+    loadCodeToBasic();
+  }catch(e){}
+}
+
+function delLevel(){
+  try{
+    const data = JSON.parse(document.getElementById("codeInput").value);
+    if(!Array.isArray(data)||data.length<=1){ alert("至少保留一个课时"); return; }
+    if(!confirm("删除课时「"+(data[currentLevelIdx]?.name||"")+"」？")) return;
+    data.splice(currentLevelIdx,1);
+    if(currentLevelIdx >= data.length) currentLevelIdx = data.length - 1;
+    document.getElementById("codeInput").value = JSON.stringify(data, null, 2);
+    loadCodeToBasic();
   }catch(e){}
 }
 
