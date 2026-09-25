@@ -677,6 +677,17 @@
         </div>
     </div>
 </div>
+<!-- ========== 同步诊断弹窗 ========== -->
+<div class="gate-mask" id="diagModal">
+    <div class="gate-box">
+        <div class="gate-title">🔍 同步诊断</div>
+        <div class="gate-tip" id="diagReport" style="white-space:pre-wrap;text-align:left;max-height:50vh;overflow-y:auto;"></div>
+        <div class="gate-btns" style="flex-direction:column;gap:10px;">
+            <button class="gate-btn ok" type="button" onclick="window.open('https://my.feishu.cn/docx/WCK5dHbcioYcssxMKiYc3nL5nHg','_blank')">📖 了解更多</button>
+            <button class="gate-btn cancel" type="button" onclick="closeDiag()">关闭</button>
+        </div>
+    </div>
+</div>
 <script src="dict/wbook.js"></script>
 <script src="dict/sync.js"></script>
 <script>
@@ -1314,8 +1325,14 @@ function updateSyncPill(state, error, lastOk) {
 function onSyncPillClick() {
     const s = getSyncState();
     if (s.state === "error") {
-        syncDiagnose().then(report => alert("===== 同步诊断 =====\n" + report));
+        syncDiagnose().then(report => {
+            document.getElementById("diagReport").innerText = report;
+            document.getElementById("diagModal").classList.add("show");
+        });
     }
+}
+function closeDiag() {
+    document.getElementById("diagModal").classList.remove("show");
 }
 onSyncStateChange(updateSyncPill);
 // 如果同步已启用但还没 pull，先拉一次
