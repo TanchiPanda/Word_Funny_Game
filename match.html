@@ -667,13 +667,15 @@
 <!-- ========== 密码解锁弹窗 ========== -->
 <div class="gate-mask" id="gateModal">
     <div class="gate-box">
-        <div class="gate-title">🔒 此功能需要解锁</div>
-        <div class="gate-tip">请输入通关暗号解锁全部内容<br>提示：<span class="hint-text">二水在手</span></div>
-        <input class="gate-input" id="gateInput" placeholder="请输入通关暗号" onkeydown="if(event.key==='Enter')submitGate()">
+        <div class="gate-title">🔒 此功能需要登录</div>
+        <div class="gate-tip">使用 GitHub 账号登录后<br>即可解锁全部课时与特色模式</div>
         <div class="gate-err" id="gateErr"></div>
-        <div class="gate-btns">
+        <div class="gate-btns" style="flex-direction:column;gap:10px;">
+            <button class="gate-btn ok" type="button" onclick="loginWithGitHub()">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:6px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.7-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                使用 GitHub 登录
+            </button>
             <button class="gate-btn cancel" type="button" onclick="closeGate()">取消</button>
-            <button class="gate-btn ok" type="button" onclick="submitGate()">确认解锁</button>
         </div>
     </div>
 </div>
@@ -690,6 +692,7 @@
 </div>
 <script src="dict/wbook.js"></script>
 <script src="dict/sync.js"></script>
+<script src="dict/auth.js"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -812,75 +815,68 @@ const MAX_OPEN = 6;
 const HELL_DELAY = 3000;
 let gameStartTime = 0;
 // ===== 身份/权限（客人模式受限） =====
-const ACCESS_KEY = "wordGameAccess";
+const ACCESS_KEY = "wordGameAccess"; // 兼容旧数据（导出导入跳过用）
 const LOCKED_MODES = ["race", "hell"];
-const GUEST_MAX_LEVEL = 2; // 受限模式每个单词本可体验前 3 章节（下标 0~2）
+const GUEST_MAX_LEVEL = 2;
 function isGuest() {
-    return localStorage.getItem(ACCESS_KEY) !== "full";
+    return !isLoggedIn();
 }
 function guestCanReach(levelIdx) {
     if (!isGuest()) return true;
-    if (activeBook().free) return true; // 免费单词本：受限模式也可解锁全部章节
-    return levelIdx <= GUEST_MAX_LEVEL; // 其余词本受限仅前 3 章节
+    if (activeBook().free) return true;
+    return levelIdx <= GUEST_MAX_LEVEL;
 }
 function goLogin() {
     playClickSound();
-    location.href = "login.html";
+    loginWithGitHub();
 }
 function goLogout() {
     playClickSound();
-    if (confirm("确定要退出登录吗？退出后将回到登录页重新选择身份。")) {
-        localStorage.removeItem(ACCESS_KEY);
-        location.href = "login.html";
+    if (confirm("确定要退出登录吗？")) {
+        logout();
+        location.reload();
     }
 }
 function renderAccessUI() {
     const bar = document.getElementById("accessBar");
     if (!bar) return;
     const guest = isGuest();
+    const user = getGitHubUser();
     bar.classList.remove("hidden");
-    document.getElementById("accessLabel").innerText = guest ? "👤 客人模式" : "✅ 已解锁全部内容";
+    if (guest) {
+        document.getElementById("accessLabel").innerText = "👤 客人模式";
+    } else {
+        document.getElementById("accessLabel").innerText = "🐙 " + (user ? user.login : "已登录");
+    }
     document.getElementById("accessLogin").classList.toggle("hidden", !guest);
     document.getElementById("modeBtnRace").classList.toggle("locked", guest);
     document.getElementById("modeBtnHell").classList.toggle("locked", guest);
     renderSelectTip();
 }
-function unlockFull() {
-    localStorage.setItem(ACCESS_KEY, "full");
-    playUnlockSound();
-    renderAccessUI();
-    const levelSel = document.getElementById("levelSelect");
-    if (levelSel) renderLevelSelect();
-    renderCurrentBanner();
-    renderLeaderboard();
-}
-// ===== 密码解锁弹窗 =====
-let pendingGateAction = null; // {type:'level', idx} | {type:'mode', mode} | {type:'moreLevels'}
+// ===== 登录弹窗（GitHub OAuth）=====
+let pendingGateAction = null;
 function openGate(action) {
     pendingGateAction = action;
+    // 存到 sessionStorage，OAuth 跳转回来后可恢复
+    if (action) sessionStorage.setItem("wordGamePendingGate", JSON.stringify(action));
     document.getElementById("gateErr").innerText = "";
-    document.getElementById("gateInput").value = "";
     document.getElementById("gateModal").classList.add("show");
-    document.getElementById("gateInput").focus();
 }
 function closeGate() {
     pendingGateAction = null;
+    sessionStorage.removeItem("wordGamePendingGate");
     document.getElementById("gateModal").classList.remove("show");
 }
-function submitGate() {
-    const v = document.getElementById("gateInput").value.trim();
-    if (v === "满分有我") {
-        const act = pendingGateAction;
-        pendingGateAction = null;
-        document.getElementById("gateModal").classList.remove("show");
-        unlockFull();
-        if (act && act.type === "level") switchLevel(act.idx);
-        else if (act && act.type === "mode") startGame(act.mode);
-        // act.type === 'moreLevels'：已解锁并重渲染下拉，无需跳转
-    } else {
-        playErrorSound();
-        document.getElementById("gateErr").innerText = "暗号错误！再想想提示：二水在手";
-        document.getElementById("gateInput").value = "";
+// 页面加载时检查是否有登录后待恢复的操作
+function checkResumeGate() {
+    const saved = sessionStorage.getItem("wordGamePendingGate");
+    if (saved && isLoggedIn()) {
+        sessionStorage.removeItem("wordGamePendingGate");
+        try {
+            const act = JSON.parse(saved);
+            if (act.type === "level") switchLevel(act.idx);
+            else if (act.type === "mode") startGame(act.mode);
+        } catch(e) {}
     }
 }
 // ===== 页面切换 =====
@@ -1341,6 +1337,7 @@ if (!isSyncEnabled()) setSyncState("off");
 updateSoundBtn();
 loadCurrentSelection();
 renderAccessUI();
+checkResumeGate();
 initLevels();
 teenStart();
 // WebDAV：进入时异步拉取远端配置，拉取后刷新界面

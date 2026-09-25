@@ -240,8 +240,8 @@
             <span class="status-text" id="statusText">👤 客人模式</span>
         </div>
         <div class="status-box">
-            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()">🔑 登录</button>
-            <span class="status-text activated" id="activatedText" style="display:none;">✅ 已解锁全部功能</span>
+            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()">🐙 GitHub 登录</button>
+            <button class="login-btn" id="logoutBtn" type="button" onclick="goLogout()" style="display:none;background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.5);color:#ff8888;">退出登录</button>
         </div>
     </div>
 
@@ -252,18 +252,23 @@
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 </button>
 <script src="dict/wbook.js"></script>
+<script src="dict/wbook.js"></script>
+<script src="dict/auth.js"></script>
 <script>
 // ===== 身份检测 =====
-const ACCESS_KEY = "wordGameAccess";
-function isActivated() {
-    return localStorage.getItem(ACCESS_KEY) === "full";
-}
 function renderStatus() {
-    const activated = isActivated();
-    document.getElementById("statusText").innerText = activated ? "✅ 已解锁全部功能" : "👤 客人模式";
-    document.getElementById("statusText").classList.toggle("activated", activated);
-    document.getElementById("loginBtn").classList.toggle("hidden", activated);
-    document.getElementById("activatedText").style.display = activated ? "" : "none";
+    const user = getGitHubUser();
+    const loggedIn = isLoggedIn();
+    const statusEl = document.getElementById("statusText");
+    if (loggedIn && user) {
+        statusEl.innerText = "🐙 " + user.login;
+        statusEl.classList.add("activated");
+    } else {
+        statusEl.innerText = "👤 客人模式";
+        statusEl.classList.remove("activated");
+    }
+    document.getElementById("loginBtn").style.display = loggedIn ? "none" : "";
+    document.getElementById("logoutBtn").style.display = loggedIn ? "" : "none";
 }
 // ===== 当前词本/课时展示 =====
 function renderCurrentBook() {
@@ -277,7 +282,13 @@ function goChooser() {
     location.href = "dict/chooser.html";
 }
 function goLogin() {
-    location.href = "login.html";
+    loginWithGitHub();
+}
+function goLogout() {
+    if (confirm("确定要退出登录吗？")) {
+        logout();
+        location.reload();
+    }
 }
 function goSettings() {
     location.href = "settings.html";

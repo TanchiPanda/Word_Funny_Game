@@ -1,256 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>单词闯关-登录</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Microsoft Yahei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            min-height: 100vh;
-            background: linear-gradient(135deg,#2c1b54,#422880,#201440);
-            padding: 48px 16px 40px;
-            text-align: center;
-            overflow-x: hidden;
-            color: #fff;
-        }
-        .container {
-            max-width: 520px;
-            margin: 0 auto;
-        }
-        .page-title {
-            font-size: 32px;
-            font-weight: 900;
-            color: #ffd700;
-            margin-bottom: 36px;
-            letter-spacing: 4px;
-        }
-        .npc-static {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg,#ffd700,#ff8822);
-            margin: 0 auto 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-            box-shadow: 0 0 30px rgba(255,215,0,0.4);
-        }
-        .npc-dialog-static {
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,215,0,0.5);
-            border-radius: 18px;
-            padding: 22px 20px;
-            max-width: 460px;
-            margin: 0 auto 26px;
-            backdrop-filter: blur(10px);
-        }
-        .npc-dialog-static p {
-            font-size: 16px;
-            line-height: 1.9;
-            color: #fff8dc;
-        }
-        .npc-dialog-static .hint-text {
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 20px;
-        }
-        .password-input {
-            width: 85%;
-            max-width: 320px;
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid rgba(255,215,0,0.3);
-            background: rgba(255,255,255,0.08);
-            color: #fff;
-            font-size: 18px;
-            text-align: center;
-            outline: none;
-            margin-bottom: 18px;
-        }
-        .password-input:focus {
-            border-color: #ffd700;
-            box-shadow: 0 0 15px rgba(255,215,0,0.3);
-        }
-        .password-input::placeholder {
-            color: rgba(255,255,255,0.4);
-        }
-        .unlock-btn {
-            display: block;
-            width: 85%;
-            max-width: 320px;
-            margin: 0 auto;
-            padding: 15px 30px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(90deg,#ffd700,#ff9500);
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #222;
-            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
-            letter-spacing: 2px;
-        }
-        .unlock-btn:active { transform: scale(0.97); }
-        .divider {
-            margin: 24px 0 18px;
-            color: #a8a8d8;
-            font-size: 14px;
-            letter-spacing: 4px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            justify-content: center;
-        }
-        .divider::before, .divider::after {
-            content: "";
-            height: 1px;
-            flex: 0 0 90px;
-            background: rgba(255,255,255,0.2);
-        }
-        .guest-btn {
-            display: block;
-            width: 85%;
-            max-width: 320px;
-            margin: 0 auto;
-            padding: 15px 30px;
-            border-radius: 12px;
-            border: 2px solid rgba(78,205,196,0.6);
-            background: rgba(78,205,196,0.15);
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #4ecdc4;
-            letter-spacing: 2px;
-            transition: 0.2s;
-        }
-        .guest-btn:active { transform: scale(0.97); }
-        .err-text {
-            color: #ff8888;
-            font-size: 14px;
-            margin-top: 16px;
-            min-height: 20px;
-        }
-        .footnote {
-            margin-top: 30px;
-            font-size: 13px;
-            color: #a8a8d8;
-            line-height: 1.9;
-        }
-        .footnote b { color: #ffd700; }
-        .pwd-link {
-            display: inline-block;
-            margin-top: 26px;
-            font-size: 15px;
-            font-weight: bold;
-            color: #4ecdc4;
-            letter-spacing: 1px;
-            text-decoration: none;
-            border-bottom: 2px dashed rgba(78,205,196,0.6);
-            padding-bottom: 2px;
-            transition: 0.2s;
-        }
-        .pwd-link:hover {
-            color: #ffd700;
-            border-bottom-color: #ffd700;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>单词闯关 - 登录</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Microsoft Yahei","PingFang SC",-apple-system,sans-serif; -webkit-tap-highlight-color:transparent; }
+    body {
+        min-height:100vh;
+        background:linear-gradient(135deg,#2c1b54,#422880,#201440);
+        padding:48px 16px 40px;
+        text-align:center;
+        color:#fff;
+    }
+    .container { max-width:520px; margin:0 auto; }
+    .page-title { font-size:32px; font-weight:900; color:#ffd700; margin-bottom:36px; letter-spacing:4px; }
+    .npc-static {
+        width:120px; height:120px; border-radius:50%;
+        background:linear-gradient(135deg,#ffd700,#ff8822);
+        margin:0 auto 24px; display:flex; align-items:center; justify-content:center;
+        font-size:60px; box-shadow:0 0 30px rgba(255,215,0,0.4);
+    }
+    .npc-dialog-static {
+        background:rgba(255,255,255,0.1);
+        border:2px solid rgba(255,215,0,0.5);
+        border-radius:18px; padding:22px 20px;
+        max-width:460px; margin:0 auto 26px;
+        backdrop-filter:blur(10px);
+    }
+    .npc-dialog-static p { font-size:16px; line-height:1.9; color:#fff8dc; }
+    .github-btn {
+        display:flex; align-items:center; justify-content:center; gap:10px;
+        width:85%; max-width:320px; margin:0 auto 18px;
+        padding:15px 30px; border-radius:12px; border:none;
+        background:#24292e; color:#fff;
+        font-size:18px; font-weight:bold; cursor:pointer;
+        box-shadow:0 4px 15px rgba(0,0,0,0.3);
+        letter-spacing:1px; transition:0.2s;
+    }
+    .github-btn:active { transform:scale(0.97); }
+    .github-btn svg { flex:none; }
+    .divider {
+        margin:24px 0 18px; color:#a8a8d8; font-size:14px;
+        letter-spacing:4px; display:flex; align-items:center; gap:14px; justify-content:center;
+    }
+    .divider::before, .divider::after { content:""; height:1px; flex:0 0 90px; background:rgba(255,255,255,0.2); }
+    .guest-btn {
+        display:block; width:85%; max-width:320px; margin:0 auto;
+        padding:15px 30px; border-radius:12px;
+        border:2px solid rgba(78,205,196,0.6); background:rgba(78,205,196,0.15);
+        font-size:18px; font-weight:bold; cursor:pointer; color:#4ecdc4;
+        letter-spacing:2px; transition:0.2s;
+    }
+    .guest-btn:active { transform:scale(0.97); }
+    .err-text { color:#ff8888; font-size:14px; margin-top:16px; min-height:20px; }
+    .footnote { margin-top:30px; font-size:13px; color:#a8a8d8; line-height:1.9; }
+    .footnote b { color:#ffd700; }
+</style>
 </head>
 <body>
 <div class="container">
-    <div class="page-title">⚡ 单词闯关连连看 ⚡</div>
+    <div class="page-title">⚡ 单词闯关 ⚡</div>
     <div class="npc-static">🧙</div>
     <div class="npc-dialog-static">
-        <p>欢迎来到单词闯关世界！我是守关魔法师。</p>
-        <p>输入暗号即可解锁全部课时与特色模式。</p>
-        <p>提示：<span class="hint-text">二水在手</span></p>
+        <p>欢迎来到单词闯关世界！</p>
+        <p>使用 GitHub 账号登录即可解锁全部课时与特色模式。</p>
     </div>
-    <input class="password-input" id="pwdInput" placeholder="请输入通关暗号" onkeydown="if(event.key==='Enter')unlockAll()">
-    <br>
-    <button class="unlock-btn" onclick="unlockAll()">🔓 解锁全部内容</button>
+    <button class="github-btn" onclick="loginWithGitHub()">
+        <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.7-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        使用 GitHub 登录
+    </button>
     <div class="divider">— 或 —</div>
     <button class="guest-btn" onclick="enterGuest()">👤 以客人身份体验</button>
     <div class="err-text" id="errText"></div>
     <div class="footnote">
-        客人模式仅可体验 <b>Level 1~3</b> 与<b>天堂、简单</b>模式；<br>
-        解锁后可体验全部 <b>20 个课时</b>与<b>困难、地狱</b>模式。
+        客人模式仅可体验 <b>前 3 课时</b>与<b>简单模式</b>；<br>
+        GitHub 登录后可体验<b>全部课时</b>与<b>困难、地狱</b>模式。
     </div>
-    <a class="pwd-link" href="https://appv9khbaeb8458.h5.xet.pomoho.com/?l_program=xe_know_pc" target="_blank" rel="noopener">想要密码点这里 ➡️</a>
 </div>
+<script src="dict/auth.js"></script>
 <script>
-// ===== 音效系统（全部离线生成）=====
-let audioCtx = null;
-function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return audioCtx;
-}
-function playClickSound() {
-    try {
-        const ctx = getAudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = 800; osc.type = 'square';
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.08);
-    } catch(e) {}
-}
-function playErrorSound() {
-    try {
-        const ctx = getAudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(300, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
-        osc.type = 'sawtooth';
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
-    } catch(e) {}
-}
-function playUnlockSound() {
-    try {
-        const ctx = getAudioCtx();
-        const notes = [523, 659, 784, 1047];
-        notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = freq; osc.type = 'triangle';
-            gain.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.08);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.25);
-            osc.start(ctx.currentTime + i * 0.08); osc.stop(ctx.currentTime + i * 0.08 + 0.25);
-        });
-    } catch(e) {}
-}
-// ===== 登录/身份 =====
-const ACCESS_KEY = "wordGameAccess";
-function unlockAll() {
-    playClickSound();
-    let v = document.getElementById("pwdInput").value.trim();
-    if (v === "满分有我") {
-        playUnlockSound();
-        localStorage.setItem(ACCESS_KEY, "full");
-        document.getElementById("errText").innerText = "解锁成功，正在进入…";
-        setTimeout(() => { location.href = "index.html"; }, 450);
-    } else {
-        playErrorSound();
-        document.getElementById("errText").innerText = "暗号错误！再想想提示：二水在手";
-        document.getElementById("pwdInput").value = '';
-    }
-}
 function enterGuest() {
-    playClickSound();
-    localStorage.setItem(ACCESS_KEY, "guest");
+    location.href = "index.html";
+}
+// 如果已登录，直接跳转首页
+if (isLoggedIn()) {
     location.href = "index.html";
 }
 </script>
