@@ -370,10 +370,19 @@
         <div class="status-line" id="dataStatus"></div>
     </div>
 
-    <!-- ========== WebDAV 云同步 ========== -->
+    <!-- ========== 云同步 ========== -->
     <div class="card">
-        <div class="card-title">☁️ WebDAV 云同步</div>
-        <div class="card-desc">将游戏进度、排行榜、设置等同步到你的 WebDAV 网盘。<br>进入游戏时自动拉取，数据变更时自动推送。同步失败不影响本地使用。</div>
+        <div class="card-title">☁️ 云同步</div>
+        <div class="card-desc">将游戏进度、排行榜、设置等云端同步。进入游戏时自动拉取，数据变更时自动推送。同步失败不影响本地使用。</div>
+
+        <!-- OneDrive 选项 -->
+        <div class="dav-checkbox-row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;">
+            <input type="checkbox" id="onedriveEnabled" onchange="onOneDriveToggle()">
+            <span>使用 OneDrive（需登录微软账号并授权存储权限）</span>
+        </div>
+
+        <!-- WebDAV 配置区（OneDrive 勾选后禁用） -->
+        <div id="webdavArea">
         <div class="row">
             <span class="label">启用 WebDAV 同步</span>
             <label class="switch">
@@ -397,8 +406,10 @@
             <input type="checkbox" id="davInsecure">
             <span>不使用 HTTPS（无 TLS，仅局域网/调试用）</span>
         </div>
+        </div>
+
         <div class="btn-group">
-            <button class="primary-btn" type="button" onclick="saveDav()">💾 保存同步配置</button>
+            <button class="primary-btn" type="button" onclick="saveDav()" id="davSaveBtn">💾 保存同步配置</button>
             <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
         </div>
         <div class="status-line" id="davStatus"></div>
@@ -460,8 +471,8 @@
     </div>
 </div>
 
-<script src="dict/sync.js"></script>
-<script src="dict/auth.js"></script>
+<script src="dict/sync.js?v=20260925"></script>
+<script src="dict/auth.js?v=20260925"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -705,11 +716,37 @@ function importData(event) {
 
 // ===== WebDAV 配置 =====
 function renderDav() {
-    document.getElementById("davEnabled").checked = isSyncEnabled();
+    document.getElementById("davEnabled").checked = isWebdavEnabled();
     document.getElementById("davUrl").value = localStorage.getItem(SYNC_URL) || "";
     document.getElementById("davUser").value = localStorage.getItem(SYNC_USER) || "";
     document.getElementById("davPass").value = localStorage.getItem(SYNC_PASS) || "";
     document.getElementById("davInsecure").checked = localStorage.getItem(SYNC_INSECURE) === "1";
+    document.getElementById("onedriveEnabled").checked = isOneDriveEnabled();
+    applyOneDriveState();
+}
+function applyOneDriveState() {
+    const od = isOneDriveEnabled();
+    const area = document.getElementById("webdavArea");
+    if (area) {
+        area.style.opacity = od ? "0.4" : "1";
+        area.style.pointerEvents = od ? "none" : "auto";
+    }
+}
+function onOneDriveToggle() {
+    playClickSound();
+    const od = document.getElementById("onedriveEnabled").checked;
+    if (od && !isLoggedIn()) {
+        document.getElementById("onedriveEnabled").checked = false;
+        document.getElementById("davStatus").innerText = "⚠️ 使用 OneDrive 需先登录微软账号";
+        setTimeout(() => loginWithGitHub(), 1200);
+        return;
+    }
+    localStorage.setItem("wordGameOneDriveEnabled", od ? "1" : "0");
+    // 互斥：OneDrive 开启时自动关闭 WebDAV
+    if (od) localStorage.setItem(SYNC_ENABLED, "0");
+    applyOneDriveState();
+    document.getElementById("davStatus").innerText = od ? "✅ OneDrive 同步已启用" : "✅ OneDrive 同步已关闭";
+    setSyncState(isSyncEnabled() ? "idle" : "off");
 }
 function saveDav() {
     playClickSound();
@@ -744,7 +781,7 @@ function saveDav() {
 function manualSync() {
     playClickSound();
     if (!isSyncEnabled()) {
-        document.getElementById("davStatus").innerText = "⚠️ 请先启用 WebDAV 同步";
+        document.getElementById("davStatus").innerText = "⚠️ 请先启用同步（OneDrive 或 WebDAV）";
         return;
     }
     const statusEl = document.getElementById("davStatus");
