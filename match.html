@@ -887,7 +887,7 @@ function showPage(id) {
 function renderBookSelect() {
     const sel = document.getElementById("bookSelect");
     sel.innerHTML = "";
-    WORD_BOOKS.forEach((bk, i) => {
+    getAllBooks().forEach((bk, i) => {
         const opt = document.createElement("option");
         opt.value = String(i);
         opt.textContent = bk.name + (bk.free ? "（免费）" : "");
