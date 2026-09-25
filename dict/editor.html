@@ -96,6 +96,7 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
 </div>
 </div>
 
+<script src="sync.js?v=20260925b"></script>
 <script>
 const KEY = "wordGameCustomBooks";
 let editingId = null;
@@ -104,6 +105,7 @@ let editMode = "basic";
 
 function getBooks(){ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ return []; } }
 function setBooks(b){ localStorage.setItem(KEY, JSON.stringify(b)); }
+function autoSync(){ if(typeof syncPushDebounced==="function") syncPushDebounced(500); }
 
 function renderList(){
   const books = getBooks();
@@ -266,6 +268,7 @@ function saveBook(){
     books.push({ id: Date.now(), name, data });
   }
   setBooks(books);
+  autoSync();
   alert("✅ 已保存");
   backToList();
 }
@@ -274,11 +277,13 @@ function deleteBook(){
   if(!editingId) return;
   if(!confirm("删除这个词书？")) return;
   setBooks(getBooks().filter(x=>x.id!==editingId));
+  autoSync();
   backToList();
 }
 function delBookById(id){
   if(!confirm("删除这个词书？")) return;
   setBooks(getBooks().filter(x=>x.id!==id));
+  autoSync();
   renderList();
 }
 
