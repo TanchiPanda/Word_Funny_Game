@@ -7,20 +7,14 @@
 
 const MSA_CLIENT_ID = "037a7626-10a1-4dcf-a2c7-f5746fcba1df";
 const MSA_AUTHORITY = "https://login.microsoftonline.com/consumers/oauth2/v2.0";
+// 必须与 Azure 应用注册里「重定向 URI」完全一致（SPA 类型）
+const MSA_REDIRECT_URI = "https://wordgm.r6t5.cloud-ip.cc/oauth-callback";
 
 const GH_USER_KEY = "wordGameGitHubUser";   // 沿用旧 key 名，避免迁移丢失
 const GH_TOKEN_KEY = "wordGameMSAToken";
 
 function getCallbackUrl() {
-    const loc = window.location;
-    const path = loc.pathname;
-    let root;
-    if (path.includes("/dict/")) {
-        root = path.substring(0, path.indexOf("/dict/")) + "/";
-    } else {
-        root = path.replace(/[^/]*$/, "");
-    }
-    return loc.origin + root + "oauth-callback.html";
+    return MSA_REDIRECT_URI;
 }
 
 function isLoggedIn() {
