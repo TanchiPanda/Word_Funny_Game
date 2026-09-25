@@ -467,7 +467,7 @@
         <div class="gate-title">🔍 同步诊断</div>
         <div class="gate-tip" id="diagReport" style="white-space:pre-wrap;text-align:left;max-height:50vh;overflow-y:auto;"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
-            <button class="gate-btn ok" type="button" onclick="window.open('https://my.feishu.cn/docx/WCK5dHbcioYcssxMKiYc3nL5nHg','_blank')">📖 了解更多</button>
+            <button class="gate-btn ok" type="button" onclick="reauthToken()">🔑 重新授权 Token</button>
             <button class="gate-btn cancel" type="button" onclick="closeDiag()">关闭</button>
         </div>
     </div>
@@ -880,6 +880,13 @@ function runDiagnose() {
 }
 function closeDiag() {
     document.getElementById("diagModal").classList.remove("show");
+}
+function reauthToken() {
+    localStorage.removeItem("wordGameGitHubUser");
+    localStorage.removeItem("wordGameMSAToken");
+    localStorage.removeItem("wordGameMSARefresh");
+    localStorage.removeItem("wordGameMSAExpires");
+    location.href = "login.html";
 }
 onSyncStateChange(updateSettingsSyncRow);
 
