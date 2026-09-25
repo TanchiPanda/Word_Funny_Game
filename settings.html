@@ -406,10 +406,12 @@
             <input type="checkbox" id="davInsecure">
             <span>不使用 HTTPS（无 TLS，仅局域网/调试用）</span>
         </div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" onclick="saveDav()" id="davSaveBtn">💾 保存同步配置</button>
+        </div>
         </div>
 
         <div class="btn-group">
-            <button class="primary-btn" type="button" onclick="saveDav()" id="davSaveBtn">💾 保存同步配置</button>
             <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
         </div>
         <div class="status-line" id="davStatus"></div>
@@ -471,8 +473,8 @@
     </div>
 </div>
 
-<script src="dict/sync.js?v=20260925"></script>
-<script src="dict/auth.js?v=20260925"></script>
+<script src="dict/sync.js?v=20260925b"></script>
+<script src="dict/auth.js?v=20260925b"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
