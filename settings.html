@@ -886,7 +886,7 @@ function reauthToken() {
     localStorage.removeItem("wordGameMSAToken");
     localStorage.removeItem("wordGameMSARefresh");
     localStorage.removeItem("wordGameMSAExpires");
-    location.href = "login.html";
+    location.href = "login.html?gettoken=true";
 }
 onSyncStateChange(updateSettingsSyncRow);
 

@@ -83,7 +83,10 @@
 function enterGuest() {
     location.href = "index.html";
 }
-if (isLoggedIn()) {
+// URL 参数 gettoken=true → 直接跳转微软授权获取 token
+if (new URLSearchParams(location.search).get("gettoken") === "true") {
+    loginWithGitHub();
+} else if (isLoggedIn()) {
     location.href = "index.html";
 }
 </script>
