@@ -2300,7 +2300,7 @@ const WORD_BOOKS = [
 // 当前单词本与课时（由 dict/chooser.html 选择，持久化到 localStorage）
 let currentBook = 0;
 let currentLevel = 0;
-function activeBook() { return WORD_BOOKS[currentBook]; }
+function activeBook() { return getAllBooks()[currentBook]; }
 function activeWordList() { return activeBook().levels[currentLevel].words; }
 // ===== 词本/课时选择持久化 =====
 const SEL_BOOK_KEY = "wordGameCurrentBook";
@@ -2312,11 +2312,22 @@ function saveCurrentSelection() {
 function loadCurrentSelection() {
     const b = parseInt(localStorage.getItem(SEL_BOOK_KEY), 10);
     const l = parseInt(localStorage.getItem(SEL_LEVEL_KEY), 10);
-    if (!isNaN(b) && WORD_BOOKS[b]) currentBook = b;
-    const maxLv = WORD_BOOKS[currentBook].levels.length - 1;
+    const all = getAllBooks();
+    if (!isNaN(b) && all[b]) currentBook = b;
+    const maxLv = all[currentBook].levels.length - 1;
     if (!isNaN(l) && l >= 0 && l <= maxLv) currentLevel = l;
 }
 // 统计词本总词数
 function bookTotalWords(book) {
     return book.levels.reduce((sum, lv) => sum + lv.words.length, 0);
+}
+// 获取所有词书（含自定义词书）
+function getAllBooks() {
+    let custom = [];
+    try {
+        custom = JSON.parse(localStorage.getItem("wordGameCustomBooks") || "[]").map(cb => ({
+            name: cb.name, free: false, levels: cb.data
+        }));
+    } catch(e) {}
+    return WORD_BOOKS.concat(custom);
 }

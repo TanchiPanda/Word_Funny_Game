@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>词书编辑器 - 单词闯关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;min-height:100vh;padding:20px}
+.wrap{max-width:900px;margin:0 auto}
+h1{text-align:center;margin-bottom:16px;color:#ffd700}
+.card{background:rgba(255,255,255,0.06);border-radius:16px;padding:16px;margin-bottom:14px}
+select,input,textarea{width:100%;padding:8px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(0,0,0,0.2);color:#fff;font-size:14px}
+textarea{min-height:300px;resize:vertical;font-family:monospace;line-height:1.6}
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:14px;margin:3px}
+.btn-primary{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a1a2e;font-weight:bold}
+.btn-ghost{background:rgba(255,255,255,0.1);color:#fff}
+.btn-red{background:#e74c3c;color:#fff}
+.btn-green{background:#2ecc71;color:#fff}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;background:rgba(255,255,255,0.08)}
+.tab.active{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a1a2e;font-weight:bold}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:6px 8px;border:1px solid rgba(255,255,255,0.15);text-align:left}
+th{background:rgba(255,255,255,0.1);font-weight:bold}
+td input{border:none;background:transparent;padding:4px;font-size:14px}
+td input:focus{outline:none;background:rgba(255,255,255,0.1)}
+.book-list{display:flex;flex-direction:column;gap:6px}
+.book-item{display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;cursor:pointer}
+.book-item:hover{background:rgba(255,255,255,0.1)}
+.tip{font-size:12px;color:#a8a8d8;margin-top:8px;line-height:1.5}
+.err{color:#e74c3c;font-size:13px;margin-top:6px}
+.row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.row label{min-width:80px;font-size:13px;color:#a8a8d8}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📝 词书编辑器</h1>
+
+<!-- 词书列表 -->
+<div class="card" id="listCard">
+  <div style="font-size:16px;font-weight:bold;margin-bottom:10px;">我的词书</div>
+  <div class="book-list" id="bookList"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="newBook()">+ 新建词书</button>
+  </div>
+  <div class="tip">词书数据自动随云同步备份，无需手动导出。</div>
+</div>
+
+<!-- 编辑器 -->
+<div class="card hidden" id="editCard">
+  <div class="row">
+    <label>词书名称</label>
+    <input type="text" id="bookName" placeholder="例如：我的课外单词">
+  </div>
+  <div class="row">
+    <label>课时名称</label>
+    <input type="text" id="levelName" placeholder="LV1">
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('basic')">📊 表格编辑</div>
+    <div class="tab" onclick="switchTab('code')">💻 代码编辑</div>
+  </div>
+
+  <!-- 表格编辑 -->
+  <div id="basicPanel">
+    <table>
+      <thead><tr><th style="width:25%">英文</th><th style="width:20%">音标</th><th style="width:12%">词性</th><th style="width:35%">中文</th><th style="width:8%"></th></tr></thead>
+      <tbody id="wordRows"></tbody>
+    </table>
+    <div style="margin-top:8px">
+      <button class="btn btn-ghost" onclick="addRow()">+ 添加单词</button>
+    </div>
+  </div>
+
+  <!-- 代码编辑 -->
+  <div id="codePanel" class="hidden">
+    <textarea id="codeInput" placeholder='[{"name":"LV1","words":[{"en":"apple","phonetic":"/ˈæpl/","pos":"n.","cn":"苹果"}]}]'></textarea>
+    <div class="err" id="codeErr"></div>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="saveBook()">💾 保存</button>
+    <button class="btn btn-red" onclick="deleteBook()">🗑 删除</button>
+    <button class="btn btn-ghost" onclick="backToList()">← 返回</button>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:16px">
+  <button class="btn btn-ghost" onclick="location.href='chooser.html'">← 选课时</button>
+</div>
+</div>
+
+<script>
+const KEY = "wordGameCustomBooks";
+let editingId = null;
+let currentLevelIdx = 0;
+let editMode = "basic";
+
+function getBooks(){ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ return []; } }
+function setBooks(b){ localStorage.setItem(KEY, JSON.stringify(b)); }
+
+function renderList(){
+  const books = getBooks();
+  const el = document.getElementById("bookList");
+  if(!books.length){ el.innerHTML = '<div style="color:#a8a8d8;padding:16px;text-align:center">还没有词书，点上方新建</div>'; return; }
+  el.innerHTML = books.map((b,i)=>{
+    let wc=0; try{ b.data.forEach(l=>wc+=l.words.length); }catch{}
+    return `<div class="book-item" onclick="editBook(${b.id})">
+      <div><div style="font-weight:bold">${b.name}</div><div style="font-size:12px;color:#a8a8d8">${b.data.length} 课时 · ${wc} 词</div></div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-red" onclick="event.stopPropagation();delBookById(${b.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function newBook(){
+  editingId = null; currentLevelIdx = 0;
+  document.getElementById("bookName").value = "";
+  document.getElementById("levelName").value = "LV1";
+  document.getElementById("codeInput").value = JSON.stringify([
+    {name:"LV1",words:[{en:"example",phonetic:"/ɪɡˈzɑːmpl/",pos:"n.",cn:"例子"}]}
+  ], null, 2);
+  loadCodeToBasic();
+  showEdit();
+}
+
+function editBook(id){
+  const b = getBooks().find(x=>x.id===id); if(!b) return;
+  editingId = id; currentLevelIdx = 0;
+  document.getElementById("bookName").value = b.name;
+  document.getElementById("levelName").value = b.data[0]?.name || "LV1";
+  document.getElementById("codeInput").value = JSON.stringify(b.data, null, 2);
+  loadCodeToBasic();
+  showEdit();
+}
+
+function showEdit(){
+  document.getElementById("listCard").classList.add("hidden");
+  document.getElementById("editCard").classList.remove("hidden");
+}
+function backToList(){
+  document.getElementById("editCard").classList.add("hidden");
+  document.getElementById("listCard").classList.remove("hidden");
+  renderList();
+}
+
+function switchTab(m){
+  editMode = m;
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active", (i===0&&m==="basic")||(i===1&&m==="code")));
+  if(m==="basic"){ saveBasicToCode(); loadCodeToBasic(); }
+  else { saveBasicToCode(); document.getElementById("codeErr").innerText=""; }
+  document.getElementById("basicPanel").classList.toggle("hidden", m!=="basic");
+  document.getElementById("codePanel").classList.toggle("hidden", m!=="code");
+}
+
+function addRow(word){
+  const tbody = document.getElementById("wordRows");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td><input value="${word?.en||""}" data-f="en"></td>
+    <td><input value="${word?.phonetic||""}" data-f="phonetic"></td>
+    <td><input value="${word?.pos||""}" data-f="pos"></td>
+    <td><input value="${word?.cn||""}" data-f="cn"></td>
+    <td><button class="btn btn-red" style="padding:4px 8px" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function loadCodeToBasic(){
+  try{
+    const data = JSON.parse(document.getElementById("codeInput").value);
+    if(!Array.isArray(data)||!data.length) return;
+    document.getElementById("levelName").value = data[currentLevelIdx]?.name || "LV1";
+    const words = data[currentLevelIdx]?.words || [];
+    const tbody = document.getElementById("wordRows");
+    tbody.innerHTML = "";
+    words.forEach(w=>addRow(w));
+    if(!words.length) addRow();
+  }catch(e){}
+}
+
+function saveBasicToCode(){
+  // 读取表格数据
+  const rows = document.querySelectorAll("#wordRows tr");
+  const words = [];
+  rows.forEach(tr=>{
+    const w = {};
+    tr.querySelectorAll("input").forEach(inp=>{
+      w[inp.dataset.f] = inp.value.trim();
+    });
+    if(w.en) words.push(w);
+  });
+  // 合并到现有 JSON
+  let data;
+  try{ data = JSON.parse(document.getElementById("codeInput").value); }catch{ data = []; }
+  if(!Array.isArray(data)||!data.length) data = [{name:"LV1",words:[]}];
+  data[currentLevelIdx] = { name: document.getElementById("levelName").value || "LV1", words };
+  document.getElementById("codeInput").value = JSON.stringify(data, null, 2);
+}
+
+function saveBook(){
+  saveBasicToCode();
+  const name = document.getElementById("bookName").value.trim();
+  if(!name){ alert("请输入词书名称"); return; }
+  let data;
+  try{
+    data = JSON.parse(document.getElementById("codeInput").value);
+    if(!Array.isArray(data)) throw "必须是数组";
+    data.forEach((l,i)=>{
+      if(!l.name) throw `第${i+1}课时缺少 name`;
+      if(!Array.isArray(l.words)) throw `第${i+1}课时 words 不是数组`;
+    });
+  }catch(e){ alert("格式错误："+e); return; }
+  const books = getBooks();
+  if(editingId){
+    const b = books.find(x=>x.id===editingId);
+    if(b){ b.name=name; b.data=data; }
+  } else {
+    books.push({ id: Date.now(), name, data });
+  }
+  setBooks(books);
+  alert("✅ 已保存");
+  backToList();
+}
+
+function deleteBook(){
+  if(!editingId) return;
+  if(!confirm("删除这个词书？")) return;
+  setBooks(getBooks().filter(x=>x.id!==editingId));
+  backToList();
+}
+function delBookById(id){
+  if(!confirm("删除这个词书？")) return;
+  setBooks(getBooks().filter(x=>x.id!==id));
+  renderList();
+}
+
+renderList();
+</script>
+</body>
+</html>

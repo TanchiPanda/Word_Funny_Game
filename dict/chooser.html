@@ -255,6 +255,35 @@ function render() {
             </div>`;
         list.appendChild(card);
     });
+    // 自定义词书
+    let custom = [];
+    try { custom = JSON.parse(localStorage.getItem("wordGameCustomBooks") || "[]"); } catch {}
+    custom.forEach((cb, ci) => {
+        const bi = WORD_BOOKS.length + ci;
+        const card = document.createElement("div");
+        card.className = "book-card" + (bi === currentBook ? " active" : "");
+        let levelsHtml = "";
+        cb.data.forEach((lv, li) => {
+            const selected = (bi === currentBook && li === currentLevel);
+            levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
+        });
+        card.innerHTML = `
+            <div class="cover">📝</div>
+            <div class="book-info">
+                <div class="book-name">${cb.name}<span class="free-tag">自定义</span></div>
+                <div class="book-stats">共 ${cb.data.length} 课时 · ${cb.data.reduce((s,l)=>s+l.words.length,0)} 词</div>
+                <div class="level-tags">${levelsHtml}</div>
+            </div>`;
+        list.appendChild(card);
+    });
+    // 新建按钮
+    const add = document.createElement("div");
+    add.className = "book-card";
+    add.style.border = "2px dashed rgba(255,255,255,0.2)";
+    add.style.cursor = "pointer";
+    add.innerHTML = `<div class="cover" style="opacity:0.5">➕</div><div class="book-info"><div class="book-name" style="color:#a8a8d8;">新建/编辑词书</div></div>`;
+    add.onclick = () => location.href = "editor.html";
+    list.appendChild(add);
 }
 // 选择课时
 function pickLevel(bi, li) {
