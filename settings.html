@@ -323,6 +323,15 @@
     <a class="back-link" href="index.html">← 返回首页</a>
     <div class="page-title">⚙️ 设置</div>
 
+    <!-- ========== 账号 ========== -->
+    <div class="card" id="accountCard">
+        <div class="card-title">👤 账号</div>
+        <div id="accountInfo" style="text-align:center;padding:10px 0;">
+            <div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 登录后解锁全部功能</div>
+            <button class="primary-btn" type="button" onclick="loginWithGitHub()">使用微软账号登录</button>
+        </div>
+    </div>
+
     <!-- ========== 青少年模式 ========== -->
     <div class="card">
         <div class="card-title">🧒 青少年模式</div>
@@ -395,6 +404,21 @@
         <div class="status-line" id="davStatus"></div>
     </div>
 
+    <!-- ========== 词典学习 ========== -->
+    <div class="card">
+        <div class="card-title">📕 词典学习</div>
+        <div class="card-desc">设置词典学习页内嵌的词典网站地址。使用 <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;">%d</code> 代表要查询的单词。</div>
+        <div class="dav-row">
+            <label class="dav-label">词典 URL 模板</label>
+            <input class="dav-input" type="text" id="dictTpl" placeholder="https://cn.bing.com/dict/%d">
+        </div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" onclick="saveDictTpl()">💾 保存</button>
+            <button class="ghost-btn" type="button" onclick="resetDictTpl()">↺ 重置为默认</button>
+        </div>
+        <div class="status-line" id="dictTplStatus"></div>
+    </div>
+
     <!-- ========== 同步状态 ========== -->
     <div class="card">
         <div class="card-title">📡 同步状态</div>
@@ -437,6 +461,7 @@
 </div>
 
 <script src="dict/sync.js"></script>
+<script src="dict/auth.js"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -726,6 +751,64 @@ function manualSync() {
     syncPush(msg => statusEl.innerText = msg);
 }
 
+// ===== GitHub 账号卡片 =====
+function renderAccount() {
+    const box = document.getElementById("accountInfo");
+    const user = getGitHubUser();
+    if (isLoggedIn() && user) {
+        box.innerHTML =
+            '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#f25022,#ffb900);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;">👤</div>' +
+            '<div style="font-size:18px;font-weight:bold;color:#fff;margin-bottom:4px;">' + (user.name || user.login) + '</div>' +
+            '<div style="font-size:14px;color:#a8a8d8;margin-bottom:14px;">' + (user.login || '') + '</div>' +
+            '<button class="ghost-btn" type="button" onclick="doLogout()">退出登录</button>';
+    } else {
+        box.innerHTML =
+            '<div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 登录后解锁全部功能</div>' +
+            '<button class="primary-btn" type="button" onclick="loginWithGitHub()">使用微软账号登录</button>';
+    }
+}
+function doLogout() {
+    if (confirm("确定要退出登录吗？")) {
+        logout();
+        renderAccount();
+    }
+}
+
+// ===== 词典 URL 模板 =====
+const DICT_TPL_KEY = "wordGameDictTpl";
+const DICT_TPL_DEFAULT = "https://cn.bing.com/dict/%d";
+function renderDictTpl() {
+    document.getElementById("dictTpl").value = localStorage.getItem(DICT_TPL_KEY) || DICT_TPL_DEFAULT;
+}
+function saveDictTpl() {
+    playClickSound();
+    const v = document.getElementById("dictTpl").value.trim();
+    if (!v) {
+        playErrorSound();
+        document.getElementById("dictTplStatus").innerText = "⚠️ 地址不能为空";
+        return;
+    }
+    if (!/%d/.test(v)) {
+        playErrorSound();
+        document.getElementById("dictTplStatus").innerText = "⚠️ 必须包含 %d 作为单词占位符";
+        return;
+    }
+    if (!/^https?:\/\//.test(v)) {
+        playErrorSound();
+        document.getElementById("dictTplStatus").innerText = "⚠️ 地址需以 http:// 或 https:// 开头";
+        return;
+    }
+    localStorage.setItem(DICT_TPL_KEY, v);
+    playSuccessSound();
+    document.getElementById("dictTplStatus").innerText = "✅ 词典地址已保存";
+}
+function resetDictTpl() {
+    playClickSound();
+    localStorage.removeItem(DICT_TPL_KEY);
+    document.getElementById("dictTpl").value = DICT_TPL_DEFAULT;
+    document.getElementById("dictTplStatus").innerText = "✅ 已重置为默认地址";
+}
+
 // ===== 同步状态 UI =====
 function updateSettingsSyncRow(state, error, lastOk) {
     const row = document.getElementById("settingsSyncRow");
@@ -764,6 +847,8 @@ onSyncStateChange(updateSettingsSyncRow);
 // ===== 启动 =====
 renderTeen();
 renderDav();
+renderDictTpl();
+renderAccount();
 if (!isSyncEnabled()) setSyncState("off");
 </script>
 </body>

@@ -240,7 +240,7 @@
             <span class="status-text" id="statusText">👤 客人模式</span>
         </div>
         <div class="status-box">
-            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()">🐙 GitHub 登录</button>
+            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()">🔑 登录解锁</button>
             <button class="login-btn" id="logoutBtn" type="button" onclick="goLogout()" style="display:none;background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.5);color:#ff8888;">退出登录</button>
         </div>
     </div>
@@ -261,7 +261,7 @@ function renderStatus() {
     const loggedIn = isLoggedIn();
     const statusEl = document.getElementById("statusText");
     if (loggedIn && user) {
-        statusEl.innerText = "🐙 " + user.login;
+        statusEl.innerText = "✅ " + (user.name || user.login);
         statusEl.classList.add("activated");
     } else {
         statusEl.innerText = "👤 客人模式";
