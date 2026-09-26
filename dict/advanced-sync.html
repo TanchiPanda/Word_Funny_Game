@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>高级同步设置 - 单词闯关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;min-height:100vh;padding:16px}
+.wrap{max-width:680px;margin:0 auto}
+h1{text-align:center;margin-bottom:16px;color:#ffd700;font-size:22px}
+.card{background:rgba(255,255,255,0.06);border-radius:14px;padding:14px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:bold;margin-bottom:10px;color:#ffd700}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.btn{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-size:14px;flex:1;min-width:90px}
+.btn-primary{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a1a2e;font-weight:bold}
+.btn-ghost{background:rgba(255,255,255,0.1);color:#fff}
+.btn-red{background:#e74c3c;color:#fff}
+.btn-green{background:#2ecc71;color:#fff}
+.info{font-size:13px;line-height:1.8;color:#ccc;word-break:break-all}
+.info b{color:#fff}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;margin-left:6px}
+.badge-onedrive{background:#0078d4;color:#fff}
+.badge-webdav{background:#9b59b6;color:#fff}
+.badge-off{background:#555;color:#aaa}
+.badge-ok{background:#2ecc71;color:#fff}
+.badge-err{background:#e74c3c;color:#fff}
+.badge-sync{background:#f39c12;color:#fff}
+pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;overflow-x:auto;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.back{display:block;text-align:center;margin-top:8px;color:#a8a8d8;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>⚙️ 高级同步设置</h1>
+
+<!-- 第一行：同步状态 -->
+<div class="card">
+  <div class="card-title">📊 同步状态</div>
+  <div class="info">
+    <div>同步后端：<span id="backend" class="badge badge-off">未开启</span></div>
+    <div>同步状态：<span id="syncState" class="badge badge-off">未知</span></div>
+    <div>上次成功：<span id="lastOk">-</span></div>
+    <div>Token 过期时间：<span id="expiresAt">-</span></div>
+    <div id="expireWarn" style="color:#f39c12;display:none">⚠️ Token 即将过期或已过期</div>
+  </div>
+</div>
+
+<!-- 第二行：操作按钮 -->
+<div class="card">
+  <div class="card-title">🔧 操作</div>
+  <div class="row">
+    <button class="btn btn-primary" onclick="syncPull()">📥 拉取</button>
+    <button class="btn btn-green" onclick="syncPush()">📤 推送</button>
+    <button class="btn btn-ghost" onclick="refreshNow()">🔄 刷新 Token</button>
+  </div>
+</div>
+
+<!-- 第三行：当前凭证 -->
+<div class="card">
+  <div class="card-title">🔑 当前凭证</div>
+  <div class="info">
+    <div id="tokenInfo">Access Token：<span id="tokenVal">-</span></div>
+    <div id="rtInfo">Refresh Token：<span id="rtVal">-</span></div>
+    <div id="webdavInfo" style="display:none">WebDAV 地址：<span id="webdavUrl">-</span></div>
+    <div id="webdavUser" style="display:none">WebDAV 用户：<span id="webdavU">-</span></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="btn btn-ghost" onclick="runDiag()">🔍 详细诊断</button>
+    <button class="btn btn-red" onclick="reauth()">🔑 重新授权</button>
+  </div>
+</div>
+
+<!-- 同步记录 -->
+<div class="card">
+  <div class="card-title">📝 同步记录</div>
+  <pre id="log">（暂无记录）</pre>
+</div>
+
+<a class="back" href="settings.html">← 返回设置</a>
+</div>
+
+<script src="sync.js?v=20260926"></script>
+<script src="auth.js?v=20260926"></script>
+<script>
+let logs = [];
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  logs.push("["+t+"] "+msg);
+  if(logs.length>50) logs.shift();
+  document.getElementById("log").innerText = logs.join("\n");
+}
+
+function refreshView(){
+  // 后端
+  const be = document.getElementById("backend");
+  if(isOneDriveEnabled()){ be.className="badge badge-onedrive"; be.innerText="OneDrive"; }
+  else if(isWebdavEnabled()){ be.className="badge badge-webdav"; be.innerText="WebDAV"; }
+  else { be.className="badge badge-off"; be.innerText="未开启"; }
+
+  // 状态
+  const s = getSyncState();
+  const se = document.getElementById("syncState");
+  se.className = "badge " + (s.state==="idle"?"badge-ok":s.state==="syncing"?"badge-sync":s.state==="error"?"badge-err":"badge-off");
+  se.innerText = s.state + (s.error?"："+s.error:"");
+  document.getElementById("lastOk").innerText = s.lastOk || "-";
+
+  // Token
+  const token = localStorage.getItem("wordGameMSAToken");
+  const rt = localStorage.getItem("wordGameMSARefresh");
+  const exp = localStorage.getItem("wordGameMSAExpires");
+  document.getElementById("tokenVal").innerText = token ? token.slice(0,30)+"…" : "-";
+  document.getElementById("rtVal").innerText = rt ? rt.slice(0,20)+"…" : "-";
+  if(exp){
+    const d = new Date(Number(exp));
+    document.getElementById("expiresAt").innerText = d.toLocaleString();
+    if(Date.now() > Number(exp)-300000){
+      document.getElementById("expireWarn").style.display = "";
+    }
+  } else {
+    document.getElementById("expiresAt").innerText = "-（未记录）";
+  }
+
+  // WebDAV
+  const cfg = getSyncConfig();
+  if(isWebdavEnabled()){
+    document.getElementById("webdavInfo").style.display = "";
+    document.getElementById("webdavUser").style.display = "";
+    document.getElementById("webdavUrl").innerText = cfg.url || "-";
+    document.getElementById("webdavU").innerText = cfg.user || "-";
+  }
+}
+
+onSyncStateChange((state,err,lastOk)=>{
+  log("状态变化："+state+(err?" ("+err+")":""));
+  refreshView();
+});
+
+function syncPull(){ log("手动拉取…"); syncPull(msg=>log(msg)); }
+function syncPush(){ log("手动推送…"); syncPush(msg=>log(msg)); }
+async function refreshNow(){
+  log("手动刷新 Token…");
+  const ok = await refreshAccessToken();
+  log(ok ? "✅ Token 已刷新" : "❌ Token 刷新失败");
+  refreshView();
+}
+async function runDiag(){
+  log("运行详细诊断…");
+  const r = await syncDiagnose();
+  log("诊断结果：\n"+r);
+  alert(r);
+}
+function reauth(){
+  if(!confirm("清除当前 Token 并跳转登录？")) return;
+  localStorage.removeItem("wordGameGitHubUser");
+  localStorage.removeItem("wordGameMSAToken");
+  localStorage.removeItem("wordGameMSARefresh");
+  localStorage.removeItem("wordGameMSAExpires");
+  location.href = "login.html?gettoken=true";
+}
+
+refreshView();
+</script>
+</body>
+</html>
