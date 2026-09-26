@@ -12,6 +12,9 @@ const MSA_REDIRECT_URI = "https://wordgm.r6t5.cloud-ip.cc/oauth-callback";
 
 const GH_USER_KEY = "wordGameGitHubUser";   // 沿用旧 key 名，避免迁移丢失
 const GH_TOKEN_KEY = "wordGameMSAToken";
+const MSA_REFRESH_KEY = "wordGameMSARefresh";
+const MSA_EXPIRES_KEY = "wordGameMSAExpires";
+const MSA_SCOPE = "openid profile email User.Read Files.ReadWrite offline_access";
 
 function getCallbackUrl() {
     return MSA_REDIRECT_URI;
@@ -60,18 +63,13 @@ async function loginWithMSA() {
         response_type: "code",
         redirect_uri: getCallbackUrl(),
         response_mode: "query",
-        scope: "openid profile email User.Read Files.ReadWrite",
+        scope: MSA_SCOPE,
         code_challenge: challenge,
         code_challenge_method: "S256",
         state: "wordgame",
         prompt: "select_account"
     });
     location.href = MSA_AUTHORITY + "/authorize?" + params.toString();
-}
-
-function logout() {
-    localStorage.removeItem(GH_USER_KEY);
-    localStorage.removeItem(GH_TOKEN_KEY);
 }
 
 // 在 oauth-callback.html 中调用
@@ -94,7 +92,7 @@ async function handleOAuthCallback() {
     try {
         const body = new URLSearchParams({
             client_id: MSA_CLIENT_ID,
-            scope: "openid profile email User.Read Files.ReadWrite",
+            scope: MSA_SCOPE,
             code: code,
             redirect_uri: getCallbackUrl(),
             code_verifier: verifier,
@@ -111,6 +109,12 @@ async function handleOAuthCallback() {
         }
         const tokenData = await resp.json();
         const accessToken = tokenData.access_token;
+        if (tokenData.refresh_token) {
+            localStorage.setItem(MSA_REFRESH_KEY, tokenData.refresh_token);
+        }
+        if (tokenData.expires_in) {
+            localStorage.setItem(MSA_EXPIRES_KEY, String(Date.now() + tokenData.expires_in * 1000));
+        }
         // 调 Microsoft Graph 获取用户信息
         const userResp = await fetch("https://graph.microsoft.com/v1.0/me", {
             headers: { "Authorization": "Bearer " + accessToken }
@@ -128,4 +132,48 @@ async function handleOAuthCallback() {
     } catch (e) {
         return { ok: false, message: "登录失败: " + e.message };
     }
+}
+
+// ===== 自动刷新 access token =====
+async function refreshAccessToken() {
+    const rt = localStorage.getItem(MSA_REFRESH_KEY);
+    if (!rt) return false;
+    try {
+        const body = new URLSearchParams({
+            client_id: MSA_CLIENT_ID,
+            scope: MSA_SCOPE,
+            refresh_token: rt,
+            grant_type: "refresh_token"
+        });
+        const resp = await fetch(MSA_AUTHORITY + "/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+        if (!resp.ok) {
+            console.warn("[MSA] refresh failed HTTP", resp.status);
+            return false;
+        }
+        const data = await resp.json();
+        if (data.access_token) {
+            localStorage.setItem(GH_TOKEN_KEY, data.access_token);
+        }
+        if (data.refresh_token) {
+            localStorage.setItem(MSA_REFRESH_KEY, data.refresh_token);
+        }
+        if (data.expires_in) {
+            localStorage.setItem(MSA_EXPIRES_KEY, String(Date.now() + data.expires_in * 1000));
+        }
+        return true;
+    } catch (e) {
+        console.warn("[MSA] refresh error:", e.message);
+        return false;
+    }
+}
+
+function logout() {
+    localStorage.removeItem(GH_USER_KEY);
+    localStorage.removeItem(GH_TOKEN_KEY);
+    localStorage.removeItem(MSA_REFRESH_KEY);
+    localStorage.removeItem(MSA_EXPIRES_KEY);
 }

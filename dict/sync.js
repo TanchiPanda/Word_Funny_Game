@@ -62,16 +62,27 @@ function getAccessToken() {
 function onedriveHeaders() {
     return { "Authorization": "Bearer " + getAccessToken() };
 }
+async function onedriveRequest(method, onStatus) {
+    const url = "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content";
+    // 第一次请求
+    let resp = await fetch(url, { method, headers: onedriveHeaders() });
+    // 401 → 自动刷新 token 后重试一次
+    if (resp.status === 401 && typeof refreshAccessToken === "function") {
+        if (onStatus) onStatus("🔄 Token 过期，正在自动刷新…");
+        const ok = await refreshAccessToken();
+        if (ok) {
+            resp = await fetch(url, { method, headers: onedriveHeaders() });
+        }
+    }
+    return resp;
+}
+
 async function onedrivePull(onStatus) {
     setSyncState("syncing");
     try {
         if (onStatus) onStatus("📥 正在从 OneDrive 拉取…");
-        const resp = await fetch(
-            "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
-            { method: "GET", headers: onedriveHeaders() }
-        );
+        const resp = await onedriveRequest("GET", onStatus);
         if (resp.status === 404) {
-            // 远端文件不存在，推送本地数据
             await onedrivePush(onStatus);
             return;
         }
@@ -101,6 +112,20 @@ async function onedrivePush(onStatus) {
             "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
             { method: "PUT", headers: onedriveHeaders(), body: body }
         );
+        if (resp.status === 401 && typeof refreshAccessToken === "function") {
+            if (onStatus) onStatus("🔄 Token 过期，正在自动刷新…");
+            const ok = await refreshAccessToken();
+            if (ok) {
+                const resp2 = await fetch(
+                    "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
+                    { method: "PUT", headers: onedriveHeaders(), body: body }
+                );
+                if (!resp2.ok && resp2.status !== 200 && resp2.status !== 201) throw new Error("HTTP " + resp2.status);
+                setSyncState("idle");
+                if (onStatus) onStatus("✅ 已推送本地配置到 OneDrive");
+                return;
+            }
+        }
         if (!resp.ok && resp.status !== 200 && resp.status !== 201) throw new Error("HTTP " + resp.status);
         setSyncState("idle");
         if (onStatus) onStatus("✅ 已推送本地配置到 OneDrive");
