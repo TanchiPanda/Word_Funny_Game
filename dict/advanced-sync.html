@@ -18,7 +18,6 @@ h1{text-align:center;margin-bottom:16px;color:#ffd700;font-size:22px}
 .btn-red{background:#e74c3c;color:#fff}
 .btn-green{background:#2ecc71;color:#fff}
 .info{font-size:13px;line-height:1.8;color:#ccc;word-break:break-all}
-.info b{color:#fff}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;margin-left:6px}
 .badge-off{background:#555;color:#aaa}
 .badge-ok{background:#2ecc71;color:#fff}
@@ -26,14 +25,13 @@ h1{text-align:center;margin-bottom:16px;color:#ffd700;font-size:22px}
 .badge-sync{background:#f39c12;color:#fff}
 pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;overflow-x:auto;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
 .back{display:block;text-align:center;margin-top:8px;color:#a8a8d8;text-decoration:none;font-size:14px}
-.dav-input{width:100%;padding:9px 10px;border-radius:8px;border:1.5px solid rgba(78,205,196,0.4);background:rgba(255,255,255,0.08);color:#fff;font-size:13px;outline:none;margin-bottom:8px}
-.dav-label{display:block;font-size:12px;color:#a8a8d8;margin-bottom:4px}
-.switch{position:relative;display:inline-block;width:48px;height:26px;flex:none}
+.switch{position:relative;display:inline-block;width:54px;height:30px;flex:none}
 .switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;background:rgba(255,255,255,0.18);border-radius:26px;cursor:pointer;transition:0.3s}
-.slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.3s}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,0.18);border-radius:30px;cursor:pointer;transition:0.3s}
+.slider::before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.3s}
 .switch input:checked+.slider{background:linear-gradient(90deg,#39d98a,#4ecdc4)}
-.switch input:checked+.slider::before{transform:translateX(22px)}
+.switch input:checked+.slider::before{transform:translateX(24px)}
+.sync-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
 .sync-status-row{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:bold}
 .sync-status-row .dot{width:12px;height:12px;border-radius:50%;background:#888}
 .sync-status-row.off{color:#aaa}
@@ -50,7 +48,6 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 <div class="wrap">
 <h1>⚙️ 高级同步设置</h1>
 
-<!-- 同步状态 -->
 <div class="card">
   <div class="card-title">📊 同步状态</div>
   <div class="sync-status-row" id="syncRow">
@@ -58,50 +55,32 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
     <span id="syncText">同步未开启</span>
   </div>
   <div class="info" style="margin-top:8px">
-    <div>后端：Backblaze B2</div>
+    <div>存储：Backblaze B2（R6T5 共享）</div>
     <div>上次成功：<span id="lastOk">-</span></div>
   </div>
 </div>
 
-<!-- 配置 -->
 <div class="card">
-  <div class="card-title">🔧 同步配置</div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <span style="font-size:14px">启用同步</span>
-    <label class="switch"><input type="checkbox" id="b2Enabled" onchange="localStorage.setItem('wordGameB2Enabled',this.checked?'1':'0');log('启用同步：'+this.checked)"><span class="slider"></span></label>
+  <div class="card-title">🔧 开关</div>
+  <div class="sync-row">
+    <span style="font-size:15px">启用云同步</span>
+    <label class="switch"><input type="checkbox" id="b2Enabled" onchange="onToggle(this.checked)"><span class="slider"></span></label>
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <span style="font-size:14px">使用 R6T5 共享存储</span>
-    <label class="switch"><input type="checkbox" id="b2Preset" onchange="togglePreset();localStorage.setItem('wordGameB2Preset',this.checked?'1':'0');log('R6T5共享：'+this.checked)"><span class="slider"></span></label>
-  </div>
-  <div id="customArea">
-    <label class="dav-label">Endpoint</label>
-    <input class="dav-input" type="text" id="b2Endpoint" placeholder="s3.us-east-005.backblazeb2.com">
-    <label class="dav-label">Bucket</label>
-    <input class="dav-input" type="text" id="b2Bucket" placeholder="bucket-name">
-    <label class="dav-label">Key ID</label>
-    <input class="dav-input" type="text" id="b2KeyId" placeholder="Key ID">
-    <label class="dav-label">Application Key</label>
-    <input class="dav-input" type="password" id="b2AppKey" placeholder="Application Key">
-  </div>
-  <div class="row">
-    <button class="btn btn-primary" onclick="saveConfig()">💾 保存</button>
+  <div id="toggleHint" style="font-size:12px;color:#a8a8d8;margin-top:4px"></div>
+  <div class="row" style="margin-top:12px">
     <button class="btn btn-green" onclick="doPull()">📥 拉取</button>
-    <button class="btn btn-ghost" onclick="doPush()">📤 推送</button>
+    <button class="btn btn-primary" onclick="doPush()">📤 推送</button>
   </div>
-  <div id="configStatus" style="font-size:13px;color:#ffd700;min-height:18px"></div>
 </div>
 
-<!-- 诊断 -->
 <div class="card">
   <div class="card-title">🔍 诊断</div>
   <div class="row">
-    <button class="btn btn-ghost" onclick="runDiag()">🔍 运行诊断</button>
-    <button class="btn btn-red" onclick="reauth()">🔑 重新授权</button>
+    <button class="btn btn-ghost" onclick="runDiag()">运行诊断</button>
+    <button class="btn btn-red" onclick="reauth()">重新登录</button>
   </div>
 </div>
 
-<!-- 同步记录 -->
 <div class="card">
   <div class="card-title">📝 同步记录</div>
   <pre id="log">（暂无记录）</pre>
@@ -110,8 +89,8 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 <a class="back" href="../settings.html">← 返回设置</a>
 </div>
 
-<script src="sync.js?v=20261001c"></script>
-<script src="auth.js?v=20261001c"></script>
+<script src="sync.js?v=20261001dd"></script>
+<script src="auth.js?v=20261001dd"></script>
 <script>
 var logs = [];
 function log(msg){
@@ -121,30 +100,17 @@ function log(msg){
   document.getElementById("log").innerText = logs.join("\n");
 }
 
-function togglePreset(){
-  var p = document.getElementById("b2Preset").checked;
-  document.getElementById("customArea").style.display = p ? "none" : "";
-}
-
-function saveConfig(){
-  var enabled = document.getElementById("b2Enabled").checked;
-  var preset = document.getElementById("b2Preset").checked;
-  localStorage.setItem("wordGameB2Enabled", enabled?"1":"0");
-  if(preset){
-    localStorage.setItem("wordGameB2Preset","1");
-    localStorage.setItem("wordGameB2Endpoint","s3.us-east-005.backblazeb2.com");
-    localStorage.setItem("wordGameB2Bucket","R6T5Data");
-    localStorage.setItem("wordGameB2KeyId","005c54e99fa03480000000002");
-    localStorage.setItem("wordGameB2AppKey","K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw");
-  } else {
-    localStorage.removeItem("wordGameB2Preset");
-    localStorage.setItem("wordGameB2Endpoint", document.getElementById("b2Endpoint").value.trim());
-    localStorage.setItem("wordGameB2Bucket", document.getElementById("b2Bucket").value.trim());
-    localStorage.setItem("wordGameB2KeyId", document.getElementById("b2KeyId").value.trim());
-    localStorage.setItem("wordGameB2AppKey", document.getElementById("b2AppKey").value);
-  }
-  document.getElementById("configStatus").innerText = "✅ 已保存";
-  log("配置已保存");
+function onToggle(on){
+  localStorage.setItem("wordGameB2Enabled", on?"1":"0");
+  // 强制使用 R6T5 预设参数
+  localStorage.setItem("wordGameB2Preset","1");
+  localStorage.setItem("wordGameB2Endpoint","s3.us-east-005.backblazeb2.com");
+  localStorage.setItem("wordGameB2Bucket","R6T5Data");
+  localStorage.setItem("wordGameB2KeyId","005c54e99fa03480000000002");
+  localStorage.setItem("wordGameB2AppKey","K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw");
+  document.getElementById("toggleHint").innerText = on ? "✅ 已启用，下次进入游戏自动同步" : "已关闭，数据仅保存在本地";
+  log("同步开关："+(on?"开启":"关闭"));
+  if(on){ doPull(); }
 }
 
 function doPull(){ log("手动拉取…"); syncPull(function(m){ log(m); }); }
@@ -175,19 +141,11 @@ onSyncStateChange(function(state,err,lastOk){
   refreshView();
 });
 
-// 加载配置
-var preset = localStorage.getItem("wordGameB2Preset")==="1";
-document.getElementById("b2Preset").checked = preset;
+// 加载
 document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2Enabled")==="1";
-document.getElementById("customArea").style.display = preset ? "none" : "";
-if(!preset){
-  document.getElementById("b2Endpoint").value = localStorage.getItem("wordGameB2Endpoint")||"";
-  document.getElementById("b2Bucket").value = localStorage.getItem("wordGameB2Bucket")||"";
-  document.getElementById("b2KeyId").value = localStorage.getItem("wordGameB2KeyId")||"";
-  document.getElementById("b2AppKey").value = localStorage.getItem("wordGameB2AppKey")||"";
-}
+document.getElementById("toggleHint").innerText = document.getElementById("b2Enabled").checked ? "✅ 已启用" : "已关闭";
 refreshView();
 </script>
-<script src="sidebar.js?v=20261001c"></script>
+<script src="sidebar.js?v=20261001dd"></script>
 </body>
 </html>
