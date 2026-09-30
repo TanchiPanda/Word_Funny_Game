@@ -1,260 +1,227 @@
-// ===== 云同步模块（Backblaze B2 / S3 兼容）=====
-// 存储路径：users/{userId}/wordgame-sync.json
-//           users/{userId}/books/{bookId}.json（>200MB 跳过）
+// ===== 云同步模块（Backblaze B2 S3）=====
+// 路径：users/{userId}/wordgame-sync.json
 
-const B2_KEY_ID = "wordGameB2KeyId";
-const B2_APP_KEY = "wordGameB2AppKey";
-const B2_ENDPOINT = "wordGameB2Endpoint";
-const B2_BUCKET = "wordGameB2Bucket";
-const B2_ENABLED = "wordGameB2Enabled";
-const B2_PRESET = "wordGameB2Preset";
+// ===== 常量 =====
+const B2_KEY = {
+    enabled: "wordGameB2Enabled",
+    preset: "wordGameB2Preset",
+    endpoint: "wordGameB2Endpoint",
+    bucket: "wordGameB2Bucket",
+    keyId: "wordGameB2KeyId",
+    appKey: "wordGameB2AppKey"
+};
 
-const BOOK_SIZE_LIMIT = 200 * 1024 * 1024; // 200MB
-
-const SYNC_SKIP_KEYS = [
-    "wordGameGitHubUser", "wordGameMSAToken", "wordGameMSARefresh", "wordGameMSAExpires",
-    B2_KEY_ID, B2_APP_KEY
-];
-
-// R6T5 共享 B2 参数
-const R6T5_B2 = {
+const R6T5_DEFAULTS = {
     endpoint: "s3.us-east-005.backblazeb2.com",
     bucket: "R6T5Data",
     keyId: "005c54e99fa03480000000002",
     appKey: "K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw"
 };
 
-// ===== 同步状态机 =====
-let syncState = "off";
-let syncError = "";
-let syncLastOk = "";
-const syncListeners = [];
-function onSyncStateChange(fn) { syncListeners.push(fn); fn(syncState, syncError, syncLastOk); }
-function setSyncState(state, errMsg) {
-    syncState = state;
-    if (state === "error") syncError = errMsg || "未知错误";
-    if (state === "idle") { syncError = ""; syncLastOk = new Date().toLocaleTimeString(); }
-    syncListeners.forEach(fn => fn(syncState, syncError, syncLastOk));
-}
-function getSyncState() { return { state: syncState, error: syncError, lastOk: syncLastOk }; }
+const SKIP_KEYS = [
+    "wordGameGitHubUser",
+    "wordGameMSAToken", "wordGameMSARefresh", "wordGameMSAExpires",
+    B2_KEY.keyId, B2_KEY.appKey
+];
 
-// ===== B2 配置 =====
-function isSyncEnabled() {
-    return localStorage.getItem(B2_ENABLED) === "1";
+// ===== 状态 =====
+var _state = "off";
+var _error = "";
+var _lastOk = "";
+var _listeners = [];
+
+function onSyncStateChange(fn) {
+    _listeners.push(fn);
+    fn(_state, _error, _lastOk);
 }
-function getB2Config() {
-    const preset = localStorage.getItem(B2_PRESET) === "1";
-    if (preset) return { ...R6T5_B2 };
-    return {
-        keyId: (localStorage.getItem(B2_KEY_ID) || "").trim(),
-        appKey: (localStorage.getItem(B2_APP_KEY) || "").trim(),
-        endpoint: (localStorage.getItem(B2_ENDPOINT) || "").trim(),
-        bucket: (localStorage.getItem(B2_BUCKET) || "").trim()
-    };
+function _setState(s, err) {
+    _state = s;
+    _error = (s === "error") ? (err || "未知错误") : "";
+    if (s === "idle") _lastOk = new Date().toLocaleTimeString();
+    for (var i = 0; i < _listeners.length; i++) {
+        try { _listeners[i](_state, _error, _lastOk); } catch(e) {}
+    }
 }
+function getSyncState() { return { state: _state, error: _error, lastOk: _lastOk }; }
+function isSyncEnabled() { return localStorage.getItem(B2_KEY.enabled) === "1"; }
+
 function getUserId() {
     try {
-        const u = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null");
+        var u = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null");
         return (u && u.id) ? u.id : null;
-    } catch (e) { return null; }
+    } catch(e) { return null; }
 }
 
-// ===== S3 client（通过 module script 注入 AWS SDK v3）=====
-let s3Client = null;
-let s3Module = null;
+function _getConfig() {
+    if (localStorage.getItem(B2_KEY.preset) === "1") return { ...R6T5_DEFAULTS };
+    return {
+        endpoint: (localStorage.getItem(B2_KEY.endpoint) || "").trim(),
+        bucket: (localStorage.getItem(B2_KEY.bucket) || "").trim(),
+        keyId: (localStorage.getItem(B2_KEY.keyId) || "").trim(),
+        appKey: (localStorage.getItem(B2_KEY.appKey) || "").trim()
+    };
+}
 
-function loadS3SDK() {
-    if (s3Module) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        if (window.__AWS_S3) { s3Module = window.__AWS_S3; resolve(); return; }
-        const s = document.createElement("script");
+// ===== SDK 加载 =====
+var _s3 = null; // { client, GetObjectCommand, PutObjectCommand }
+
+function _loadSDK() {
+    if (_s3) return Promise.resolve(_s3);
+    return new Promise(function(resolve, reject) {
+        if (window.__AWS_S3) { _s3 = window.__AWS_S3; resolve(_s3); return; }
+        var s = document.createElement("script");
         s.type = "module";
-        s.textContent = `
-            import { S3Client, GetObjectCommand, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.525.0?target=web&bundle";
-            window.__AWS_S3 = { S3Client, GetObjectCommand, PutObjectCommand };
-            window.dispatchEvent(new Event("aws-s3-ready"));
-        `;
-        window.addEventListener("aws-s3-ready", () => { s3Module = window.__AWS_S3; resolve(); });
-        s.onerror = () => reject(new Error("SDK 脚本加载失败"));
+        s.textContent =
+            'import { S3Client, GetObjectCommand, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.525.0?target=web";' +
+            'window.__AWS_S3 = { S3Client, GetObjectCommand, PutObjectCommand };' +
+            'window.dispatchEvent(new Event("aws-s3-ready"));';
+        window.addEventListener("aws-s3-ready", function() {
+            _s3 = window.__AWS_S3;
+            resolve(_s3);
+        });
+        s.onerror = function() { reject(new Error("SDK 加载失败")); };
         document.head.appendChild(s);
-        setTimeout(() => reject(new Error("SDK 加载超时")), 20000);
+        setTimeout(function() { reject(new Error("SDK 加载超时")); }, 20000);
     });
 }
 
-async function getS3Client() {
-    const cfg = getB2Config();
-    if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) return null;
-    if (s3Client) return s3Client;
-    await loadS3SDK();
-    s3Client = new s3Module.S3Client({
+async function _getClient() {
+    var cfg = _getConfig();
+    if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) throw new Error("未配置 B2 参数");
+    var sdk = await _loadSDK();
+    return new sdk.S3Client({
         region: "us-east-005",
         endpoint: "https://" + cfg.endpoint,
         credentials: { accessKeyId: cfg.keyId, secretAccessKey: cfg.appKey },
         forcePathStyle: true
     });
-    return s3Client;
 }
 
-// ===== 路径工具 =====
-function userPath(file) {
-    const uid = getUserId();
-    if (!uid) throw new Error("未登录");
-    return "users/" + uid + "/" + file;
-}
-
-// ===== 收集/恢复数据 =====
-function collectSyncData() {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (SYNC_SKIP_KEYS.includes(k)) continue;
+// ===== 数据收集/恢复 =====
+function _collect() {
+    var data = {};
+    for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (SKIP_KEYS.indexOf(k) >= 0) continue;
         data[k] = localStorage.getItem(k);
     }
     return data;
 }
-function applySyncData(data) {
+
+function _apply(data) {
     if (!data || typeof data !== "object") return 0;
-    let count = 0;
-    Object.keys(data).forEach(k => {
-        if (SYNC_SKIP_KEYS.includes(k)) return;
+    var n = 0;
+    Object.keys(data).forEach(function(k) {
+        if (SKIP_KEYS.indexOf(k) >= 0) return;
         localStorage.setItem(k, String(data[k]));
-        count++;
+        n++;
     });
-    return count;
+    return n;
 }
 
-// ===== 主数据同步（游戏进度/设置）=====
+function _userPath(file) {
+    var uid = getUserId();
+    if (!uid) throw new Error("未登录");
+    return "users/" + uid + "/" + file;
+}
+
+// ===== 拉取 =====
 async function syncPull(onStatus) {
-    if (!isSyncEnabled()) { setSyncState("off"); return; }
-    const cfg = getB2Config();
-    if (!cfg.keyId) { setSyncState("error", "未配置 B2"); if (onStatus) onStatus("⚠️ 请先配置 B2"); return; }
-    if (!getUserId()) { setSyncState("error", "未登录"); if (onStatus) onStatus("⚠️ 请先登录"); return; }
-    setSyncState("syncing");
+    if (!isSyncEnabled()) { _setState("off"); return; }
+    var uid = getUserId();
+    if (!uid) { _setState("error", "未登录"); if(onStatus) onStatus("⚠️ 请先登录"); return; }
+
+    _setState("syncing");
     try {
         if (onStatus) onStatus("📥 正在拉取…");
-        const client = await getS3Client();
-        const key = userPath("wordgame-sync.json");
-        try {
-            const obj = await client.send(new s3Module.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
-            const body = await obj.Body.transformToString();
-            const data = JSON.parse(body);
-            const count = applySyncData(data);
-            setSyncState("idle");
-            if (onStatus) onStatus("✅ 已拉取 " + count + " 项配置");
-        } catch (e) {
-            const code = e.name || e.Code || (e.$metadata && e.$metadata.httpStatusCode);
-            if (code === "NoSuchKey" || code === 404 || code === "NotFound") {
-                if (onStatus) onStatus("📤 首次同步，推送数据…");
-                await syncPush(onStatus);
-            } else {
-                throw e;
-            }
-        }
+        var cfg = _getConfig();
+        var client = await _getClient();
+        var sdk = await _loadSDK();
+        var key = _userPath("wordgame-sync.json");
+
+        var obj = await client.send(new sdk.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+        var body = await obj.Body.transformToString();
+        var data = JSON.parse(body);
+        var n = _apply(data);
+        _setState("idle");
+        if (onStatus) onStatus("✅ 已拉取 " + n + " 项");
     } catch (e) {
-        const msg = e.message || String(e);
-        setSyncState("error", msg);
-        if (onStatus) onStatus("⚠️ 拉取失败：" + msg);
+        var code = e.name || (e.$metadata && e.$metadata.httpStatusCode);
+        if (code === "NoSuchKey" || code === 404) {
+            // 文件不存在，首次推送
+            if (onStatus) onStatus("📤 首次同步，推送…");
+            await syncPush(onStatus);
+        } else {
+            var msg = e.message || String(e);
+            _setState("error", msg);
+            if (onStatus) onStatus("⚠️ " + msg);
+        }
     }
 }
 
+// ===== 推送 =====
 async function syncPush(onStatus) {
-    if (!isSyncEnabled()) { setSyncState("off"); return; }
-    const cfg = getB2Config();
-    if (!cfg.keyId) { setSyncState("error", "未配置 B2"); if (onStatus) onStatus("⚠️ 请先配置 B2"); return; }
-    if (!getUserId()) { setSyncState("error", "未登录"); if (onStatus) onStatus("⚠️ 请先登录"); return; }
-    setSyncState("syncing");
+    if (!isSyncEnabled()) { _setState("off"); return; }
+    var uid = getUserId();
+    if (!uid) { _setState("error", "未登录"); if(onStatus) onStatus("⚠️ 请先登录"); return; }
+
+    _setState("syncing");
     try {
         if (onStatus) onStatus("📤 正在推送…");
-        const client = await getS3Client();
-        const key = userPath("wordgame-sync.json");
-        const body = JSON.stringify(collectSyncData());
-        const { PutObjectCommand } = s3Module;
-        await client.send(new PutObjectCommand({
+        var cfg = _getConfig();
+        var client = await _getClient();
+        var sdk = await _loadSDK();
+        var key = _userPath("wordgame-sync.json");
+        var body = JSON.stringify(_collect());
+
+        await client.send(new sdk.PutObjectCommand({
             Bucket: cfg.bucket,
             Key: key,
             Body: body,
             ContentType: "application/json"
         }));
-        setSyncState("idle");
-        if (onStatus) onStatus("✅ 已推送本地配置");
+        _setState("idle");
+        if (onStatus) onStatus("✅ 已推送");
     } catch (e) {
-        const msg = e.message || String(e);
-        setSyncState("error", msg);
-        if (onStatus) onStatus("⚠️ 推送失败：" + msg);
+        var msg = e.message || String(e);
+        _setState("error", msg);
+        if (onStatus) onStatus("⚠️ " + msg);
     }
 }
 
-// ===== 词书同步（>200MB 跳过）=====
-async function syncBook(bookId, bookData, onStatus) {
-    if (!isSyncEnabled() || !getUserId()) return false;
-    const cfg = getB2Config();
-    if (!cfg.keyId) return false;
-    try {
-        const body = JSON.stringify(bookData);
-        if (body.length > BOOK_SIZE_LIMIT) {
-            if (onStatus) onStatus("⏭️ 词书 " + bookId + " 超过 200MB，跳过");
-            return false;
-        }
-        const client = await getS3Client();
-        const key = userPath("books/" + bookId + ".json");
-        const { PutObjectCommand } = s3Module;
-        await client.send(new PutObjectCommand({
-            Bucket: cfg.bucket, Key: key, Body: body, ContentType: "application/json"
-        }));
-        return true;
-    } catch (e) {
-        if (onStatus) onStatus("⚠️ 词书 " + bookId + " 同步失败：" + (e.message || e));
-        return false;
-    }
-}
-
-async function pullBook(bookId) {
-    if (!isSyncEnabled() || !getUserId()) return null;
-    const cfg = getB2Config();
-    if (!cfg.keyId) return null;
-    try {
-        const client = await getS3Client();
-        const key = userPath("books/" + bookId + ".json");
-        const { GetObjectCommand } = s3Module;
-        const obj = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
-        const body = await obj.Body.transformToString();
-        return JSON.parse(body);
-    } catch (e) {
-        return null;
-    }
-}
-
-// 防抖推送
-let syncPushTimer = null;
-function syncPushDebounced(delayMs) {
+// ===== 防抖推送 =====
+var _timer = null;
+function syncPushDebounced(ms) {
     if (!isSyncEnabled()) return;
-    clearTimeout(syncPushTimer);
-    syncPushTimer = setTimeout(() => { syncPush(); }, delayMs || 1500);
+    clearTimeout(_timer);
+    _timer = setTimeout(function() { syncPush(); }, ms || 1500);
 }
 
 // ===== 诊断 =====
 async function syncDiagnose() {
-    const report = [];
-    const cfg = getB2Config();
-    report.push("同步后端: " + (isSyncEnabled() ? "Backblaze B2" : "未开启"));
-    report.push("Endpoint: " + (cfg.endpoint || "(空)"));
-    report.push("Bucket: " + (cfg.bucket || "(空)"));
-    report.push("User: " + (getUserId() || "(未登录)"));
-    if (!cfg.keyId) { report.push("→ 结果: 请先配置 B2 Key ID"); return report.join("\n"); }
+    var r = [];
+    var cfg = _getConfig();
+    r.push("后端: " + (isSyncEnabled() ? "Backblaze B2" : "未开启"));
+    r.push("Endpoint: " + (cfg.endpoint || "(空)"));
+    r.push("Bucket: " + (cfg.bucket || "(空)"));
+    r.push("User: " + (getUserId() || "(未登录)"));
+
+    if (!cfg.keyId) { r.push("→ 请先配置参数"); return r.join("\n"); }
+
     try {
-        const client = await getS3Client();
-        const key = userPath("wordgame-sync.json");
-        report.push("→ 测试 GET: " + key);
-        const { GetObjectCommand } = s3Module;
-        await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
-        report.push("→ 结果: ✅ 连接正常");
+        var client = await _getClient();
+        var sdk = await _loadSDK();
+        var key = _userPath("wordgame-sync.json");
+        r.push("→ 测试 GET: " + key);
+        await client.send(new sdk.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+        r.push("→ ✅ 连接正常");
     } catch (e) {
-        const code = e.name || e.Code || (e.$metadata && e.$metadata.httpStatusCode);
-        if (code === "NoSuchKey" || code === 404 || code === "NotFound") {
-            report.push("→ 结果: 文件不存在，首次同步将自动创建");
+        var code = e.name || (e.$metadata && e.$metadata.httpStatusCode);
+        if (code === "NoSuchKey" || code === 404) {
+            r.push("→ 文件不存在，首次同步将自动创建");
         } else {
-            report.push("→ 结果: ⚠️ " + (e.message || JSON.stringify(e)));
+            r.push("→ ⚠️ " + (e.message || JSON.stringify(e)));
         }
     }
-    return report.join("\n");
+    return r.join("\n");
 }
