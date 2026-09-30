@@ -68,11 +68,11 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
   <div class="card-title">🔧 同步配置</div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <span style="font-size:14px">启用同步</span>
-    <label class="switch"><input type="checkbox" id="b2Enabled" onchange="saveConfig()"><span class="slider"></span></label>
+    <label class="switch"><input type="checkbox" id="b2Enabled" onchange="localStorage.setItem('wordGameB2Enabled',this.checked?'1':'0');log('启用同步：'+this.checked)"><span class="slider"></span></label>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <span style="font-size:14px">使用 R6T5 共享存储</span>
-    <label class="switch"><input type="checkbox" id="b2Preset" onchange="togglePreset();saveConfig()"><span class="slider"></span></label>
+    <label class="switch"><input type="checkbox" id="b2Preset" onchange="togglePreset();localStorage.setItem('wordGameB2Preset',this.checked?'1':'0');log('R6T5共享：'+this.checked)"><span class="slider"></span></label>
   </div>
   <div id="customArea">
     <label class="dav-label">Endpoint</label>
@@ -110,8 +110,8 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 <a class="back" href="../settings.html">← 返回设置</a>
 </div>
 
-<script src="sync.js?v=20261001b"></script>
-<script src="auth.js?v=20261001b"></script>
+<script src="sync.js?v=20261001c"></script>
+<script src="auth.js?v=20261001c"></script>
 <script>
 var logs = [];
 function log(msg){
@@ -188,6 +188,6 @@ if(!preset){
 }
 refreshView();
 </script>
-<script src="sidebar.js?v=20261001b"></script>
+<script src="sidebar.js?v=20261001c"></script>
 </body>
 </html>
