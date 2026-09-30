@@ -1,11 +1,19 @@
-// ===== 云同步模块（WebDAV / OneDrive 双后端）=====
-const SYNC_ENABLED = "wordGameWebdavEnabled";
-const SYNC_URL = "wordGameWebdavUrl";
-const SYNC_USER = "wordGameWebdavUser";
-const SYNC_PASS = "wordGameWebdavPass";
-const SYNC_INSECURE = "wordGameWebdavInsecure";
-const ONEDRIVE_ENABLED = "wordGameOneDriveEnabled";
-const SYNC_SKIP_KEYS = ["wordGameAccess", "wordGameParentPin", "wordGameGitHubUser", "wordGameMSAToken"];
+// ===== 云同步模块（Backblaze B2 / S3 兼容）=====
+// 存储路径：users/{userId}/wordgame-sync.json
+//           users/{userId}/books/{bookId}.json（>200MB 跳过）
+
+const B2_KEY_ID = "wordGameB2KeyId";
+const B2_APP_KEY = "wordGameB2AppKey";
+const B2_ENDPOINT = "wordGameB2Endpoint";
+const B2_BUCKET = "wordGameB2Bucket";
+const B2_ENABLED = "wordGameB2Enabled";
+
+const BOOK_SIZE_LIMIT = 200 * 1024 * 1024; // 200MB
+
+const SYNC_SKIP_KEYS = [
+    "wordGameGitHubUser", "wordGameMSAToken", "wordGameMSARefresh", "wordGameMSAExpires",
+    B2_KEY_ID, B2_APP_KEY
+];
 
 // ===== 同步状态机 =====
 let syncState = "off";
@@ -21,24 +29,60 @@ function setSyncState(state, errMsg) {
 }
 function getSyncState() { return { state: syncState, error: syncError, lastOk: syncLastOk }; }
 
-function isOneDriveEnabled() {
-    return localStorage.getItem(ONEDRIVE_ENABLED) === "1";
-}
-function isWebdavEnabled() {
-    return localStorage.getItem(SYNC_ENABLED) === "1";
-}
-// 整体同步是否开启：OneDrive 优先，其次 WebDAV
+// ===== B2 配置 =====
 function isSyncEnabled() {
-    return isOneDriveEnabled() || isWebdavEnabled();
+    return localStorage.getItem(B2_ENABLED) === "1";
 }
-function getSyncConfig() {
+function getB2Config() {
     return {
-        url: (localStorage.getItem(SYNC_URL) || "").trim(),
-        user: (localStorage.getItem(SYNC_USER) || "").trim(),
-        pass: localStorage.getItem(SYNC_PASS) || "",
-        insecure: localStorage.getItem(SYNC_INSECURE) === "1"
+        keyId: (localStorage.getItem(B2_KEY_ID) || "").trim(),
+        appKey: (localStorage.getItem(B2_APP_KEY) || "").trim(),
+        endpoint: (localStorage.getItem(B2_ENDPOINT) || "").trim(),
+        bucket: (localStorage.getItem(B2_BUCKET) || "").trim()
     };
 }
+function getUserId() {
+    try {
+        const u = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null");
+        return (u && u.id) ? u.id : null;
+    } catch (e) { return null; }
+}
+
+// ===== S3 client（懒加载 AWS SDK）=====
+let s3Client = null;
+async function getS3Client() {
+    const cfg = getB2Config();
+    if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) return null;
+    if (s3Client) return s3Client;
+    if (!window.S3ClientCommand || !window.AwsClients) {
+        // 动态加载 AWS SDK v3
+        await loadScript("https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3/dist/client-s3.min.js");
+    }
+    s3Client = window.AwsClients.createS3Client({
+        region: "us-east-005",
+        endpoint: cfg.endpoint,
+        credentials: { accessKeyId: cfg.keyId, secretAccessKey: cfg.appKey },
+        forcePathStyle: true
+    });
+    return s3Client;
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+// ===== 路径工具 =====
+function userPath(file) {
+    const uid = getUserId();
+    if (!uid) throw new Error("未登录");
+    return "users/" + uid + "/" + file;
+}
+
+// ===== 收集/恢复数据 =====
 function collectSyncData() {
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -48,120 +92,44 @@ function collectSyncData() {
     }
     return data;
 }
-function syncHeaders(user, pass) {
-    const h = { "Content-Type": "application/json" };
-    if (user) h["Authorization"] = "Basic " + btoa(user + ":" + pass);
-    return h;
+function applySyncData(data) {
+    if (!data || typeof data !== "object") return 0;
+    let count = 0;
+    Object.keys(data).forEach(k => {
+        if (SYNC_SKIP_KEYS.includes(k)) return;
+        localStorage.setItem(k, String(data[k]));
+        count++;
+    });
+    return count;
 }
 
-// ===== OneDrive 同步 =====
-const ONEDRIVE_FILE = "wordgame-sync.json";
-function getAccessToken() {
-    return localStorage.getItem("wordGameMSAToken");
-}
-function onedriveHeaders() {
-    return { "Authorization": "Bearer " + getAccessToken() };
-}
-async function onedriveRequest(method, onStatus) {
-    const url = "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content";
-    // 第一次请求
-    let resp = await fetch(url, { method, headers: onedriveHeaders() });
-    // 401 → 自动刷新 token 后重试一次
-    if (resp.status === 401 && typeof refreshAccessToken === "function") {
-        if (onStatus) onStatus("🔄 Token 过期，正在自动刷新…");
-        const ok = await refreshAccessToken();
-        if (ok) {
-            resp = await fetch(url, { method, headers: onedriveHeaders() });
-        }
-    }
-    return resp;
-}
-
-async function onedrivePull(onStatus) {
+// ===== 主数据同步（游戏进度/设置）=====
+async function syncPull(onStatus) {
+    if (!isSyncEnabled()) { setSyncState("off"); return; }
+    const cfg = getB2Config();
+    if (!cfg.keyId) { setSyncState("error", "未配置 B2"); if (onStatus) onStatus("⚠️ 请先配置 B2"); return; }
+    if (!getUserId()) { setSyncState("error", "未登录"); if (onStatus) onStatus("⚠️ 请先登录"); return; }
     setSyncState("syncing");
     try {
-        if (onStatus) onStatus("📥 正在从 OneDrive 拉取…");
-        const resp = await onedriveRequest("GET", onStatus);
-        if (resp.status === 404) {
-            await onedrivePush(onStatus);
-            return;
-        }
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        const data = await resp.json();
-        if (!data || typeof data !== "object") throw new Error("远端数据格式错误");
-        let count = 0;
-        Object.keys(data).forEach(k => {
-            if (SYNC_SKIP_KEYS.includes(k)) return;
-            localStorage.setItem(k, String(data[k]));
-            count++;
-        });
-        setSyncState("idle");
-        if (onStatus) onStatus("✅ 已从 OneDrive 拉取 " + count + " 项配置");
-    } catch (e) {
-        setSyncState("error", e.message);
-        if (onStatus) onStatus("⚠️ OneDrive 拉取失败：" + e.message);
-        console.warn("[OneDrive] pull failed:", e.message);
-    }
-}
-async function onedrivePush(onStatus) {
-    setSyncState("syncing");
-    try {
-        if (onStatus) onStatus("📤 正在推送到 OneDrive…");
-        const body = JSON.stringify(collectSyncData());
-        const resp = await fetch(
-            "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
-            { method: "PUT", headers: onedriveHeaders(), body: body }
-        );
-        if (resp.status === 401 && typeof refreshAccessToken === "function") {
-            if (onStatus) onStatus("🔄 Token 过期，正在自动刷新…");
-            const ok = await refreshAccessToken();
-            if (ok) {
-                const resp2 = await fetch(
-                    "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
-                    { method: "PUT", headers: onedriveHeaders(), body: body }
-                );
-                if (!resp2.ok && resp2.status !== 200 && resp2.status !== 201) throw new Error("HTTP " + resp2.status);
-                setSyncState("idle");
-                if (onStatus) onStatus("✅ 已推送本地配置到 OneDrive");
-                return;
+        if (onStatus) onStatus("📥 正在拉取…");
+        const client = await getS3Client();
+        const key = userPath("wordgame-sync.json");
+        try {
+            const obj = await client.getObject({ Bucket: cfg.bucket, Key: key });
+            const body = await obj.Body.transformToString();
+            const data = JSON.parse(body);
+            const count = applySyncData(data);
+            setSyncState("idle");
+            if (onStatus) onStatus("✅ 已拉取 " + count + " 项配置");
+        } catch (e) {
+            if (e.name === "NoSuchKey" || e.$metadata?.httpStatusCode === 404 || e.Code === "NoSuchKey") {
+                // 文件不存在，首次推送
+                if (onStatus) onStatus("📤 首次同步，推送数据…");
+                await syncPush(onStatus);
+            } else {
+                throw e;
             }
         }
-        if (!resp.ok && resp.status !== 200 && resp.status !== 201) throw new Error("HTTP " + resp.status);
-        setSyncState("idle");
-        if (onStatus) onStatus("✅ 已推送本地配置到 OneDrive");
-    } catch (e) {
-        setSyncState("error", e.message);
-        if (onStatus) onStatus("⚠️ OneDrive 推送失败：" + e.message);
-        console.warn("[OneDrive] push failed:", e.message);
-    }
-}
-
-// ===== 统一入口：根据后端选择路由 =====
-async function syncPull(onStatus) {
-    if (isOneDriveEnabled()) {
-        if (!getAccessToken()) { setSyncState("error", "未登录微软账号"); if (onStatus) onStatus("⚠️ 请先登录微软账号"); return; }
-        await onedrivePull(onStatus);
-        return;
-    }
-    if (!isWebdavEnabled()) { setSyncState("off"); return; }
-    const cfg = getSyncConfig();
-    if (!cfg.url) { setSyncState("error", "未配置 WebDAV 地址"); if (onStatus) onStatus("⚠️ 未配置 WebDAV 地址"); return; }
-    setSyncState("syncing");
-    try {
-        if (onStatus) onStatus("📥 正在从 WebDAV 拉取…");
-        const resp = await fetch(cfg.url, { method: "GET", headers: syncHeaders(cfg.user, cfg.pass) });
-        if (resp.status === 404) { await syncPush(onStatus); return; }
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        const data = await resp.json();
-        if (!data || typeof data !== "object") throw new Error("远端数据格式错误");
-        let count = 0;
-        Object.keys(data).forEach(k => {
-            if (SYNC_SKIP_KEYS.includes(k)) return;
-            localStorage.setItem(k, String(data[k]));
-            count++;
-        });
-        setSyncState("idle");
-        if (onStatus) onStatus("✅ 已拉取 " + count + " 项配置");
     } catch (e) {
         setSyncState("error", e.message);
         if (onStatus) onStatus("⚠️ 拉取失败：" + e.message);
@@ -169,25 +137,65 @@ async function syncPull(onStatus) {
 }
 
 async function syncPush(onStatus) {
-    if (isOneDriveEnabled()) {
-        if (!getAccessToken()) { setSyncState("error", "未登录微软账号"); if (onStatus) onStatus("⚠️ 请先登录微软账号"); return; }
-        await onedrivePush(onStatus);
-        return;
-    }
-    if (!isWebdavEnabled()) { setSyncState("off"); return; }
-    const cfg = getSyncConfig();
-    if (!cfg.url) { setSyncState("error", "未配置 WebDAV 地址"); if (onStatus) onStatus("⚠️ 未配置 WebDAV 地址"); return; }
+    if (!isSyncEnabled()) { setSyncState("off"); return; }
+    const cfg = getB2Config();
+    if (!cfg.keyId) { setSyncState("error", "未配置 B2"); if (onStatus) onStatus("⚠️ 请先配置 B2"); return; }
+    if (!getUserId()) { setSyncState("error", "未登录"); if (onStatus) onStatus("⚠️ 请先登录"); return; }
     setSyncState("syncing");
     try {
-        if (onStatus) onStatus("📤 正在推送到 WebDAV…");
+        if (onStatus) onStatus("📤 正在推送…");
+        const client = await getS3Client();
+        const key = userPath("wordgame-sync.json");
         const body = JSON.stringify(collectSyncData());
-        const resp = await fetch(cfg.url, { method: "PUT", headers: syncHeaders(cfg.user, cfg.pass), body: body });
-        if (!resp.ok && resp.status !== 204) throw new Error("HTTP " + resp.status);
+        await client.putObject({
+            Bucket: cfg.bucket,
+            Key: key,
+            Body: body,
+            ContentType: "application/json"
+        });
         setSyncState("idle");
-        if (onStatus) onStatus("✅ 已推送本地配置到 WebDAV");
+        if (onStatus) onStatus("✅ 已推送本地配置");
     } catch (e) {
         setSyncState("error", e.message);
         if (onStatus) onStatus("⚠️ 推送失败：" + e.message);
+    }
+}
+
+// ===== 词书同步（>200MB 跳过）=====
+async function syncBook(bookId, bookData, onStatus) {
+    if (!isSyncEnabled() || !getUserId()) return false;
+    const cfg = getB2Config();
+    if (!cfg.keyId) return false;
+    try {
+        const body = JSON.stringify(bookData);
+        if (body.length > BOOK_SIZE_LIMIT) {
+            if (onStatus) onStatus("⏭️ 词书 " + bookId + " 超过 200MB，跳过");
+            return false;
+        }
+        const client = await getS3Client();
+        const key = userPath("books/" + bookId + ".json");
+        await client.putObject({
+            Bucket: cfg.bucket, Key: key, Body: body, ContentType: "application/json"
+        });
+        return true;
+    } catch (e) {
+        if (onStatus) onStatus("⚠️ 词书 " + bookId + " 同步失败：" + e.message);
+        return false;
+    }
+}
+
+async function pullBook(bookId) {
+    if (!isSyncEnabled() || !getUserId()) return null;
+    const cfg = getB2Config();
+    if (!cfg.keyId) return null;
+    try {
+        const client = await getS3Client();
+        const key = userPath("books/" + bookId + ".json");
+        const obj = await client.getObject({ Bucket: cfg.bucket, Key: key });
+        const body = await obj.Body.transformToString();
+        return JSON.parse(body);
+    } catch (e) {
+        return null;
     }
 }
 
@@ -202,37 +210,24 @@ function syncPushDebounced(delayMs) {
 // ===== 诊断 =====
 async function syncDiagnose() {
     const report = [];
-    report.push("同步后端: " + (isOneDriveEnabled() ? "OneDrive" : (isWebdavEnabled() ? "WebDAV" : "未开启")));
-    if (isOneDriveEnabled()) {
-        report.push("OneDrive 文件: /" + ONEDRIVE_FILE);
-        if (!getAccessToken()) { report.push("→ 结果: 未登录微软账号，请先登录"); return report.join("\n"); }
-        try {
-            report.push("→ 正在测试 OneDrive GET …");
-            const resp = await fetch(
-                "https://graph.microsoft.com/v1.0/me/drive/root:/" + ONEDRIVE_FILE + ":/content",
-                { method: "GET", headers: onedriveHeaders() }
-            );
-            report.push("→ GET 响应: HTTP " + resp.status);
-            if (resp.status === 401 || resp.status === 403) report.push("→ 诊断: 授权过期，请重新登录");
-            else if (resp.status === 404) report.push("→ 诊断: 文件不存在，首次同步将自动创建");
-            else if (resp.ok) report.push("→ 诊断: OneDrive 连接正常");
-            else report.push("→ 诊断: 错误 HTTP " + resp.status);
-        } catch (e) {
-            report.push("→ 诊断: 网络错误 — " + e.message);
-        }
-        return report.join("\n");
-    }
-    const cfg = getSyncConfig();
-    report.push("WebDAV 地址: " + (cfg.url || "(空)"));
-    if (!cfg.url) { report.push("→ 结果: 请先填写 WebDAV 地址"); return report.join("\n"); }
+    const cfg = getB2Config();
+    report.push("同步后端: " + (isSyncEnabled() ? "Backblaze B2" : "未开启"));
+    report.push("Endpoint: " + (cfg.endpoint || "(空)"));
+    report.push("Bucket: " + (cfg.bucket || "(空)"));
+    report.push("User: " + (getUserId() || "(未登录)"));
+    if (!cfg.keyId) { report.push("→ 结果: 请先配置 B2 Key ID"); return report.join("\n"); }
     try {
-        const resp = await fetch(cfg.url, { method: "GET", headers: syncHeaders(cfg.user, cfg.pass) });
-        report.push("→ GET 响应: HTTP " + resp.status);
-        if (resp.status === 401 || resp.status === 403) report.push("→ 诊断: 认证失败");
-        else if (resp.status === 404) report.push("→ 诊断: 文件不存在，首次同步将自动创建");
-        else report.push("→ 诊断: 连接正常");
+        const client = await getS3Client();
+        const key = userPath("wordgame-sync.json");
+        report.push("→ 测试 GET: " + key);
+        await client.getObject({ Bucket: cfg.bucket, Key: key });
+        report.push("→ 结果: ✅ 连接正常");
     } catch (e) {
-        report.push("→ 诊断: 网络错误 — " + e.message);
+        if (e.name === "NoSuchKey" || e.$metadata?.httpStatusCode === 404) {
+            report.push("→ 结果: 文件不存在，首次同步将自动创建");
+        } else {
+            report.push("→ 结果: ⚠️ " + e.message);
+        }
     }
     return report.join("\n");
 }

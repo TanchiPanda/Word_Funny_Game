@@ -372,50 +372,35 @@
 
     <!-- ========== 云同步 ========== -->
     <div class="card">
-        <div class="card-title">☁️ 云同步</div>
-        <div class="card-desc">云同步功能正在灰度测试中，暂时不可用。所有数据保存在本地。</div>
-        <div style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:10px 14px;color:#ffd700;font-size:13px;margin-bottom:14px;">
-            🚧 云同步维护中，暂未开放
-        </div>
+        <div class="card-title">☁️ 云同步（Backblaze B2）</div>
+        <div class="card-desc">使用 Backblaze B2 S3 兼容存储同步游戏进度和词书。词书超过 200MB 自动跳过。</div>
 
-        <!-- OneDrive 选项（已禁用） -->
-        <div class="dav-checkbox-row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;opacity:0.4;pointer-events:none;">
-            <input type="checkbox" id="onedriveEnabled" disabled>
-            <span>使用 OneDrive（需登录微软账号并授权存储权限）</span>
-        </div>
-
-        <!-- WebDAV 配置区（已禁用） -->
-        <div id="webdavArea" style="opacity:0.4;pointer-events:none;">
         <div class="row">
-            <span class="label">启用 WebDAV 同步</span>
+            <span class="label">启用同步</span>
             <label class="switch">
-                <input type="checkbox" id="davEnabled" disabled>
+                <input type="checkbox" id="b2Enabled">
                 <span class="slider"></span>
             </label>
         </div>
         <div class="dav-row">
-            <label class="dav-label">WebDAV 文件地址（.json 文件完整 URL）</label>
-            <input class="dav-input" type="text" id="davUrl" placeholder="https://dav.example.com/wordgame/sync.json" disabled>
+            <label class="dav-label">Endpoint（S3 地址）</label>
+            <input class="dav-input" type="text" id="b2Endpoint" placeholder="s3.us-east-005.backblazeb2.com">
         </div>
         <div class="dav-row">
-            <label class="dav-label">用户名</label>
-            <input class="dav-input" type="text" id="davUser" placeholder="WebDAV 用户名" disabled>
+            <label class="dav-label">Bucket 名称</label>
+            <input class="dav-input" type="text" id="b2Bucket" placeholder="R6T5-Hub">
         </div>
         <div class="dav-row">
-            <label class="dav-label">密码</label>
-            <input class="dav-input" type="password" id="davPass" placeholder="WebDAV 密码" disabled>
+            <label class="dav-label">Key ID</label>
+            <input class="dav-input" type="text" id="b2KeyId" placeholder="Application Key ID">
         </div>
-        <div class="dav-checkbox-row">
-            <input type="checkbox" id="davInsecure" disabled>
-            <span>不使用 HTTPS（无 TLS，仅局域网/调试用）</span>
+        <div class="dav-row">
+            <label class="dav-label">Application Key</label>
+            <input class="dav-input" type="password" id="b2AppKey" placeholder="Application Key">
         </div>
         <div class="btn-group">
-            <button class="primary-btn" type="button" id="davSaveBtn" disabled>💾 保存同步配置</button>
-        </div>
-        </div>
-
-        <div class="btn-group">
-            <button class="ghost-btn" type="button" onclick="manualSync()" disabled>🔄 立即同步</button>
+            <button class="primary-btn" type="button" onclick="saveB2()">💾 保存配置</button>
+            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
         </div>
         <div class="status-line" id="davStatus"></div>
     </div>
@@ -435,18 +420,17 @@
         <div class="status-line" id="dictTplStatus"></div>
     </div>
 
-    <!-- ========== 同步状态（已禁用） ========== -->
-    <div class="card" style="opacity:0.5;pointer-events:none;">
+    <!-- ========== 同步状态 ========== -->
+    <div class="card">
         <div class="card-title">📡 同步状态</div>
         <div class="sync-status-row" id="settingsSyncRow">
             <span class="dot" id="settingsSyncDot"></span>
-            <span id="settingsSyncText">同步未开启（灰度中）</span>
+            <span id="settingsSyncText">同步未开启</span>
         </div>
         <div id="settingsSyncDetail" style="font-size:13px;color:#a8a8d8;margin-top:8px;display:none;"></div>
         <div class="btn-group" id="settingsSyncBtns" style="display:none;">
             <button class="ghost-btn" type="button" onclick="runDiagnose()">🔍 诊断连接</button>
             <button class="ghost-btn" type="button" onclick="manualSync()">🔄 重新同步</button>
-            <button class="ghost-btn" type="button" onclick="location.href='dict/advanced-sync.html'">🛠 高级同步设置</button>
         </div>
     </div>
 </div>
@@ -755,40 +739,37 @@ function onOneDriveToggle() {
     document.getElementById("davStatus").innerText = od ? "✅ OneDrive 同步已启用" : "✅ OneDrive 同步已关闭";
     setSyncState(isSyncEnabled() ? "idle" : "off");
 }
-function saveDav() {
+function saveB2() {
     playClickSound();
-    const enabled = document.getElementById("davEnabled").checked;
-    const url = document.getElementById("davUrl").value.trim();
-    const user = document.getElementById("davUser").value.trim();
-    const pass = document.getElementById("davPass").value;
-    const insecure = document.getElementById("davInsecure").checked;
-    if (enabled && !url) {
+    const enabled = document.getElementById("b2Enabled").checked;
+    const endpoint = document.getElementById("b2Endpoint").value.trim();
+    const bucket = document.getElementById("b2Bucket").value.trim();
+    const keyId = document.getElementById("b2KeyId").value.trim();
+    const appKey = document.getElementById("b2AppKey").value;
+    if (enabled && (!endpoint || !bucket || !keyId || !appKey)) {
         playErrorSound();
-        document.getElementById("davStatus").innerText = "⚠️ 启用同步请填写 WebDAV 文件地址";
+        document.getElementById("davStatus").innerText = "⚠️ 请填写完整 B2 配置";
         return;
     }
-    if (url && !/^https?:\/\/.+/.test(url)) {
-        playErrorSound();
-        document.getElementById("davStatus").innerText = "⚠️ 地址需以 http:// 或 https:// 开头";
-        return;
-    }
-    if (url && /^http:\/\//.test(url) && !insecure) {
-        playErrorSound();
-        document.getElementById("davStatus").innerText = "⚠️ 检测到 HTTP 地址，请勾选「不使用 HTTPS」以确认";
-        return;
-    }
-    localStorage.setItem(SYNC_ENABLED, enabled ? "1" : "0");
-    localStorage.setItem(SYNC_URL, url);
-    localStorage.setItem(SYNC_USER, user);
-    localStorage.setItem(SYNC_PASS, pass);
-    localStorage.setItem(SYNC_INSECURE, insecure ? "1" : "0");
+    localStorage.setItem("wordGameB2Enabled", enabled ? "1" : "0");
+    localStorage.setItem("wordGameB2Endpoint", endpoint);
+    localStorage.setItem("wordGameB2Bucket", bucket);
+    localStorage.setItem("wordGameB2KeyId", keyId);
+    localStorage.setItem("wordGameB2AppKey", appKey);
     playSuccessSound();
-    document.getElementById("davStatus").innerText = "✅ 同步配置已保存";
+    document.getElementById("davStatus").innerText = "✅ B2 配置已保存";
+}
+function loadB2Config() {
+    document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2Enabled") === "1";
+    document.getElementById("b2Endpoint").value = localStorage.getItem("wordGameB2Endpoint") || "s3.us-east-005.backblazeb2.com";
+    document.getElementById("b2Bucket").value = localStorage.getItem("wordGameB2Bucket") || "";
+    document.getElementById("b2KeyId").value = localStorage.getItem("wordGameB2KeyId") || "";
+    document.getElementById("b2AppKey").value = localStorage.getItem("wordGameB2AppKey") || "";
 }
 function manualSync() {
     playClickSound();
     if (!isSyncEnabled()) {
-        document.getElementById("davStatus").innerText = "⚠️ 请先启用同步（OneDrive 或 WebDAV）";
+        document.getElementById("davStatus").innerText = "⚠️ 请先启用同步";
         return;
     }
     const statusEl = document.getElementById("davStatus");
@@ -897,7 +878,7 @@ onSyncStateChange(updateSettingsSyncRow);
 
 // ===== 启动 =====
 renderTeen();
-renderDav();
+loadB2Config();
 renderDictTpl();
 renderAccount();
 if (!isSyncEnabled()) setSyncState("off");
