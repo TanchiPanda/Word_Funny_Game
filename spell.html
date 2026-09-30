@@ -211,6 +211,7 @@ body {
 
 <script src="dict/wbook.js?v=20260925b"></script>
 <script src="dict/sync.js?v=20260925b"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="dict/auth.js?v=20260925b"></script>
 <script>
 // ===== 音效 =====
@@ -269,7 +270,7 @@ let timeLeft = 0;
 
 function startGame(mode) {
     playClickSound();
-    if (isGuest() && LOCKED_MODES.includes(mode)) { loginWithGitHub(); return; }
+    if (isGuest() && LOCKED_MODES.includes(mode)) { location.href = "login.html"; return; }
     gameMode = mode;
     const removed = getRemovedList();
     gameWords = [];

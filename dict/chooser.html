@@ -204,12 +204,11 @@
 <div class="gate-mask" id="gateModal">
     <div class="gate-box">
         <div class="gate-title">🔒 此课时需要登录</div>
-        <div class="gate-tip">使用微软账号登录后<br>即可选择全部课时</div>
+        <div class="gate-tip">登录后即可选择全部课时</div>
         <div class="gate-err" id="gateErr"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
-            <button class="gate-btn ok" onclick="loginWithGitHub()">
-                <svg width="20" height="20" viewBox="0 0 23 23" style="vertical-align:middle;margin-right:6px;"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg>
-                使用微软账号登录
+            <button class="gate-btn ok" onclick="location.href='../login.html'">
+                🔑 立即登录
             </button>
             <button class="gate-btn cancel" onclick="closeGate()">取消</button>
         </div>

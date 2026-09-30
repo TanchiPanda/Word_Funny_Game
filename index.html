@@ -264,6 +264,7 @@
 </button>
 <script src="dict/wbook.js?v=20260925b"></script>
 <script src="dict/wbook.js?v=20260925b"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="dict/auth.js?v=20260925b"></script>
 <script>
 // ===== 身份检测 =====
@@ -293,7 +294,7 @@ function goChooser() {
     location.href = "dict/chooser.html";
 }
 function goLogin() {
-    loginWithGitHub();
+    location.href = "login.html";
 }
 function goLogout() {
     if (confirm("确定要退出登录吗？")) {

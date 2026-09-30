@@ -328,7 +328,7 @@
         <div class="card-title">👤 账号</div>
         <div id="accountInfo" style="text-align:center;padding:10px 0;">
             <div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 登录后解锁全部功能</div>
-            <button class="primary-btn" type="button" onclick="loginWithGitHub()">使用微软账号登录</button>
+            <button class="primary-btn" type="button" onclick="location.href='login.html'">登录账号</button>
         </div>
     </div>
 
@@ -373,46 +373,49 @@
     <!-- ========== 云同步 ========== -->
     <div class="card">
         <div class="card-title">☁️ 云同步</div>
-        <div class="card-desc">将游戏进度、排行榜、设置等云端同步。进入游戏时自动拉取，数据变更时自动推送。同步失败不影响本地使用。</div>
+        <div class="card-desc">云同步功能正在灰度测试中，暂时不可用。所有数据保存在本地。</div>
+        <div style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:10px 14px;color:#ffd700;font-size:13px;margin-bottom:14px;">
+            🚧 云同步维护中，暂未开放
+        </div>
 
-        <!-- OneDrive 选项 -->
-        <div class="dav-checkbox-row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;">
-            <input type="checkbox" id="onedriveEnabled" onchange="onOneDriveToggle()">
+        <!-- OneDrive 选项（已禁用） -->
+        <div class="dav-checkbox-row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;opacity:0.4;pointer-events:none;">
+            <input type="checkbox" id="onedriveEnabled" disabled>
             <span>使用 OneDrive（需登录微软账号并授权存储权限）</span>
         </div>
 
-        <!-- WebDAV 配置区（OneDrive 勾选后禁用） -->
-        <div id="webdavArea">
+        <!-- WebDAV 配置区（已禁用） -->
+        <div id="webdavArea" style="opacity:0.4;pointer-events:none;">
         <div class="row">
             <span class="label">启用 WebDAV 同步</span>
             <label class="switch">
-                <input type="checkbox" id="davEnabled">
+                <input type="checkbox" id="davEnabled" disabled>
                 <span class="slider"></span>
             </label>
         </div>
         <div class="dav-row">
             <label class="dav-label">WebDAV 文件地址（.json 文件完整 URL）</label>
-            <input class="dav-input" type="text" id="davUrl" placeholder="https://dav.example.com/wordgame/sync.json">
+            <input class="dav-input" type="text" id="davUrl" placeholder="https://dav.example.com/wordgame/sync.json" disabled>
         </div>
         <div class="dav-row">
             <label class="dav-label">用户名</label>
-            <input class="dav-input" type="text" id="davUser" placeholder="WebDAV 用户名">
+            <input class="dav-input" type="text" id="davUser" placeholder="WebDAV 用户名" disabled>
         </div>
         <div class="dav-row">
             <label class="dav-label">密码</label>
-            <input class="dav-input" type="password" id="davPass" placeholder="WebDAV 密码">
+            <input class="dav-input" type="password" id="davPass" placeholder="WebDAV 密码" disabled>
         </div>
         <div class="dav-checkbox-row">
-            <input type="checkbox" id="davInsecure">
+            <input type="checkbox" id="davInsecure" disabled>
             <span>不使用 HTTPS（无 TLS，仅局域网/调试用）</span>
         </div>
         <div class="btn-group">
-            <button class="primary-btn" type="button" onclick="saveDav()" id="davSaveBtn">💾 保存同步配置</button>
+            <button class="primary-btn" type="button" id="davSaveBtn" disabled>💾 保存同步配置</button>
         </div>
         </div>
 
         <div class="btn-group">
-            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
+            <button class="ghost-btn" type="button" onclick="manualSync()" disabled>🔄 立即同步</button>
         </div>
         <div class="status-line" id="davStatus"></div>
     </div>
@@ -432,12 +435,12 @@
         <div class="status-line" id="dictTplStatus"></div>
     </div>
 
-    <!-- ========== 同步状态 ========== -->
-    <div class="card">
+    <!-- ========== 同步状态（已禁用） ========== -->
+    <div class="card" style="opacity:0.5;pointer-events:none;">
         <div class="card-title">📡 同步状态</div>
         <div class="sync-status-row" id="settingsSyncRow">
             <span class="dot" id="settingsSyncDot"></span>
-            <span id="settingsSyncText">同步未开启</span>
+            <span id="settingsSyncText">同步未开启（灰度中）</span>
         </div>
         <div id="settingsSyncDetail" style="font-size:13px;color:#a8a8d8;margin-top:8px;display:none;"></div>
         <div class="btn-group" id="settingsSyncBtns" style="display:none;">
@@ -475,6 +478,7 @@
 </div>
 
 <script src="dict/sync.js?v=20260925b"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="dict/auth.js?v=20260925b"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
@@ -804,7 +808,7 @@ function renderAccount() {
     } else {
         box.innerHTML =
             '<div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 登录后解锁全部功能</div>' +
-            '<button class="primary-btn" type="button" onclick="loginWithGitHub()">使用微软账号登录</button>';
+            '<button class="primary-btn" type="button" onclick="location.href=\'login.html\'">登录账号</button>';
     }
 }
 function doLogout() {
