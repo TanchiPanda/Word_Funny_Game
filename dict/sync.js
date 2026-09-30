@@ -14,8 +14,8 @@ const B2_KEY = {
 const R6T5_DEFAULTS = {
     endpoint: "s3.us-east-005.backblazeb2.com",
     bucket: "R6T5Data",
-    keyId: "005c54e99fa03480000000002",
-    appKey: "K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw"
+    keyId: "c54e99fa0348",
+    appKey: "005543fcad6847de92fac91554e897acf3493c9a00"
 };
 
 const SKIP_KEYS = [
