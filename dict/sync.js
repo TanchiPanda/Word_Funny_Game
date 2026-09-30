@@ -168,7 +168,7 @@ async function syncPush(onStatus) {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         const body = JSON.stringify(collectSyncData());
-        const { PutObjectCommand } = window.AWS;
+        const { PutObjectCommand } = s3Module;
         await client.send(new PutObjectCommand({
             Bucket: cfg.bucket,
             Key: key,
@@ -197,7 +197,7 @@ async function syncBook(bookId, bookData, onStatus) {
         }
         const client = await getS3Client();
         const key = userPath("books/" + bookId + ".json");
-        const { PutObjectCommand } = window.AWS;
+        const { PutObjectCommand } = s3Module;
         await client.send(new PutObjectCommand({
             Bucket: cfg.bucket, Key: key, Body: body, ContentType: "application/json"
         }));
@@ -215,7 +215,7 @@ async function pullBook(bookId) {
     try {
         const client = await getS3Client();
         const key = userPath("books/" + bookId + ".json");
-        const { GetObjectCommand } = window.AWS;
+        const { GetObjectCommand } = s3Module;
         const obj = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
         const body = await obj.Body.transformToString();
         return JSON.parse(body);
@@ -245,7 +245,7 @@ async function syncDiagnose() {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         report.push("→ 测试 GET: " + key);
-        const { GetObjectCommand } = window.AWS;
+        const { GetObjectCommand } = s3Module;
         await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
         report.push("→ 结果: ✅ 连接正常");
     } catch (e) {
