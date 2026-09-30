@@ -135,7 +135,7 @@ async function syncPull(onStatus) {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         try {
-            new s3Module.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+            const obj = await client.send(new s3Module.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
             const body = await obj.Body.transformToString();
             const data = JSON.parse(body);
             const count = applySyncData(data);
