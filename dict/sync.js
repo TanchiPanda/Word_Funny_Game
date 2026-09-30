@@ -19,9 +19,9 @@ const SYNC_SKIP_KEYS = [
 // R6T5 共享 B2 参数
 const R6T5_B2 = {
     endpoint: "s3.us-east-005.backblazeb2.com",
-    bucket: "R6T5-Hub",
-    keyId: "005c54e99fa03480000000001",
-    appKey: "K005Zw12BLILAG9/jGP53wV61uQ8QMk"
+    bucket: "R6T5Data",
+    keyId: "005c54e99fa03480000000002",
+    appKey: "K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw"
 };
 
 // ===== 同步状态机 =====
@@ -59,30 +59,40 @@ function getUserId() {
     } catch (e) { return null; }
 }
 
-// ===== S3 client（懒加载 AWS SDK v3）=====
+// ===== S3 client（通过 module script 注入 AWS SDK v3）=====
 let s3Client = null;
+let s3Module = null;
+
+function loadS3SDK() {
+    if (s3Module) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        if (window.__AWS_S3) { s3Module = window.__AWS_S3; resolve(); return; }
+        const s = document.createElement("script");
+        s.type = "module";
+        s.textContent = `
+            import { S3Client, GetObjectCommand, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.525.0?target=web&bundle";
+            window.__AWS_S3 = { S3Client, GetObjectCommand, PutObjectCommand };
+            window.dispatchEvent(new Event("aws-s3-ready"));
+        `;
+        window.addEventListener("aws-s3-ready", () => { s3Module = window.__AWS_S3; resolve(); });
+        s.onerror = () => reject(new Error("SDK 脚本加载失败"));
+        document.head.appendChild(s);
+        setTimeout(() => reject(new Error("SDK 加载超时")), 20000);
+    });
+}
+
 async function getS3Client() {
     const cfg = getB2Config();
     if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) return null;
     if (s3Client) return s3Client;
-    if (!window.AWS || !window.AWS.S3Client) {
-        await loadScript("https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3.525.0/dist/index.min.js");
-    }
-    s3Client = new window.AWS.S3Client({
+    await loadS3SDK();
+    s3Client = new s3Module.S3Client({
         region: "us-east-005",
         endpoint: "https://" + cfg.endpoint,
         credentials: { accessKeyId: cfg.keyId, secretAccessKey: cfg.appKey },
         forcePathStyle: true
     });
     return s3Client;
-}
-
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = src; s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-    });
 }
 
 // ===== 路径工具 =====
@@ -125,8 +135,7 @@ async function syncPull(onStatus) {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         try {
-            const { GetObjectCommand } = window.AWS;
-            const obj = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+            new s3Module.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
             const body = await obj.Body.transformToString();
             const data = JSON.parse(body);
             const count = applySyncData(data);

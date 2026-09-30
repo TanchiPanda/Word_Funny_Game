@@ -20,53 +20,83 @@ h1{text-align:center;margin-bottom:16px;color:#ffd700;font-size:22px}
 .info{font-size:13px;line-height:1.8;color:#ccc;word-break:break-all}
 .info b{color:#fff}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;margin-left:6px}
-.badge-onedrive{background:#0078d4;color:#fff}
-.badge-webdav{background:#9b59b6;color:#fff}
 .badge-off{background:#555;color:#aaa}
 .badge-ok{background:#2ecc71;color:#fff}
 .badge-err{background:#e74c3c;color:#fff}
 .badge-sync{background:#f39c12;color:#fff}
 pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;overflow-x:auto;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
 .back{display:block;text-align:center;margin-top:8px;color:#a8a8d8;text-decoration:none;font-size:14px}
+.dav-input{width:100%;padding:9px 10px;border-radius:8px;border:1.5px solid rgba(78,205,196,0.4);background:rgba(255,255,255,0.08);color:#fff;font-size:13px;outline:none;margin-bottom:8px}
+.dav-label{display:block;font-size:12px;color:#a8a8d8;margin-bottom:4px}
+.switch{position:relative;display:inline-block;width:48px;height:26px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,0.18);border-radius:26px;cursor:pointer;transition:0.3s}
+.slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.3s}
+.switch input:checked+.slider{background:linear-gradient(90deg,#39d98a,#4ecdc4)}
+.switch input:checked+.slider::before{transform:translateX(22px)}
+.sync-status-row{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:bold}
+.sync-status-row .dot{width:12px;height:12px;border-radius:50%;background:#888}
+.sync-status-row.off{color:#aaa}
+.sync-status-row.idle{color:#39d98a}
+.sync-status-row.idle .dot{background:#39d98a;box-shadow:0 0 8px #39d98a}
+.sync-status-row.syncing{color:#ffd700}
+.sync-status-row.syncing .dot{background:#ffd700;box-shadow:0 0 8px #ffd700;animation:pulse 1s infinite}
+.sync-status-row.error{color:#ff8888}
+.sync-status-row.error .dot{background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>⚙️ 高级同步设置</h1>
 
-<!-- 第一行：同步状态 -->
+<!-- 同步状态 -->
 <div class="card">
   <div class="card-title">📊 同步状态</div>
-  <div class="info">
-    <div>同步后端：<span id="backend" class="badge badge-off">未开启</span></div>
-    <div>同步状态：<span id="syncState" class="badge badge-off">未知</span></div>
+  <div class="sync-status-row" id="syncRow">
+    <span class="dot" id="syncDot"></span>
+    <span id="syncText">同步未开启</span>
+  </div>
+  <div class="info" style="margin-top:8px">
+    <div>后端：Backblaze B2</div>
     <div>上次成功：<span id="lastOk">-</span></div>
-    <div>Token 过期时间：<span id="expiresAt">-</span></div>
-    <div id="expireWarn" style="color:#f39c12;display:none">⚠️ Token 即将过期或已过期</div>
   </div>
 </div>
 
-<!-- 第二行：操作按钮 -->
+<!-- 配置 -->
 <div class="card">
-  <div class="card-title">🔧 操作</div>
+  <div class="card-title">🔧 同步配置</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:14px">启用同步</span>
+    <label class="switch"><input type="checkbox" id="b2Enabled"><span class="slider"></span></label>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:14px">使用 R6T5 共享存储</span>
+    <label class="switch"><input type="checkbox" id="b2Preset" onchange="togglePreset()"><span class="slider"></span></label>
+  </div>
+  <div id="customArea">
+    <label class="dav-label">Endpoint</label>
+    <input class="dav-input" type="text" id="b2Endpoint" placeholder="s3.us-east-005.backblazeb2.com">
+    <label class="dav-label">Bucket</label>
+    <input class="dav-input" type="text" id="b2Bucket" placeholder="bucket-name">
+    <label class="dav-label">Key ID</label>
+    <input class="dav-input" type="text" id="b2KeyId" placeholder="Key ID">
+    <label class="dav-label">Application Key</label>
+    <input class="dav-input" type="password" id="b2AppKey" placeholder="Application Key">
+  </div>
   <div class="row">
-    <button class="btn btn-primary" onclick="syncPull()">📥 拉取</button>
-    <button class="btn btn-green" onclick="syncPush()">📤 推送</button>
-    <button class="btn btn-ghost" onclick="refreshNow()">🔄 刷新 Token</button>
+    <button class="btn btn-primary" onclick="saveConfig()">💾 保存</button>
+    <button class="btn btn-green" onclick="doPull()">📥 拉取</button>
+    <button class="btn btn-ghost" onclick="doPush()">📤 推送</button>
   </div>
+  <div id="configStatus" style="font-size:13px;color:#ffd700;min-height:18px"></div>
 </div>
 
-<!-- 第三行：当前凭证 -->
+<!-- 诊断 -->
 <div class="card">
-  <div class="card-title">🔑 当前凭证</div>
-  <div class="info">
-    <div id="tokenInfo">Access Token：<span id="tokenVal">-</span></div>
-    <div id="rtInfo">Refresh Token：<span id="rtVal">-</span></div>
-    <div id="webdavInfo" style="display:none">WebDAV 地址：<span id="webdavUrl">-</span></div>
-    <div id="webdavUser" style="display:none">WebDAV 用户：<span id="webdavU">-</span></div>
-  </div>
-  <div class="row" style="margin-top:10px">
-    <button class="btn btn-ghost" onclick="runDiag()">🔍 详细诊断</button>
+  <div class="card-title">🔍 诊断</div>
+  <div class="row">
+    <button class="btn btn-ghost" onclick="runDiag()">🔍 运行诊断</button>
     <button class="btn btn-red" onclick="reauth()">🔑 重新授权</button>
   </div>
 </div>
@@ -77,90 +107,87 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
   <pre id="log">（暂无记录）</pre>
 </div>
 
-<a class="back" href="settings.html">← 返回设置</a>
+<a class="back" href="../settings.html">← 返回设置</a>
 </div>
 
-<script src="sync.js?v=20260930e"></script>
-<script src="auth.js?v=20260930e"></script>
+<script src="sync.js?v=20260930ff"></script>
+<script src="auth.js?v=20260930ff"></script>
 <script>
-let logs = [];
+var logs = [];
 function log(msg){
-  const t = new Date().toLocaleTimeString();
+  var t = new Date().toLocaleTimeString();
   logs.push("["+t+"] "+msg);
   if(logs.length>50) logs.shift();
   document.getElementById("log").innerText = logs.join("\n");
 }
 
-function refreshView(){
-  // 后端
-  const be = document.getElementById("backend");
-  if(isOneDriveEnabled()){ be.className="badge badge-onedrive"; be.innerText="OneDrive"; }
-  else if(isWebdavEnabled()){ be.className="badge badge-webdav"; be.innerText="WebDAV"; }
-  else { be.className="badge badge-off"; be.innerText="未开启"; }
-
-  // 状态
-  const s = getSyncState();
-  const se = document.getElementById("syncState");
-  se.className = "badge " + (s.state==="idle"?"badge-ok":s.state==="syncing"?"badge-sync":s.state==="error"?"badge-err":"badge-off");
-  se.innerText = s.state + (s.error?"："+s.error:"");
-  document.getElementById("lastOk").innerText = s.lastOk || "-";
-
-  // Token
-  const token = localStorage.getItem("wordGameMSAToken");
-  const rt = localStorage.getItem("wordGameMSARefresh");
-  const exp = localStorage.getItem("wordGameMSAExpires");
-  document.getElementById("tokenVal").innerText = token ? token.slice(0,30)+"…" : "-";
-  document.getElementById("rtVal").innerText = rt ? rt.slice(0,20)+"…" : "-";
-  if(exp){
-    const d = new Date(Number(exp));
-    document.getElementById("expiresAt").innerText = d.toLocaleString();
-    if(Date.now() > Number(exp)-300000){
-      document.getElementById("expireWarn").style.display = "";
-    }
-  } else {
-    document.getElementById("expiresAt").innerText = "-（未记录）";
-  }
-
-  // WebDAV
-  const cfg = getSyncConfig();
-  if(isWebdavEnabled()){
-    document.getElementById("webdavInfo").style.display = "";
-    document.getElementById("webdavUser").style.display = "";
-    document.getElementById("webdavUrl").innerText = cfg.url || "-";
-    document.getElementById("webdavU").innerText = cfg.user || "-";
-  }
+function togglePreset(){
+  var p = document.getElementById("b2Preset").checked;
+  document.getElementById("customArea").style.display = p ? "none" : "";
 }
 
-onSyncStateChange((state,err,lastOk)=>{
-  log("状态变化："+state+(err?" ("+err+")":""));
+function saveConfig(){
+  var enabled = document.getElementById("b2Enabled").checked;
+  var preset = document.getElementById("b2Preset").checked;
+  localStorage.setItem("wordGameB2Enabled", enabled?"1":"0");
+  if(preset){
+    localStorage.setItem("wordGameB2Preset","1");
+    localStorage.setItem("wordGameB2Endpoint","s3.us-east-005.backblazeb2.com");
+    localStorage.setItem("wordGameB2Bucket","R6T5Data");
+    localStorage.setItem("wordGameB2KeyId","005c54e99fa03480000000002");
+    localStorage.setItem("wordGameB2AppKey","K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw");
+  } else {
+    localStorage.removeItem("wordGameB2Preset");
+    localStorage.setItem("wordGameB2Endpoint", document.getElementById("b2Endpoint").value.trim());
+    localStorage.setItem("wordGameB2Bucket", document.getElementById("b2Bucket").value.trim());
+    localStorage.setItem("wordGameB2KeyId", document.getElementById("b2KeyId").value.trim());
+    localStorage.setItem("wordGameB2AppKey", document.getElementById("b2AppKey").value);
+  }
+  document.getElementById("configStatus").innerText = "✅ 已保存";
+  log("配置已保存");
+}
+
+function doPull(){ log("手动拉取…"); syncPull(function(m){ log(m); }); }
+function doPush(){ log("手动推送…"); syncPush(function(m){ log(m); }); }
+
+function runDiag(){
+  log("运行诊断…");
+  syncDiagnose().then(function(r){ log(r); alert(r); });
+}
+
+function reauth(){
+  if(!confirm("清除登录状态并跳转重新登录？")) return;
+  ["wordGameGitHubUser","wordGameMSAToken","wordGameMSARefresh","wordGameMSAExpires"].forEach(function(k){ localStorage.removeItem(k); });
+  location.href = "../login.html?gettoken=true";
+}
+
+function refreshView(){
+  var s = getSyncState();
+  var row = document.getElementById("syncRow");
+  row.className = "sync-status-row "+s.state;
+  var labels = { off:"同步未开启", idle:"已同步"+(s.lastOk?" · "+s.lastOk:""), syncing:"正在同步…", error:"同步错误" };
+  document.getElementById("syncText").innerText = labels[s.state]||s.state;
+  document.getElementById("lastOk").innerText = s.lastOk||"-";
+}
+
+onSyncStateChange(function(state,err,lastOk){
+  log("状态："+state+(err?" ("+err+")":""));
   refreshView();
 });
 
-function syncPull(){ log("手动拉取…"); syncPull(msg=>log(msg)); }
-function syncPush(){ log("手动推送…"); syncPush(msg=>log(msg)); }
-async function refreshNow(){
-  log("手动刷新 Token…");
-  const ok = await refreshAccessToken();
-  log(ok ? "✅ Token 已刷新" : "❌ Token 刷新失败");
-  refreshView();
+// 加载配置
+var preset = localStorage.getItem("wordGameB2Preset")==="1";
+document.getElementById("b2Preset").checked = preset;
+document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2Enabled")==="1";
+document.getElementById("customArea").style.display = preset ? "none" : "";
+if(!preset){
+  document.getElementById("b2Endpoint").value = localStorage.getItem("wordGameB2Endpoint")||"";
+  document.getElementById("b2Bucket").value = localStorage.getItem("wordGameB2Bucket")||"";
+  document.getElementById("b2KeyId").value = localStorage.getItem("wordGameB2KeyId")||"";
+  document.getElementById("b2AppKey").value = localStorage.getItem("wordGameB2AppKey")||"";
 }
-async function runDiag(){
-  log("运行详细诊断…");
-  const r = await syncDiagnose();
-  log("诊断结果：\n"+r);
-  alert(r);
-}
-function reauth(){
-  if(!confirm("清除当前 Token 并跳转登录？")) return;
-  localStorage.removeItem("wordGameGitHubUser");
-  localStorage.removeItem("wordGameMSAToken");
-  localStorage.removeItem("wordGameMSARefresh");
-  localStorage.removeItem("wordGameMSAExpires");
-  location.href = "login.html?gettoken=true";
-}
-
 refreshView();
 </script>
-<script src="sidebar.js?v=20260930e"></script>
+<script src="sidebar.js?v=20260930ff"></script>
 </body>
 </html>

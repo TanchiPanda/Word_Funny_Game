@@ -372,44 +372,15 @@
 
     <!-- ========== 云同步 ========== -->
     <div class="card">
-        <div class="card-title">☁️ 云同步（Backblaze B2）</div>
-        <div class="card-desc">使用 Backblaze B2 S3 兼容存储同步游戏进度和词书。词书超过 200MB 自动跳过。</div>
-
-        <div class="row" style="margin-bottom:12px;">
-            <span class="label">使用 R6T5 提供的参数</span>
-            <label class="switch">
-                <input type="checkbox" id="b2Preset" onchange="onPresetToggle()">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="row">
-            <span class="label">启用同步</span>
-            <label class="switch">
-                <input type="checkbox" id="b2Enabled">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="dav-row">
-            <label class="dav-label">Endpoint（S3 地址）</label>
-            <input class="dav-input" type="text" id="b2Endpoint" placeholder="s3.us-east-005.backblazeb2.com">
-        </div>
-        <div class="dav-row">
-            <label class="dav-label">Bucket 名称</label>
-            <input class="dav-input" type="text" id="b2Bucket" placeholder="R6T5-Hub">
-        </div>
-        <div class="dav-row">
-            <label class="dav-label">Key ID</label>
-            <input class="dav-input" type="text" id="b2KeyId" placeholder="Application Key ID">
-        </div>
-        <div class="dav-row">
-            <label class="dav-label">Application Key</label>
-            <input class="dav-input" type="password" id="b2AppKey" placeholder="Application Key">
-        </div>
+        <div class="card-title">☁️ 云同步</div>
+        <div class="card-desc">同步游戏进度到云端，换设备不丢失。配置和诊断在高级同步设置中。</div>
         <div class="btn-group">
-            <button class="primary-btn" type="button" onclick="saveB2()">💾 保存配置</button>
-            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 立即同步</button>
+            <button class="primary-btn" onclick="location.href='dict/advanced-sync.html'">🛠 高级同步设置</button>
         </div>
-        <div class="status-line" id="davStatus"></div>
+        <div class="sync-status-row" id="settingsSyncRow" style="margin-top:14px;">
+            <span class="dot" id="settingsSyncDot"></span>
+            <span id="settingsSyncText">同步未开启</span>
+        </div>
     </div>
 
     <!-- ========== 词典学习 ========== -->
@@ -425,20 +396,6 @@
             <button class="ghost-btn" type="button" onclick="resetDictTpl()">↺ 重置为默认</button>
         </div>
         <div class="status-line" id="dictTplStatus"></div>
-    </div>
-
-    <!-- ========== 同步状态 ========== -->
-    <div class="card">
-        <div class="card-title">📡 同步状态</div>
-        <div class="sync-status-row" id="settingsSyncRow">
-            <span class="dot" id="settingsSyncDot"></span>
-            <span id="settingsSyncText">同步未开启</span>
-        </div>
-        <div id="settingsSyncDetail" style="font-size:13px;color:#a8a8d8;margin-top:8px;display:none;"></div>
-        <div class="btn-group" id="settingsSyncBtns" style="display:none;">
-            <button class="ghost-btn" type="button" onclick="runDiagnose()">🔍 诊断连接</button>
-            <button class="ghost-btn" type="button" onclick="manualSync()">🔄 重新同步</button>
-        </div>
     </div>
 </div>
 
@@ -468,9 +425,9 @@
     </div>
 </div>
 
-<script src="dict/sync.js?v=20260930e"></script>
+<script src="dict/sync.js?v=20260930f"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="dict/auth.js?v=20260930e"></script>
+<script src="dict/auth.js?v=20260930f"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -746,92 +703,6 @@ function onOneDriveToggle() {
     document.getElementById("davStatus").innerText = od ? "✅ OneDrive 同步已启用" : "✅ OneDrive 同步已关闭";
     setSyncState(isSyncEnabled() ? "idle" : "off");
 }
-// R6T5 共享 B2 参数
-const R6T5_B2 = {
-    endpoint: "s3.us-east-005.backblazeb2.com",
-    bucket: "R6T5-Hub",
-    keyId: "005c54e99fa03480000000001",
-    appKey: "K005Zw12BLILAG9/jGP53wV61uQ8QMk"
-};
-
-function onPresetToggle() {
-    const usePreset = document.getElementById("b2Preset").checked;
-    const fields = ["b2Endpoint", "b2Bucket", "b2KeyId", "b2AppKey"];
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        el.disabled = usePreset;
-        if (usePreset) {
-            el.value = "••••••••";
-            el.style.color = "#888";
-        } else {
-            el.style.color = "";
-        }
-    });
-    if (usePreset) {
-        localStorage.setItem("wordGameB2Preset", "1");
-    } else {
-        localStorage.removeItem("wordGameB2Preset");
-    }
-}
-
-function saveB2() {
-    playClickSound();
-    const usePreset = document.getElementById("b2Preset").checked;
-    const enabled = document.getElementById("b2Enabled").checked;
-    let endpoint, bucket, keyId, appKey;
-    if (usePreset) {
-        endpoint = R6T5_B2.endpoint;
-        bucket = R6T5_B2.bucket;
-        keyId = R6T5_B2.keyId;
-        appKey = R6T5_B2.appKey;
-    } else {
-        endpoint = document.getElementById("b2Endpoint").value.trim();
-        bucket = document.getElementById("b2Bucket").value.trim();
-        keyId = document.getElementById("b2KeyId").value.trim();
-        appKey = document.getElementById("b2AppKey").value;
-    }
-    if (enabled && (!endpoint || !bucket || !keyId || !appKey)) {
-        playErrorSound();
-        document.getElementById("davStatus").innerText = "⚠️ 请填写完整 B2 配置";
-        return;
-    }
-    localStorage.setItem("wordGameB2Enabled", enabled ? "1" : "0");
-    localStorage.setItem("wordGameB2Endpoint", endpoint);
-    localStorage.setItem("wordGameB2Bucket", bucket);
-    localStorage.setItem("wordGameB2KeyId", keyId);
-    localStorage.setItem("wordGameB2AppKey", appKey);
-    playSuccessSound();
-    document.getElementById("davStatus").innerText = "✅ B2 配置已保存";
-}
-
-function loadB2Config() {
-    const usePreset = localStorage.getItem("wordGameB2Preset") === "1";
-    document.getElementById("b2Preset").checked = usePreset;
-    document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2Enabled") === "1";
-    if (usePreset) {
-        ["b2Endpoint", "b2Bucket", "b2KeyId", "b2AppKey"].forEach(id => {
-            const el = document.getElementById(id);
-            el.value = "••••••••";
-            el.disabled = true;
-            el.style.color = "#888";
-        });
-    } else {
-        document.getElementById("b2Endpoint").value = localStorage.getItem("wordGameB2Endpoint") || "s3.us-east-005.backblazeb2.com";
-        document.getElementById("b2Bucket").value = localStorage.getItem("wordGameB2Bucket") || "";
-        document.getElementById("b2KeyId").value = localStorage.getItem("wordGameB2KeyId") || "";
-        document.getElementById("b2AppKey").value = localStorage.getItem("wordGameB2AppKey") || "";
-    }
-}
-function manualSync() {
-    playClickSound();
-    if (!isSyncEnabled()) {
-        document.getElementById("davStatus").innerText = "⚠️ 请先启用同步";
-        return;
-    }
-    const statusEl = document.getElementById("davStatus");
-    syncPush(msg => statusEl.innerText = msg);
-}
-
 // ===== GitHub 账号卡片 =====
 function renderAccount() {
     const box = document.getElementById("accountInfo");
@@ -934,11 +805,10 @@ onSyncStateChange(updateSettingsSyncRow);
 
 // ===== 启动 =====
 renderTeen();
-loadB2Config();
 renderDictTpl();
 renderAccount();
 if (!isSyncEnabled()) setSyncState("off");
 </script>
-<script src="dict/sidebar.js?v=20260930e"></script>
+<script src="dict/sidebar.js?v=20260930f"></script>
 </body>
 </html>
