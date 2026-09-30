@@ -7,6 +7,7 @@ const B2_APP_KEY = "wordGameB2AppKey";
 const B2_ENDPOINT = "wordGameB2Endpoint";
 const B2_BUCKET = "wordGameB2Bucket";
 const B2_ENABLED = "wordGameB2Enabled";
+const B2_PRESET = "wordGameB2Preset";
 
 const BOOK_SIZE_LIMIT = 200 * 1024 * 1024; // 200MB
 
@@ -14,6 +15,14 @@ const SYNC_SKIP_KEYS = [
     "wordGameGitHubUser", "wordGameMSAToken", "wordGameMSARefresh", "wordGameMSAExpires",
     B2_KEY_ID, B2_APP_KEY
 ];
+
+// R6T5 共享 B2 参数
+const R6T5_B2 = {
+    endpoint: "s3.us-east-005.backblazeb2.com",
+    bucket: "R6T5-Hub",
+    keyId: "005c54e99fa03480000000001",
+    appKey: "K005Zw12BLILAG9/jGP53wV61uQ8QMk"
+};
 
 // ===== 同步状态机 =====
 let syncState = "off";
@@ -34,6 +43,8 @@ function isSyncEnabled() {
     return localStorage.getItem(B2_ENABLED) === "1";
 }
 function getB2Config() {
+    const preset = localStorage.getItem(B2_PRESET) === "1";
+    if (preset) return { ...R6T5_B2 };
     return {
         keyId: (localStorage.getItem(B2_KEY_ID) || "").trim(),
         appKey: (localStorage.getItem(B2_APP_KEY) || "").trim(),
@@ -48,19 +59,18 @@ function getUserId() {
     } catch (e) { return null; }
 }
 
-// ===== S3 client（懒加载 AWS SDK）=====
+// ===== S3 client（懒加载 AWS SDK v3）=====
 let s3Client = null;
 async function getS3Client() {
     const cfg = getB2Config();
     if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) return null;
     if (s3Client) return s3Client;
-    if (!window.S3ClientCommand || !window.AwsClients) {
-        // 动态加载 AWS SDK v3
-        await loadScript("https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3/dist/client-s3.min.js");
+    if (!window.AWS || !window.AWS.S3Client) {
+        await loadScript("https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3.525.0/dist/index.min.js");
     }
-    s3Client = window.AwsClients.createS3Client({
+    s3Client = new window.AWS.S3Client({
         region: "us-east-005",
-        endpoint: cfg.endpoint,
+        endpoint: "https://" + cfg.endpoint,
         credentials: { accessKeyId: cfg.keyId, secretAccessKey: cfg.appKey },
         forcePathStyle: true
     });
@@ -115,15 +125,16 @@ async function syncPull(onStatus) {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         try {
-            const obj = await client.getObject({ Bucket: cfg.bucket, Key: key });
+            const { GetObjectCommand } = window.AWS;
+            const obj = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
             const body = await obj.Body.transformToString();
             const data = JSON.parse(body);
             const count = applySyncData(data);
             setSyncState("idle");
             if (onStatus) onStatus("✅ 已拉取 " + count + " 项配置");
         } catch (e) {
-            if (e.name === "NoSuchKey" || e.$metadata?.httpStatusCode === 404 || e.Code === "NoSuchKey") {
-                // 文件不存在，首次推送
+            const code = e.name || e.Code || (e.$metadata && e.$metadata.httpStatusCode);
+            if (code === "NoSuchKey" || code === 404 || code === "NotFound") {
                 if (onStatus) onStatus("📤 首次同步，推送数据…");
                 await syncPush(onStatus);
             } else {
@@ -131,8 +142,9 @@ async function syncPull(onStatus) {
             }
         }
     } catch (e) {
-        setSyncState("error", e.message);
-        if (onStatus) onStatus("⚠️ 拉取失败：" + e.message);
+        const msg = e.message || String(e);
+        setSyncState("error", msg);
+        if (onStatus) onStatus("⚠️ 拉取失败：" + msg);
     }
 }
 
@@ -147,17 +159,19 @@ async function syncPush(onStatus) {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         const body = JSON.stringify(collectSyncData());
-        await client.putObject({
+        const { PutObjectCommand } = window.AWS;
+        await client.send(new PutObjectCommand({
             Bucket: cfg.bucket,
             Key: key,
             Body: body,
             ContentType: "application/json"
-        });
+        }));
         setSyncState("idle");
         if (onStatus) onStatus("✅ 已推送本地配置");
     } catch (e) {
-        setSyncState("error", e.message);
-        if (onStatus) onStatus("⚠️ 推送失败：" + e.message);
+        const msg = e.message || String(e);
+        setSyncState("error", msg);
+        if (onStatus) onStatus("⚠️ 推送失败：" + msg);
     }
 }
 
@@ -174,12 +188,13 @@ async function syncBook(bookId, bookData, onStatus) {
         }
         const client = await getS3Client();
         const key = userPath("books/" + bookId + ".json");
-        await client.putObject({
+        const { PutObjectCommand } = window.AWS;
+        await client.send(new PutObjectCommand({
             Bucket: cfg.bucket, Key: key, Body: body, ContentType: "application/json"
-        });
+        }));
         return true;
     } catch (e) {
-        if (onStatus) onStatus("⚠️ 词书 " + bookId + " 同步失败：" + e.message);
+        if (onStatus) onStatus("⚠️ 词书 " + bookId + " 同步失败：" + (e.message || e));
         return false;
     }
 }
@@ -191,7 +206,8 @@ async function pullBook(bookId) {
     try {
         const client = await getS3Client();
         const key = userPath("books/" + bookId + ".json");
-        const obj = await client.getObject({ Bucket: cfg.bucket, Key: key });
+        const { GetObjectCommand } = window.AWS;
+        const obj = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
         const body = await obj.Body.transformToString();
         return JSON.parse(body);
     } catch (e) {
@@ -220,13 +236,15 @@ async function syncDiagnose() {
         const client = await getS3Client();
         const key = userPath("wordgame-sync.json");
         report.push("→ 测试 GET: " + key);
-        await client.getObject({ Bucket: cfg.bucket, Key: key });
+        const { GetObjectCommand } = window.AWS;
+        await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
         report.push("→ 结果: ✅ 连接正常");
     } catch (e) {
-        if (e.name === "NoSuchKey" || e.$metadata?.httpStatusCode === 404) {
+        const code = e.name || e.Code || (e.$metadata && e.$metadata.httpStatusCode);
+        if (code === "NoSuchKey" || code === 404 || code === "NotFound") {
             report.push("→ 结果: 文件不存在，首次同步将自动创建");
         } else {
-            report.push("→ 结果: ⚠️ " + e.message);
+            report.push("→ 结果: ⚠️ " + (e.message || JSON.stringify(e)));
         }
     }
     return report.join("\n");
