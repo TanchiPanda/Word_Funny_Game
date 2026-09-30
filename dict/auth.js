@@ -79,9 +79,44 @@ async function loginWithEmail(email, password) {
 async function signUpWithEmail(email, password) {
     const client = getSupabase();
     if (!client) throw new Error("Supabase 未加载");
-    const { data, error } = await client.auth.signUp({ email, password });
+    const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: location.origin + "/login.html" }
+    });
     if (error) throw error;
     return data;
+}
+
+// 处理 OAuth / 邮箱验证回调（URL 带 hash 或 code 时调用）
+async function handleAuthCallback() {
+    const client = getSupabase();
+    if (!client) return false;
+    // Supabase JS v2 自动检测 hash fragment (#access_token=...) 或 query code
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+        console.warn("[Supabase] callback error:", error.message);
+        return false;
+    }
+    if (data && data.session) {
+        syncUserToLocal({ ...data.session.user, access_token: data.session.access_token });
+        return true;
+    }
+    // PKCE flow: URL 中带 ?code= 时交换
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+    if (code) {
+        const { data: exchData, error: exchErr } = await client.auth.exchangeCodeForSession(code);
+        if (exchErr) {
+            console.warn("[Supabase] code exchange error:", exchErr.message);
+            return false;
+        }
+        if (exchData && exchData.session) {
+            syncUserToLocal({ ...exchData.session.user, access_token: exchData.session.access_token });
+            return true;
+        }
+    }
+    return false;
 }
 
 // 魔法链接

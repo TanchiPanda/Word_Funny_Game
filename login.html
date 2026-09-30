@@ -171,10 +171,31 @@ async function sendMagicLink() {
 function enterGuest() {
     location.href = "index.html";
 }
-// 已登录直接跳转
-if (isLoggedIn()) {
-    location.href = "index.html";
-}
+// 处理回调（邮箱验证/魔法链接/OAuth 跳转回来）
+(async function initCallback() {
+    const okText = document.getElementById("okText");
+    const hasHash = location.hash && location.hash.length > 1;
+    const hasCode = new URLSearchParams(location.search).get("code");
+    if (hasHash || hasCode) {
+        okText.textContent = "🔗 正在验证登录…";
+        const ok = await handleAuthCallback();
+        if (ok) {
+            okText.textContent = "✅ 登录成功，正在跳转…";
+            // 清理 URL 中的 hash/code
+            history.replaceState(null, "", location.pathname);
+            setTimeout(() => location.href = "index.html", 600);
+        } else {
+            okText.textContent = "";
+            document.getElementById("errText").textContent = "验证链接无效或已过期，请重新登录";
+            history.replaceState(null, "", location.pathname);
+        }
+        return;
+    }
+    // 已登录直接跳转
+    if (isLoggedIn()) {
+        location.href = "index.html";
+    }
+})();
 </script>
 </body>
 </html>
