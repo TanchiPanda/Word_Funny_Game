@@ -1,7 +1,5 @@
-// ===== 云同步模块（Backblaze B2 S3）=====
-// 路径：users/{userId}/wordgame-sync.json
+// ===== 云同步模块（Backblaze B2 S3 / AWS SDK v2）=====
 
-// ===== 常量 =====
 const B2_KEY = {
     enabled: "wordGameB2Enabled",
     preset: "wordGameB2Preset",
@@ -62,38 +60,42 @@ function _getConfig() {
     };
 }
 
-// ===== SDK 加载 =====
-var _s3 = null; // { client, GetObjectCommand, PutObjectCommand }
+// ===== SDK 加载（AWS SDK v2 浏览器版）=====
+var _s3 = null;
 
 function _loadSDK() {
     if (_s3) return Promise.resolve(_s3);
     return new Promise(function(resolve, reject) {
-        if (window.__AWS_S3) { _s3 = window.__AWS_S3; resolve(_s3); return; }
-        var s = document.createElement("script");
-        s.type = "module";
-        s.textContent =
-            'import { S3Client, GetObjectCommand, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.525.0?target=web";' +
-            'window.__AWS_S3 = { S3Client, GetObjectCommand, PutObjectCommand };' +
-            'window.dispatchEvent(new Event("aws-s3-ready"));';
-        window.addEventListener("aws-s3-ready", function() {
-            _s3 = window.__AWS_S3;
+        if (window.AWS && window.AWS.S3) {
+            _s3 = _makeClient(window.AWS);
             resolve(_s3);
-        });
+            return;
+        }
+        var s = document.createElement("script");
+        s.src = "https://sdk.amazonaws.com/js/aws-sdk-2.1692.0.min.js";
+        s.onload = function() {
+            if (window.AWS && window.AWS.S3) {
+                _s3 = _makeClient(window.AWS);
+                resolve(_s3);
+            } else {
+                reject(new Error("AWS SDK 加载后不可用"));
+            }
+        };
         s.onerror = function() { reject(new Error("SDK 加载失败")); };
         document.head.appendChild(s);
         setTimeout(function() { reject(new Error("SDK 加载超时")); }, 20000);
     });
 }
 
-async function _getClient() {
+function _makeClient(AWS) {
     var cfg = _getConfig();
-    if (!cfg.keyId || !cfg.appKey || !cfg.endpoint || !cfg.bucket) throw new Error("未配置 B2 参数");
-    var sdk = await _loadSDK();
-    return new sdk.S3Client({
+    return new AWS.S3({
         region: "us-east-005",
         endpoint: "https://" + cfg.endpoint,
-        credentials: { accessKeyId: cfg.keyId, secretAccessKey: cfg.appKey },
-        forcePathStyle: true
+        accessKeyId: cfg.keyId,
+        secretAccessKey: cfg.appKey,
+        s3ForcePathStyle: true,
+        signatureVersion: "v4"
     });
 }
 
@@ -135,20 +137,18 @@ async function syncPull(onStatus) {
     try {
         if (onStatus) onStatus("📥 正在拉取…");
         var cfg = _getConfig();
-        var client = await _getClient();
-        var sdk = await _loadSDK();
+        var s3 = await _loadSDK();
         var key = _userPath("wordgame-sync.json");
 
-        var obj = await client.send(new sdk.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
-        var body = await obj.Body.transformToString();
-        var data = JSON.parse(body);
-        var n = _apply(data);
+        var data = await s3.getObject({ Bucket: cfg.bucket, Key: key }).promise();
+        var body = data.Body.toString("utf-8");
+        var parsed = JSON.parse(body);
+        var n = _apply(parsed);
         _setState("idle");
         if (onStatus) onStatus("✅ 已拉取 " + n + " 项");
     } catch (e) {
-        var code = e.name || (e.$metadata && e.$metadata.httpStatusCode);
+        var code = e.code || e.statusCode;
         if (code === "NoSuchKey" || code === 404) {
-            // 文件不存在，首次推送
             if (onStatus) onStatus("📤 首次同步，推送…");
             await syncPush(onStatus);
         } else {
@@ -169,17 +169,16 @@ async function syncPush(onStatus) {
     try {
         if (onStatus) onStatus("📤 正在推送…");
         var cfg = _getConfig();
-        var client = await _getClient();
-        var sdk = await _loadSDK();
+        var s3 = await _loadSDK();
         var key = _userPath("wordgame-sync.json");
         var body = JSON.stringify(_collect());
 
-        await client.send(new sdk.PutObjectCommand({
+        await s3.putObject({
             Bucket: cfg.bucket,
             Key: key,
             Body: body,
             ContentType: "application/json"
-        }));
+        }).promise();
         _setState("idle");
         if (onStatus) onStatus("✅ 已推送");
     } catch (e) {
@@ -209,14 +208,13 @@ async function syncDiagnose() {
     if (!cfg.keyId) { r.push("→ 请先配置参数"); return r.join("\n"); }
 
     try {
-        var client = await _getClient();
-        var sdk = await _loadSDK();
+        var s3 = await _loadSDK();
         var key = _userPath("wordgame-sync.json");
         r.push("→ 测试 GET: " + key);
-        await client.send(new sdk.GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+        await s3.getObject({ Bucket: cfg.bucket, Key: key }).promise();
         r.push("→ ✅ 连接正常");
     } catch (e) {
-        var code = e.name || (e.$metadata && e.$metadata.httpStatusCode);
+        var code = e.code || e.statusCode;
         if (code === "NoSuchKey" || code === 404) {
             r.push("→ 文件不存在，首次同步将自动创建");
         } else {
