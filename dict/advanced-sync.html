@@ -55,7 +55,7 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
     <span id="syncText">同步未开启</span>
   </div>
   <div class="info" style="margin-top:8px">
-    <div>存储：Backblaze B2（R6T5 共享）</div>
+    <div>存储：Cloudflare R2（R6T5 共享）</div>
     <div>上次成功：<span id="lastOk">-</span></div>
   </div>
 </div>
@@ -89,8 +89,8 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 <a class="back" href="../settings.html">← 返回设置</a>
 </div>
 
-<script src="sync.js?v=20261001i"></script>
-<script src="auth.js?v=20261001i"></script>
+<script src="sync.js?v=20261002a"></script>
+<script src="auth.js?v=20261002a"></script>
 <script>
 var logs = [];
 function log(msg){
@@ -104,10 +104,10 @@ function onToggle(on){
   localStorage.setItem("wordGameB2Enabled", on?"1":"0");
   // 强制使用 R6T5 预设参数
   localStorage.setItem("wordGameB2Preset","1");
-  localStorage.setItem("wordGameB2Endpoint","s3.us-east-005.backblazeb2.com");
-  localStorage.setItem("wordGameB2Bucket","R6T5Data");
-  localStorage.setItem("wordGameB2KeyId","005c54e99fa03480000000002");
-  localStorage.setItem("wordGameB2AppKey","K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw");
+  localStorage.setItem("wordGameB2Endpoint","014ac5e0260517557de20af45ca52d27.r2.cloudflarestorage.com");
+  localStorage.setItem("wordGameB2Bucket","r6t5-hub-data");
+  localStorage.setItem("wordGameB2KeyId","c23b354df1895fe8fb71fc31c21d3205");
+  localStorage.setItem("wordGameB2AppKey","ab5b6ecf76420b49634623849576db6282fd0703575e590dbcd3428e8cdf274a");
   document.getElementById("toggleHint").innerText = on ? "✅ 已启用，下次进入游戏自动同步" : "已关闭，数据仅保存在本地";
   log("同步开关："+(on?"开启":"关闭"));
   if(on){ doPull(); }
@@ -146,6 +146,6 @@ document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2E
 document.getElementById("toggleHint").innerText = document.getElementById("b2Enabled").checked ? "✅ 已启用" : "已关闭";
 refreshView();
 </script>
-<script src="sidebar.js?v=20261001i"></script>
+<script src="sidebar.js?v=20261002a"></script>
 </body>
 </html>

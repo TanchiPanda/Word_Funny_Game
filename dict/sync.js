@@ -1,4 +1,4 @@
-// ===== 云同步模块（Backblaze B2 S3 / AWS SDK v2）=====
+// ===== 云同步模块（Cloudflare R2 S3 / AWS SDK v2）=====
 
 const B2_KEY = {
     enabled: "wordGameB2Enabled",
@@ -10,10 +10,10 @@ const B2_KEY = {
 };
 
 const R6T5_DEFAULTS = {
-    endpoint: "s3.us-east-005.backblazeb2.com",
-    bucket: "R6T5Data",
-    keyId: "005c54e99fa03480000000002",
-    appKey: "K005rSwwGtkJfJ2fOaJ9qAoKoUY2/bw"
+    endpoint: "014ac5e0260517557de20af45ca52d27.r2.cloudflarestorage.com",
+    bucket: "r6t5-hub-data",
+    keyId: "c23b354df1895fe8fb71fc31c21d3205",
+    appKey: "ab5b6ecf76420b49634623849576db6282fd0703575e590dbcd3428e8cdf274a"
 };
 
 const SKIP_KEYS = [
@@ -89,9 +89,10 @@ function _loadSDK() {
 
 function _makeClient(AWS) {
     var cfg = _getConfig();
+    var ep = cfg.endpoint.startsWith("http") ? cfg.endpoint : "https://" + cfg.endpoint;
     return new AWS.S3({
-        region: "us-east-005",
-        endpoint: "https://" + cfg.endpoint,
+        region: "auto",
+        endpoint: ep,
         accessKeyId: cfg.keyId,
         secretAccessKey: cfg.appKey,
         s3ForcePathStyle: true,
@@ -200,7 +201,7 @@ function syncPushDebounced(ms) {
 async function syncDiagnose() {
     var r = [];
     var cfg = _getConfig();
-    r.push("后端: " + (isSyncEnabled() ? "Backblaze B2" : "未开启"));
+    r.push("后端: " + (isSyncEnabled() ? "Cloudflare R2" : "未开启"));
     r.push("Endpoint: " + (cfg.endpoint || "(空)"));
     r.push("Bucket: " + (cfg.bucket || "(空)"));
     r.push("User: " + (getUserId() || "(未登录)"));
