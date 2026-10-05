@@ -126,7 +126,7 @@ async function signUpWithEmail(email, password) {
     if (!client) throw new Error("Supabase 未加载");
     const { data, error } = await client.auth.signUp({
         email, password,
-        options: { emailRedirectTo: location.origin + "/login.html" }
+        options: { emailRedirectTo: location.origin + "/index.html" }
     });
     if (error) throw error;
     return data;
@@ -137,7 +137,7 @@ async function loginWithMagicLink(email) {
     if (!client) throw new Error("Supabase 未加载");
     const { error } = await client.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: location.origin + "/login.html" }
+        options: { emailRedirectTo: location.origin + "/index.html" }
     });
     if (error) throw error;
 }
@@ -149,6 +149,7 @@ async function handleAuthCallback() {
     if (error) return false;
     if (data && data.session) {
         syncUserToLocal({ ...data.session.user, access_token: data.session.access_token });
+        location.replace("index.html");
         return true;
     }
     const params = new URLSearchParams(location.search);
@@ -157,6 +158,7 @@ async function handleAuthCallback() {
         const { data: exchData, error: exchErr } = await client.auth.exchangeCodeForSession(code);
         if (!exchErr && exchData && exchData.session) {
             syncUserToLocal({ ...exchData.session.user, access_token: exchData.session.access_token });
+            location.replace("index.html");
             return true;
         }
     }
