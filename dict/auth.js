@@ -1,8 +1,8 @@
 // ===== R6T5 Hub 统一登录模块 =====
-// 登录跳转到 myacc.r6t5.cloud-ip.cc，通过 app 参数召回
-// 跨子域名共享会话（cookie 设在 .r6t5.cloud-ip.cc）
+// 登录跳转到 myacc.r6t5.dpdns.org，通过 app 参数召回
+// 跨子域名共享会话（cookie 设在 .r6t5.dpdns.org）
 
-const ACCOUNT_URL = "https://myacc.r6t5.cloud-ip.cc";
+const ACCOUNT_URL = "https://myacc.r6t5.dpdns.org";
 const APP_ID = "wordgm";
 
 const GH_USER_KEY = "wordGameGitHubUser";

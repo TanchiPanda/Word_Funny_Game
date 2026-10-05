@@ -13,7 +13,7 @@
     { icon: "📕", label: "词典学习", href: base + "study.html", match: ["study.html"] },
     { icon: "📖", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },
     { icon: "⚙️", label: "设置", href: base + "settings.html", match: ["settings.html", "advanced-sync.html"] },
-    { icon: "👤", label: "账号管理", href: "https://myacc.r6t5.cloud-ip.cc/?app=wordgm", match: [] },
+    { icon: "👤", label: "账号管理", href: "https://myacc.r6t5.dpdns.org/?app=wordgm", match: [] },
   ];
 
   const style = document.createElement("style");
