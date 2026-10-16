@@ -1,6 +1,13 @@
 // ===== 版本登记表（手动维护）=====
 // 版号 = git 提交短 SHA。每次 commit + push 后，把新 SHA 加到数组最前面。
 //
+// 维护流程：
+//   1. 改完代码 → git commit → git push
+//   2. git rev-parse --short HEAD  拿到这次提交的短 SHA
+//   3. 把该 SHA 作为一条新记录插入 VERSION_REGISTRY 最前面
+//   4. 再提交一次（这一步只是登记版号，不必单独登记）
+//   数组第一项 = 当前默认启用的版本。
+//
 // 字段说明：
 //   version : 版号，git 提交短 SHA
 //   channel : "Private" 内测 | "Public" 公测
@@ -14,6 +21,10 @@ var VERSION_DEFAULT_DAYS = 90;               // 每个测试版默认有效期
 var VERSION_STORE_KEY = "wordGameActiveVersion";
 
 var VERSION_REGISTRY = [
+    { version: "71163de", channel: "Private", date: "2026-10-16",
+      title: "版本登记与切换",
+      note: "Private/Public 双渠道，每版 90 天有效期" },
+
     { version: "d2e2842", channel: "Private", date: "2026-10-16",
       title: "实验室「下载词典」",
       note: "内部实验口令；词书导出 CSV / 默写版" },
