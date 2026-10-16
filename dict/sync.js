@@ -30,7 +30,7 @@ var _listeners = [];
 
 function onSyncStateChange(fn) {
     _listeners.push(fn);
-    fn(_state, _error, _lastOk);
+    try { fn(_state, _error, _lastOk); } catch(e) {}
 }
 function _setState(s, err) {
     _state = s;

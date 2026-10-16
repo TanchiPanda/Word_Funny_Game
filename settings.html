@@ -383,6 +383,9 @@
         </div>
     </div>
 
+    <!-- ========== OneDrive 云空间 ========== -->
+    <div class="card" id="onedriveBox"></div>
+
     <!-- ========== 词典学习 ========== -->
     <div class="card">
         <div class="card-title">📕 词典学习</div>
@@ -425,9 +428,9 @@
     </div>
 </div>
 
-<script src="dict/sync.js?v=20261005b"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="dict/auth.js?v=20261005b"></script>
+<script src="dict/sync.js?v=20261016"></script>
+<script src="dict/msauth.js?v=20261016"></script>
+<script src="dict/auth.js?v=20261016"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -619,13 +622,13 @@ function resetTeenUsed() {
 }
 
 // ===== 数据导出 / 导入 =====
-const SKIP_KEYS = [ACCESS_KEY, PIN_KEY];
+const PROTECTED_KEYS = [ACCESS_KEY, PIN_KEY];
 function exportData() {
     playClickSound();
     const data = {};
     for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (SKIP_KEYS.includes(k)) continue;
+        if (PROTECTED_KEYS.includes(k)) continue;
         data[k] = localStorage.getItem(k);
     }
     const json = JSON.stringify(data, null, 2);
@@ -653,7 +656,7 @@ function importData(event) {
             if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("bad");
             let count = 0, skipped = 0;
             Object.keys(data).forEach(k => {
-                if (SKIP_KEYS.includes(k)) { skipped++; return; }
+                if (PROTECTED_KEYS.includes(k)) { skipped++; return; }
                 localStorage.setItem(k, String(data[k]));
                 count++;
             });
@@ -669,7 +672,7 @@ function importData(event) {
     event.target.value = "";
 }
 
-// ===== GitHub 账号卡片 =====
+// ===== 微软账号卡片 =====
 function renderAccount() {
     const box = document.getElementById("accountInfo");
     const user = getGitHubUser();
@@ -678,17 +681,65 @@ function renderAccount() {
             '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#f25022,#ffb900);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;">👤</div>' +
             '<div style="font-size:18px;font-weight:bold;color:#fff;margin-bottom:4px;">' + (user.name || user.login) + '</div>' +
             '<div style="font-size:14px;color:#a8a8d8;margin-bottom:14px;">' + (user.login || '') + '</div>' +
-            '<button class="ghost-btn" type="button" onclick="doLogout()">退出登录</button>';
+            '<div class="btn-group" style="justify-content:center">' +
+              '<button class="ghost-btn" type="button" onclick="refreshMsToken()">🔄 重新获取令牌</button>' +
+              '<button class="ghost-btn" type="button" onclick="doLogout()">退出登录</button>' +
+            '</div>' +
+            '<div class="status-line" id="msTokenStatus"></div>';
     } else {
         box.innerHTML =
-            '<div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 登录后解锁全部功能</div>' +
-            '<button class="primary-btn" type="button" onclick="location.href=\'login.html\'">登录账号</button>';
+            '<div style="font-size:16px;color:#a8a8d8;margin-bottom:14px;">未登录 · 使用 Microsoft 账号登录</div>' +
+            '<button class="primary-btn" type="button" onclick="location.href=\'login.html\'">立即登录</button>';
     }
 }
 function doLogout() {
-    if (confirm("确定要退出登录吗？")) {
-        logout();
-        renderAccount();
+    if (confirm("确定要退出登录吗？")) { logout(); }
+}
+async function refreshMsToken() {
+    const el = document.getElementById("msTokenStatus");
+    if (el) el.innerText = "⏳ 正在获取…";
+    const t = await msGetToken({ force: true });
+    if (el) el.innerText = t ? "✅ 令牌已更新" : "⚠️ 获取失败，请重新登录";
+    renderOneDrive();
+}
+
+// ===== OneDrive 空间 =====
+async function renderOneDrive() {
+    const box = document.getElementById("onedriveBox");
+    if (!box) return;
+    const token = msPeekToken();
+    if (!isLoggedIn() || !token) {
+        box.innerHTML =
+            '<div class="card-title">☁️ OneDrive 云空间</div>' +
+            '<div class="card-desc">登录 Microsoft 账号后可查看云空间用量。</div>' +
+            '<div style="font-size:17px;font-weight:bold;color:#a8a8d8;">N/A</div>';
+        return;
+    }
+    box.innerHTML = '<div class="card-title">☁️ OneDrive 云空间</div><div class="card-desc">正在读取…</div>';
+    try {
+        const q = await msGetDriveQuota();
+        const gb = n => (n / 1073741824).toFixed(2) + " GB";
+        const pct = q.total ? Math.round(q.used / q.total * 100) : 0;
+        box.innerHTML =
+            '<div class="card-title">☁️ OneDrive 云空间</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;">' +
+              '<span>已用 ' + gb(q.used) + '</span><span style="color:#a8a8d8;">共 ' + gb(q.total) + '</span>' +
+            '</div>' +
+            '<div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden;">' +
+              '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#0f6cbd,#4ecdc4);"></div>' +
+            '</div>' +
+            '<div style="font-size:13px;color:#a8a8d8;margin-top:6px;">剩余 ' + gb(q.remaining) + '（' + pct + '% 已用）</div>' +
+            '<div class="btn-group" style="margin-top:12px">' +
+              '<button class="ghost-btn" type="button" onclick="renderOneDrive()">🔄 刷新用量</button>' +
+              '<button class="ghost-btn" type="button" onclick="window.open(\'https://go.microsoft.com/fwlink/?linkid=2248426\',\'_blank\')">➕ 扩容</button>' +
+            '</div>';
+    } catch (e) {
+        box.innerHTML =
+            '<div class="card-title">☁️ OneDrive 云空间</div>' +
+            '<div class="card-desc" style="color:#ff8888;">读取失败：' + (e.message || e) + '</div>' +
+            '<div class="btn-group" style="margin-top:10px">' +
+              '<button class="ghost-btn" type="button" onclick="refreshMsToken()">🔄 重新获取令牌</button>' +
+            '</div>';
     }
 }
 
@@ -741,14 +792,16 @@ function updateSettingsSyncRow(state, error, lastOk) {
         syncing: "正在同步…",
         error: "同步错误"
     };
-    text.innerText = labels[state] || state;
-    if (state === "error" && error) {
-        detail.style.display = "block";
-        detail.innerText = "错误信息：" + error;
-    } else {
-        detail.style.display = "none";
+    if (text) text.innerText = labels[state] || state;
+    if (detail) {
+        if (state === "error" && error) {
+            detail.style.display = "block";
+            detail.innerText = "错误信息：" + error;
+        } else {
+            detail.style.display = "none";
+        }
     }
-    btns.style.display = (state === "error" || state === "idle" || state === "syncing") ? "flex" : "none";
+    if (btns) btns.style.display = (state === "error" || state === "idle" || state === "syncing") ? "flex" : "none";
 }
 function runDiagnose() {
     playClickSound();
@@ -761,10 +814,7 @@ function closeDiag() {
     document.getElementById("diagModal").classList.remove("show");
 }
 function reauthToken() {
-    localStorage.removeItem("wordGameGitHubUser");
-    localStorage.removeItem("wordGameMSAToken");
-    localStorage.removeItem("wordGameMSARefresh");
-    localStorage.removeItem("wordGameMSAExpires");
+    if (typeof msClearLocal === "function") msClearLocal();
     location.href = "login.html?gettoken=true";
 }
 onSyncStateChange(updateSettingsSyncRow);
@@ -773,8 +823,9 @@ onSyncStateChange(updateSettingsSyncRow);
 renderTeen();
 renderDictTpl();
 renderAccount();
-if (!isSyncEnabled()) setSyncState("off");
+renderOneDrive();
+(function(){ var s = getSyncState(); updateSettingsSyncRow(s.state, s.error, s.lastOk); })();
 </script>
-<script src="dict/sidebar.js?v=20261005b"></script>
+<script src="dict/sidebar.js?v=20261016"></script>
 </body>
 </html>

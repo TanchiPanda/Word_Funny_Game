@@ -89,8 +89,9 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 <a class="back" href="../settings.html">← 返回设置</a>
 </div>
 
-<script src="sync.js?v=20261005b"></script>
-<script src="auth.js?v=20261005b"></script>
+<script src="sync.js?v=20261016"></script>
+<script src="msauth.js?v=20261016"></script>
+<script src="auth.js?v=20261016"></script>
 <script>
 var logs = [];
 function log(msg){
@@ -123,7 +124,7 @@ function runDiag(){
 
 function reauth(){
   if(!confirm("清除登录状态并跳转重新登录？")) return;
-  ["wordGameGitHubUser","wordGameMSAToken","wordGameMSARefresh","wordGameMSAExpires"].forEach(function(k){ localStorage.removeItem(k); });
+  if(typeof msClearLocal === "function") msClearLocal();
   location.href = "../login.html?gettoken=true";
 }
 
@@ -146,6 +147,6 @@ document.getElementById("b2Enabled").checked = localStorage.getItem("wordGameB2E
 document.getElementById("toggleHint").innerText = document.getElementById("b2Enabled").checked ? "✅ 已启用" : "已关闭";
 refreshView();
 </script>
-<script src="sidebar.js?v=20261005b"></script>
+<script src="sidebar.js?v=20261016"></script>
 </body>
 </html>
