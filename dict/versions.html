@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>🏷️ 版本管理</title>
+<title>🏷️ 功能版本</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     background: linear-gradient(160deg,#1a1040 0%,#2d1b5e 50%,#1a1040 100%);
-    min-height: 100vh;
-    color: #fff;
-    padding: 16px;
-    padding-bottom: 40px;
+    min-height: 100vh; color:#fff; padding:16px; padding-bottom:40px;
 }
 .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
 .back-btn {
@@ -29,7 +26,6 @@ body {
 }
 .card-title { font-size:16px; font-weight:bold; color:#ffd700; margin-bottom:12px; }
 
-/* 当前版本 */
 .cur-sha { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:24px; font-weight:bold; color:#4ecdc4; letter-spacing:1px; }
 .cur-title { font-size:14px; color:#e8e8f5; margin-top:6px; }
 .cur-sub { font-size:13px; color:#a8a8d8; margin-top:4px; line-height:1.7; }
@@ -52,13 +48,15 @@ body {
     border-radius:8px; padding:8px 10px;
 }
 
-/* 列表 */
+/* 列表行 */
 .vrow {
     display:flex; align-items:center; gap:10px;
     padding:12px; border-radius:12px; margin-bottom:8px;
     background:rgba(255,255,255,0.05);
     border:1.5px solid rgba(255,255,255,0.1);
+    text-decoration:none; color:inherit;
 }
+a.vrow { cursor:pointer; }
 .vrow.active { border-color:rgba(78,205,196,0.65); background:rgba(78,205,196,0.1); }
 .vrow.dead { opacity:0.5; }
 .vrow .info { flex:1; min-width:0; }
@@ -72,123 +70,155 @@ body {
     cursor:pointer; background:linear-gradient(90deg,#39d98a,#4ecdc4); color:#0d3b2e;
 }
 .sw-btn:active { transform:scale(0.97); }
-.sw-btn:disabled {
-    background:rgba(255,255,255,0.1); color:#7f7fa8; cursor:not-allowed;
-}
+.sw-btn:disabled { background:rgba(255,255,255,0.1); color:#7f7fa8; cursor:not-allowed; }
 .tag-cur {
     font-size:12px; padding:6px 10px; border-radius:8px;
     background:rgba(78,205,196,0.18); color:#4ecdc4; border:1px solid rgba(78,205,196,0.45);
 }
+.arrow { color:#a8a8d8; font-size:18px; flex-shrink:0; }
 .note { font-size:12px; color:#7f7fa8; line-height:1.8; }
 </style>
 </head>
 <body>
 <div class="top-bar">
-    <button class="back-btn" onclick="location.href='../lab.html'">← 实验室</button>
-    <div class="page-title">🏷️ 版本管理</div>
+    <button class="back-btn" id="backBtn" onclick="location.href='../lab.html'">← 实验室</button>
+    <div class="page-title" id="pageTitle">🏷️ 功能版本</div>
 </div>
 
-<div class="card">
-    <div class="card-title">当前启用</div>
-    <div id="curBox">加载中…</div>
-</div>
-
-<div class="card">
-    <div class="card-title">登记版本</div>
-    <div id="listBox"></div>
-    <div class="note" id="listNote" style="margin-top:12px;"></div>
-</div>
+<div id="root"></div>
 
 <script src="version.js?v=20261016"></script>
 <script src="sidebar.js?v=20261016"></script>
 <script>
+var FID = new URLSearchParams(location.search).get("f") || "";
+
 function esc(s) {
     return String(s === null || s === undefined ? "" : s)
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function renderCurrent() {
-    var box = document.getElementById("curBox");
-    var v = versionGetActive();
-    if (!v) { box.innerText = "登记表为空"; return; }
-
-    var left = versionDaysLeft(v);
-    var total = (typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS;
-    var pct = (!total || left === Infinity) ? 100 : Math.max(0, Math.min(100, left / total * 100));
-    var expired = left <= 0;
-
-    var barClass = expired ? "bar dead" : (left <= 14 ? "bar warn" : "bar");
-    var leftText = (left === Infinity) ? "永久有效"
-        : (expired ? "已过期 " + Math.abs(left) + " 天" : "剩余 " + left + " 天");
-
-    box.innerHTML =
-        '<div class="cur-sha">' + esc(v.version) +
-          '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(v.channel) + '</span>' +
-        '</div>' +
-        '<div class="cur-title">' + esc(v.title || "") + '</div>' +
-        '<div class="cur-sub">登记于 ' + esc(v.date) + ' · ' + esc(versionExpiryText(v)) + '</div>' +
-        '<div class="' + barClass + '"><div style="width:' + pct + '%"></div></div>' +
-        '<div class="cur-sub">' + esc(leftText) + '</div>' +
-        (v.note ? '<div class="cur-sub">' + esc(v.note) + '</div>' : '') +
-        (expired ? '<div class="expired-tip">⚠️ 当前版本已超过 ' + total + ' 天有效期，建议切到仍有效的版本。</div>' : '');
+function leftHtml(v) {
+    var left = featVersionDaysLeft(v);
+    if (left === Infinity) return "永久有效";
+    if (left <= 0) return '<span class="dead">已过期 ' + Math.abs(left) + ' 天</span>';
+    if (left <= 14) return '<span class="warn">剩余 ' + left + ' 天</span>';
+    return "剩余 " + left + " 天";
 }
 
-function renderList() {
-    var box = document.getElementById("listBox");
-    var cur = versionGetActive();
-    var curSha = cur ? cur.version : "";
+// ================= 总览：列出所有实验功能 =================
+function renderIndex() {
+    var ids = Object.keys(FEATURE_VERSIONS);
+    var html = '<div class="card"><div class="card-title">实验功能</div>';
 
-    box.innerHTML = VERSION_REGISTRY.map(function (v) {
-        var left = versionDaysLeft(v);
-        var expired = left <= 0;
-        var isCur = (v.version === curSha);
-
-        var leftHtml = (left === Infinity) ? "永久有效"
-            : (expired ? '<span class="dead">已过期 ' + Math.abs(left) + ' 天</span>'
-                       : (left <= 14 ? '<span class="warn">剩余 ' + left + ' 天</span>' : '剩余 ' + left + ' 天'));
-
-        var act;
-        if (isCur) {
-            act = '<span class="tag-cur">当前</span>';
-        } else if (expired) {
-            act = '<button class="sw-btn" type="button" disabled>已过期</button>';
-        } else {
-            act = '<button class="sw-btn" type="button" onclick="doSwitch(\'' + esc(v.version) + '\')">切换</button>';
-        }
-
-        return '<div class="vrow' + (isCur ? " active" : "") + (expired ? " dead" : "") + '">' +
-            '<div class="info">' +
-              '<div class="sha">' + esc(v.version) +
-                '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(v.channel) + '</span>' +
-              '</div>' +
-              '<div class="sub">' + esc(v.title || "") + '<br>' +
-                '登记 ' + esc(v.date) + ' · 有效期 ' + ((typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS) + ' 天 · ' + leftHtml +
-              '</div>' +
-            '</div>' +
-            '<div class="act">' + act + '</div>' +
-        '</div>';
-    }).join("");
-
-    var hasBase = VERSION_REGISTRY.some(function (v) { return !!v.base; });
-    document.getElementById("listNote").innerHTML =
-        '共 ' + VERSION_REGISTRY.length + ' 个版本，其中 ' + versionValidCount() + ' 个仍在有效期内。' +
-        (hasBase ? '' : '<br>这些版本都没有填部署地址（base），切换只记录「启用哪一版」；要让切换真正加载另一份构建，需把该版本单独部署后填进 base 字段。');
-}
-
-function doSwitch(sha) {
-    var r = versionSetActive(sha);
-    if (!r.ok) {
-        alert("切换失败：" + r.reason);
-        return;
+    if (!ids.length) {
+        html += '<div class="note">还没有登记任何实验功能。</div>';
+    } else {
+        ids.forEach(function (id) {
+            var cur = featVersionGetActive(id);
+            var total = featVersionList(id).length;
+            var valid = featVersionValidCount(id);
+            html += '<a class="vrow" href="versions.html?f=' + encodeURIComponent(id) + '">' +
+                '<div class="info">' +
+                  '<div class="sha" style="font-size:15px">' + esc(featVersionName(id)) + '</div>' +
+                  '<div class="sub">' +
+                    (cur ? '当前 ' + esc(cur.version) +
+                        '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(cur.channel) + '</span>' +
+                        ' · ' + leftHtml(cur)
+                       : "暂无登记版本") +
+                    '<br>共 ' + total + ' 个版本，' + valid + ' 个有效' +
+                  '</div>' +
+                '</div>' +
+                '<div class="arrow">›</div>' +
+            '</a>';
+        });
     }
-    if (r.redirect) return;   // 已跳转
-    renderCurrent();
-    renderList();
+
+    html += '<div class="note" style="margin-top:12px;">' +
+        '每个实验功能各自维护一条版本线，互不影响；切换只在该功能自己的有效版本之间进行。</div></div>';
+
+    document.getElementById("root").innerHTML = html;
 }
 
-renderCurrent();
-renderList();
-versionOnChange(function () { renderCurrent(); renderList(); });
+// ================= 明细：某个功能的版本列表 =================
+function renderDetail(id) {
+    var list = featVersionList(id);
+    var name = featVersionName(id);
+    document.getElementById("pageTitle").innerText = "🏷️ " + name;
+    document.getElementById("backBtn").setAttribute("onclick", "location.href='versions.html'");
+    document.getElementById("backBtn").innerText = "← 全部功能";
+
+    var cur = featVersionGetActive(id);
+    var html = '<div class="card"><div class="card-title">当前启用</div>';
+
+    if (!cur) {
+        html += '<div class="note">该功能还没有登记任何版本。</div>';
+    } else {
+        var left = featVersionDaysLeft(cur);
+        var total = (typeof cur.days === "number") ? cur.days : VERSION_DEFAULT_DAYS;
+        var pct = (!total || left === Infinity) ? 100 : Math.max(0, Math.min(100, left / total * 100));
+        var expired = left <= 0;
+        var barClass = expired ? "bar dead" : (left <= 14 ? "bar warn" : "bar");
+
+        html +=
+            '<div class="cur-sha">' + esc(cur.version) +
+              '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(cur.channel) + '</span>' +
+            '</div>' +
+            '<div class="cur-title">' + esc(cur.title || "") + '</div>' +
+            '<div class="cur-sub">登记于 ' + esc(cur.date) + ' · ' + esc(featVersionExpiryText(cur)) + '</div>' +
+            '<div class="' + barClass + '"><div style="width:' + pct + '%"></div></div>' +
+            '<div class="cur-sub">' + leftHtml(cur) + '</div>' +
+            (cur.note ? '<div class="cur-sub">' + esc(cur.note) + '</div>' : '') +
+            (expired ? '<div class="expired-tip">⚠️ 这一版已超过 ' + total + ' 天有效期，建议切到仍有效的版本。</div>' : '');
+    }
+    html += '</div>';
+
+    html += '<div class="card"><div class="card-title">' + esc(name) + ' · 版本记录</div>';
+    if (!list.length) {
+        html += '<div class="note">暂无记录。</div>';
+    } else {
+        list.forEach(function (v) {
+            var expired = featVersionDaysLeft(v) <= 0;
+            var isCur = cur && v.version === cur.version;
+            var act;
+            if (isCur) act = '<span class="tag-cur">当前</span>';
+            else if (expired) act = '<button class="sw-btn" type="button" disabled>已过期</button>';
+            else act = '<button class="sw-btn" type="button" onclick="doSwitch(\'' + esc(id) + '\',\'' + esc(v.version) + '\')">切换</button>';
+
+            html += '<div class="vrow' + (isCur ? " active" : "") + (expired ? " dead" : "") + '">' +
+                '<div class="info">' +
+                  '<div class="sha">' + esc(v.version) +
+                    '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(v.channel) + '</span>' +
+                  '</div>' +
+                  '<div class="sub">' + esc(v.title || "") + '<br>' +
+                    '登记 ' + esc(v.date) + ' · 有效期 ' + ((typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS) + ' 天 · ' + leftHtml(v) +
+                  '</div>' +
+                '</div>' +
+                '<div class="act">' + act + '</div>' +
+            '</div>';
+        });
+    }
+
+    var hasBase = list.some(function (v) { return !!v.base; });
+    html += '<div class="note" style="margin-top:12px;">' +
+        '共 ' + list.length + ' 个版本，其中 ' + featVersionValidCount(id) + ' 个仍在有效期内。' +
+        (hasBase ? '' : '<br>这些版本都没有填独立部署地址（base），切换只记录「该功能启用哪一版」；要让切换真正加载另一份实现，需把该版本单独部署后填进 base 字段。') +
+        '</div></div>';
+
+    document.getElementById("root").innerHTML = html;
+}
+
+function doSwitch(id, sha) {
+    var r = featVersionSetActive(id, sha);
+    if (!r.ok) { alert("切换失败：" + r.reason); return; }
+    if (r.redirect) return;
+    renderDetail(id);
+}
+
+function render() {
+    if (FID && FEATURE_VERSIONS[FID]) renderDetail(FID); else renderIndex();
+}
+render();
+versionOnChange(render);
 </script>
 </body>
 </html>

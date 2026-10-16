@@ -157,29 +157,6 @@
             color: #8888aa;
             line-height: 1.8;
         }
-        .version-line {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #6f6f95;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-        }
-        .version-line b {
-            font-family: ui-monospace, Menlo, Consolas, monospace;
-            color: #4ecdc4;
-            font-weight: bold;
-        }
-        .version-line .tag {
-            display: inline-block;
-            padding: 1px 6px;
-            border-radius: 5px;
-            margin-left: 6px;
-            font-size: 11px;
-        }
-        .version-line .tag.private { background: rgba(255,107,107,0.18); color: #ff8888; }
-        .version-line .tag.public { background: rgba(57,217,138,0.18); color: #39d98a; }
-        .version-line .exp { color: #f39c12; }
-        .version-line .dead { color: #ff8888; }
         /* ========== 当前词本/课时选择卡片 ========== */
         .book-current-card {
             display: flex;
@@ -299,7 +276,6 @@
     </div>
 
     <div class="footnote">登录后可解锁全部课时与特色模式</div>
-    <div class="version-line" id="versionLine" onclick="location.href='dict/versions.html'" title="点击查看版本管理"></div>
 </div>
 <!-- 右下角设置入口 -->
 <button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
@@ -309,7 +285,6 @@
 <script src="dict/msauth.js?v=20261016"></script>
 <script src="dict/auth.js?v=20261016"></script>
 <script src="dict/lab.js?v=20261016"></script>
-<script src="dict/version.js?v=20261016"></script>
 <script>
 // ===== 身份检测 =====
 function renderStatus() {
@@ -372,24 +347,6 @@ function goOffline() {
     }
 }
 if (typeof labOnChange === "function") labOnChange(renderOfflineBtn);
-
-// ===== 当前版本 =====
-function renderVersionLine() {
-    const el = document.getElementById("versionLine");
-    if (!el || typeof versionGetActive !== "function") return;
-    const v = versionGetActive();
-    if (!v) { el.innerText = ""; return; }
-    const left = versionDaysLeft(v);
-    let tail;
-    if (left === Infinity) tail = '<span class="exp">永久有效</span>';
-    else if (left <= 0) tail = '<span class="dead">已过期</span>';
-    else if (left <= 14) tail = '<span class="exp">剩余 ' + left + ' 天</span>';
-    else tail = '剩余 ' + left + ' 天';
-    el.innerHTML = '当前版本 <b>' + v.version + '</b>' +
-        '<span class="tag ' + versionChannelClass(v.channel) + '">' + v.channel + '</span>' +
-        ' · ' + tail;
-}
-if (typeof versionOnChange === "function") versionOnChange(renderVersionLine);
 function enterGame() {
     location.href = "match.html";
 }
@@ -403,7 +360,6 @@ function goSpell() {
 renderStatus();
 renderCurrentBook();
 renderOfflineBtn();
-renderVersionLine();
 </script>
 <script src="dict/sidebar.js?v=20261016"></script>
 </body>
