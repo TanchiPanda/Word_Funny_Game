@@ -230,27 +230,56 @@ const LOCKED_MODES = ["hard", "hell"];
 const GUEST_MAX_LEVEL = 2;
 function isGuest() { return !isLoggedIn(); }
 function guestCanReach(levelIdx) { if (!isGuest()) return true; if (activeBook().free) return true; return levelIdx <= GUEST_MAX_LEVEL; }
-function getRemovedList() { if (!removedMap[currentBook]) removedMap[currentBook]={}; if (!removedMap[currentBook][currentLevel]) removedMap[currentBook][currentLevel]=[]; return removedMap[currentBook][currentLevel]; }
+// 划词剔除：单课时沿用旧的 book/level 键（兼容历史存档），多课时另用一个合并键
+function removedKeyForScope() {
+    const refs = activeLevelRefs();
+    if (refs.length === 1) return String(refs[0].li);
+    return "m:" + refs.map(r => r.bi + "-" + r.li).join("_");
+}
+function getRemovedList() {
+    const refs = activeLevelRefs();
+    const bi = (refs.length === 1) ? refs[0].bi : currentBook;
+    if (!removedMap[bi]) removedMap[bi] = {};
+    const key = removedKeyForScope();
+    if (!removedMap[bi][key]) removedMap[bi][key] = [];
+    return removedMap[bi][key];
+}
+function setRemovedList(arr) {
+    const refs = activeLevelRefs();
+    const bi = (refs.length === 1) ? refs[0].bi : currentBook;
+    if (!removedMap[bi]) removedMap[bi] = {};
+    removedMap[bi][removedKeyForScope()] = arr;
+}
 
 // ===== 选词页渲染 =====
 function renderSelect() {
-    const book = activeBook();
-    const lv = book.levels[currentLevel];
-    document.getElementById("selBook").innerText = "《" + book.name + "》";
-    document.getElementById("selLevel").innerText = lv.name + " · 共" + lv.words.length + "词";
+    const refs = activeLevelRefs();
+    const books = getAllBooks();
+    const words = activeWordList();
+    if (refs.length === 1) {
+        const book = books[refs[0].bi];
+        document.getElementById("selBook").innerText = "《" + book.name + "》";
+        document.getElementById("selLevel").innerText = book.levels[refs[0].li].name + " · 共" + words.length + "词";
+    } else {
+        const bookIdx = {};
+        refs.forEach(r => bookIdx[r.bi] = 1);
+        const names = Object.keys(bookIdx).map(k => books[k].name);
+        document.getElementById("selBook").innerText = "《" + names.join("》《") + "》";
+        document.getElementById("selLevel").innerText = "已选 " + refs.length + " 个课时 · 共" + words.length + "词";
+    }
     document.getElementById("selProgress").innerText = "客人模式" + (isGuest() ? "" : " · 已登录");
     const removed = getRemovedList();
     const box = document.getElementById("tagBox");
     box.innerHTML = "";
-    lv.words.forEach((w, i) => {
+    words.forEach((w, i) => {
         const tag = document.createElement("div");
         tag.className = "word-tag" + (removed.includes(i) ? " remove" : "");
         tag.innerText = w.en;
         tag.onclick = () => {
             playClickSound();
             const r = getRemovedList();
-            if (r.includes(i)) removedMap[currentBook][currentLevel] = r.filter(x => x !== i);
-            else removedMap[currentBook][currentLevel] = r.concat([i]);
+            if (r.includes(i)) setRemovedList(r.filter(x => x !== i));
+            else setRemovedList(r.concat([i]));
             renderSelect();
         };
         box.appendChild(tag);
@@ -274,7 +303,7 @@ function startGame(mode) {
     gameMode = mode;
     const removed = getRemovedList();
     gameWords = [];
-    activeBook().levels[currentLevel].words.forEach((w, i) => {
+    activeWordList().forEach((w, i) => {
         if (!removed.includes(i)) gameWords.push(w);
     });
     if (gameWords.length === 0) { alert("所有单词都被剔除了！"); return; }

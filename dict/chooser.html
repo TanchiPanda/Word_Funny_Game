@@ -121,6 +121,35 @@
             border-color: rgba(255,107,107,0.4);
             color: #999;
         }
+        /* 当前选择汇总条 */
+        .scope-bar {
+            background: rgba(255,255,255,0.07);
+            border: 1.5px solid rgba(78,205,196,0.35);
+            border-radius: 14px;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #a8a8d8;
+            line-height: 1.7;
+        }
+        .scope-bar b { color: #4ecdc4; }
+        .scope-bar .cnt {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 7px;
+            background: rgba(255,215,0,0.18);
+            color: #ffd700;
+            font-weight: bold;
+            margin: 0 3px;
+        }
+        .scope-hint {
+            text-align: center;
+            font-size: 12px;
+            color: #ffd700;
+            min-height: 17px;
+            margin: -8px 0 12px;
+            letter-spacing: 1px;
+        }
         /* 底部按钮 */
         .bottom-area {
             margin-top: 10px;
@@ -193,8 +222,10 @@
 <body>
 <div class="wrap">
     <div class="page-title">选择单词本与课时</div>
-    <div class="page-sub">点击课时标签即可切换，选择自动保存</div>
+    <div class="page-sub" id="pageSub">点击课时标签即可切换，可多选，再点一次取消</div>
+    <div class="scope-bar" id="scopeBar"></div>
     <div id="bookList"></div>
+    <div class="scope-hint" id="scopeHint"></div>
     <div class="guest-tip" id="guestTip" style="display:none;">🔒 客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
     <div class="bottom-area">
         <button class="back-btn" onclick="goBack()">✅ 完成选择，返回首页</button>
@@ -215,6 +246,7 @@
     </div>
 </div>
 <script src="wbook.js?v=20261016"></script>
+<script src="lab.js?v=20261016"></script>
 <script src="msauth.js?v=20261016"></script>
 <script src="auth.js?v=20261016"></script>
 <script>
@@ -225,6 +257,34 @@ function guestCanReach(book, levelIdx) {
     if (book.free) return true;
     return levelIdx <= GUEST_MAX_LEVEL;
 }
+// 多选课时功能（公测，默认开启）；lab.js 没加载时按开启处理
+function multiOn() {
+    return (typeof labEnabled === "function") ? labEnabled("multiLevel") : true;
+}
+let hintTimer = null;
+function showHint(msg) {
+    const el = document.getElementById("scopeHint");
+    el.innerText = msg;
+    if (hintTimer) clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () { el.innerText = ""; }, 2200);
+}
+// 当前选择汇总
+function renderScopeBar() {
+    const refs = activeLevelRefs();
+    const all = getAllBooks();
+    const total = activeWordList().length;
+    const bookIdx = {};
+    refs.forEach(function (r) { bookIdx[r.bi] = 1; });
+    const bookNames = Object.keys(bookIdx).map(function (k) { return all[k].name; });
+
+    document.getElementById("scopeBar").innerHTML =
+        "已选 <span class=\"cnt\">" + refs.length + "</span> 个课时 · 共 <b>" + total + "</b> 词" +
+        (refs.length > 1 ? "<br>范围：" + bookNames.join("、") : "<br>范围：" + all[refs[0].bi].levels[refs[0].li].name);
+
+    document.getElementById("pageSub").innerText = multiOn()
+        ? "点击课时标签可多选，再点一次取消"
+        : "点击课时标签即可切换，选择自动保存";
+}
 // 渲染词本列表
 function render() {
     loadCurrentSelection();
@@ -234,12 +294,13 @@ function render() {
     document.getElementById("guestTip").style.display = guest ? "" : "none";
     WORD_BOOKS.forEach((book, bi) => {
         const card = document.createElement("div");
-        card.className = "book-card" + (bi === currentBook ? " active" : "");
+        const anySel = book.levels.some((lv, li) => isLevelSelected(bi, li));
+        card.className = "book-card" + (anySel ? " active" : "");
         const totalWords = bookTotalWords(book);
         let levelsHtml = "";
         book.levels.forEach((lv, li) => {
             const reachable = guestCanReach(book, li);
-            const selected = (bi === currentBook && li === currentLevel);
+            const selected = isLevelSelected(bi, li);
             if (reachable) {
                 levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
             } else {
@@ -261,10 +322,11 @@ function render() {
     custom.forEach((cb, ci) => {
         const bi = WORD_BOOKS.length + ci;
         const card = document.createElement("div");
-        card.className = "book-card" + (bi === currentBook ? " active" : "");
+        const anySel = cb.data.some((lv, li) => isLevelSelected(bi, li));
+        card.className = "book-card" + (anySel ? " active" : "");
         let levelsHtml = "";
         cb.data.forEach((lv, li) => {
-            const selected = (bi === currentBook && li === currentLevel);
+            const selected = isLevelSelected(bi, li);
             levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
         });
         card.innerHTML = `
@@ -284,12 +346,19 @@ function render() {
     add.innerHTML = `<div class="cover" style="opacity:0.5">➕</div><div class="book-info"><div class="book-name" style="color:#a8a8d8;">新建/编辑词书</div></div>`;
     add.onclick = () => location.href = "editor.html";
     list.appendChild(add);
+
+    renderScopeBar();
 }
-// 选择课时
+// 点击课时：多选模式下切换勾选，单选模式下直接切换
 function pickLevel(bi, li) {
-    currentBook = bi;
-    currentLevel = li;
-    saveCurrentSelection();
+    if (multiOn()) {
+        if (!toggleLevelRef(bi, li)) {
+            showHint("至少保留一个课时");
+            return;
+        }
+    } else {
+        setSingleLevelRef(bi, li);
+    }
     render();
 }
 // 锁定课时：尝试解锁

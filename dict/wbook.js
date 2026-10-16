@@ -2298,25 +2298,163 @@ const WORD_BOOKS = [
   ] },
 ];
 // 当前单词本与课时（由 dict/chooser.html 选择，持久化到 localStorage）
+// 支持多选课时：选中的课时集合是唯一事实来源，currentBook/currentLevel 只作为「集合里的第一个」
 let currentBook = 0;
 let currentLevel = 0;
 function activeBook() { return getAllBooks()[currentBook]; }
-function activeWordList() { return activeBook().levels[currentLevel].words; }
-// ===== 词本/课时选择持久化 =====
+
+// ===== 多选课时的选择集合 =====
 const SEL_BOOK_KEY = "wordGameCurrentBook";
 const SEL_LEVEL_KEY = "wordGameCurrentLevel";
+const SEL_MULTI_KEY = "wordGameSelectedLevels";   // ["0:1","0:2","2:0"]
+
 function saveCurrentSelection() {
     localStorage.setItem(SEL_BOOK_KEY, String(currentBook));
     localStorage.setItem(SEL_LEVEL_KEY, String(currentLevel));
 }
+
+// 已勾选的课时，规范化（去重 + 按词书/课时升序），并丢掉已不存在的词书
+function selectedLevelRefs() {
+    let raw = [];
+    try { raw = JSON.parse(localStorage.getItem(SEL_MULTI_KEY) || "[]"); } catch (e) {}
+    if (!Array.isArray(raw) || !raw.length) return [];
+    const all = getAllBooks();
+    const seen = {};
+    const out = [];
+    raw.forEach(function (s) {
+        const m = /^(\d+):(\d+)$/.exec(String(s));
+        if (!m) return;
+        const bi = parseInt(m[1], 10), li = parseInt(m[2], 10);
+        if (!all[bi] || !all[bi].levels[li]) return;
+        const key = bi + ":" + li;
+        if (seen[key]) return;
+        seen[key] = 1;
+        out.push({ bi: bi, li: li });
+    });
+    out.sort(function (a, b) { return a.bi - b.bi || a.li - b.li; });
+    return out;
+}
+
+function setSelectedLevelRefs(refs) {
+    const arr = refs.map(function (r) { return r.bi + ":" + r.li; });
+    try { localStorage.setItem(SEL_MULTI_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+
+// 保证集合非空，并让 currentBook/currentLevel 与集合第一项保持一致
+function normalizeSelection() {
+    const all = getAllBooks();
+    if (!all[currentBook]) currentBook = 0;
+    if (!all[currentBook].levels[currentLevel]) currentLevel = 0;
+
+    let refs = selectedLevelRefs();
+    if (!refs.length) {
+        refs = [{ bi: currentBook, li: currentLevel }];
+    } else {
+        currentBook = refs[0].bi;
+        currentLevel = refs[0].li;
+    }
+    setSelectedLevelRefs(refs);   // 顺带把清理过的结果写回
+    saveCurrentSelection();
+    return refs;
+}
+
 function loadCurrentSelection() {
     const b = parseInt(localStorage.getItem(SEL_BOOK_KEY), 10);
     const l = parseInt(localStorage.getItem(SEL_LEVEL_KEY), 10);
     const all = getAllBooks();
     if (!isNaN(b) && all[b]) currentBook = b;
+    if (!all[currentBook]) currentBook = 0;
     const maxLv = all[currentBook].levels.length - 1;
     if (!isNaN(l) && l >= 0 && l <= maxLv) currentLevel = l;
+    normalizeSelection();
 }
+
+// ===== 当前生效的课时 / 词表 =====
+// 选中的全部课时（至少一个）
+function activeLevelRefs() {
+    const refs = selectedLevelRefs();
+    if (refs.length) return refs;
+    return [{ bi: currentBook, li: currentLevel }];
+}
+
+function activeLevelCount() { return activeLevelRefs().length; }
+
+function isLevelSelected(bi, li) {
+    return activeLevelRefs().some(function (r) { return r.bi === bi && r.li === li; });
+}
+
+// 学习词表：多选时按「词书序 + 课时序」把各课时词表依次拼接
+function activeWordList() {
+    const all = getAllBooks();
+    const refs = activeLevelRefs();
+    if (refs.length === 1) {
+        return all[refs[0].bi].levels[refs[0].li].words;
+    }
+    const out = [];
+    refs.forEach(function (r) {
+        const lv = all[r.bi] && all[r.bi].levels[r.li];
+        if (lv && Array.isArray(lv.words)) {
+            for (let i = 0; i < lv.words.length; i++) out.push(lv.words[i]);
+        }
+    });
+    return out;
+}
+
+// 显示用范围名（含词书名）
+function activeScopeName() {
+    const all = getAllBooks();
+    const refs = activeLevelRefs();
+    if (refs.length === 1) {
+        return all[refs[0].bi].name + " " + all[refs[0].bi].levels[refs[0].li].name;
+    }
+    const bookIdx = {};
+    refs.forEach(function (r) { bookIdx[r.bi] = 1; });
+    const names = Object.keys(bookIdx).map(function (k) { return all[k].name; });
+    return names.join("、") + " · " + refs.length + " 个课时";
+}
+
+// 只含课时名的范围名（多选时形如 "LV1、LV2 等 3 个课时"）
+function activeLevelLabel() {
+    const all = getAllBooks();
+    const refs = activeLevelRefs();
+    if (refs.length === 1) return all[refs[0].bi].levels[refs[0].li].name;
+    const names = refs.slice(0, 2).map(function (r) {
+        return all[r.bi].levels[r.li].name;
+    });
+    return names.join("、") + " 等 " + refs.length + " 个课时";
+}
+
+// 勾选 / 取消一个课时（再点一次取消）。返回 false 表示被拒绝
+function toggleLevelRef(bi, li) {
+    const all = getAllBooks();
+    if (!all[bi] || !all[bi].levels[li]) return false;
+    const refs = activeLevelRefs();
+    const idx = refs.findIndex(function (r) { return r.bi === bi && r.li === li; });
+    if (idx >= 0) {
+        if (refs.length <= 1) return false;   // 至少保留一个课时
+        refs.splice(idx, 1);
+    } else {
+        refs.push({ bi: bi, li: li });
+    }
+    refs.sort(function (a, b) { return a.bi - b.bi || a.li - b.li; });
+    setSelectedLevelRefs(refs);
+    currentBook = refs[0].bi;
+    currentLevel = refs[0].li;
+    saveCurrentSelection();
+    return true;
+}
+
+// 只选中这一个（单选模式，或把多选集重新收敛成一个）
+function setSingleLevelRef(bi, li) {
+    const all = getAllBooks();
+    if (!all[bi] || !all[bi].levels[li]) return false;
+    setSelectedLevelRefs([{ bi: bi, li: li }]);
+    currentBook = bi;
+    currentLevel = li;
+    saveCurrentSelection();
+    return true;
+}
+
 // 统计词本总词数
 function bookTotalWords(book) {
     return book.levels.reduce((sum, lv) => sum + lv.words.length, 0);

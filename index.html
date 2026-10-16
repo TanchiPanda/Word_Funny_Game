@@ -304,10 +304,23 @@ function renderStatus() {
 // ===== 当前词本/课时展示 =====
 function renderCurrentBook() {
     loadCurrentSelection();
-    const book = activeBook();
-    const lv = book.levels[currentLevel];
-    document.getElementById("currentBookName").innerText = "《" + book.name + "》" + (book.free ? "（免费）" : "");
-    document.getElementById("currentLevelName").innerText = lv.name + " · 共" + lv.words.length + "词";
+    const refs = activeLevelRefs();
+    const books = getAllBooks();
+    const nameEl = document.getElementById("currentBookName");
+    const lvEl = document.getElementById("currentLevelName");
+
+    if (refs.length === 1) {
+        const book = books[refs[0].bi];
+        const lv = book.levels[refs[0].li];
+        nameEl.innerText = "《" + book.name + "》" + (book.free ? "（免费）" : "");
+        lvEl.innerText = lv.name + " · 共" + lv.words.length + "词";
+    } else {
+        const bookIdx = {};
+        refs.forEach(r => bookIdx[r.bi] = 1);
+        const names = Object.keys(bookIdx).map(k => books[k].name);
+        nameEl.innerText = "《" + names.join("》《") + "》";
+        lvEl.innerText = "已选 " + refs.length + " 个课时 · 共" + activeWordList().length + "词";
+    }
 }
 function goChooser() {
     location.href = "dict/chooser.html";

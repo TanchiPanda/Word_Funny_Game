@@ -106,6 +106,11 @@ body {
     gap: 8px;
     margin-bottom: 10px;
 }
+.lab-badge.public {
+    background: rgba(57,217,138,0.18);
+    color: #39d98a;
+    border-color: rgba(57,217,138,0.4);
+}
 .lab-badge {
     font-size: 11px;
     padding: 2px 8px;
@@ -173,6 +178,7 @@ body {
     font-size: 11px;
     cursor: pointer;
 }
+.lab-ver .ver-tag { color: #a8a8d8; }
 .lab-ver .ver-link:active { transform: scale(0.96); }.lab-btn {
     width: 100%;
     padding: 12px;
@@ -345,6 +351,75 @@ window.Lab = (function () {
     }
 
     Lab.register({ id: FEATURE, title: "📥 " + NAME, render: render });
+})();
+
+// ---------- 模块：多选课时（公测）----------
+(function () {
+    var FEATURE = "multiLevel";
+    var NAME = "多选课时";
+
+    function render(el) {
+        el.innerHTML =
+            '<div class="lab-meta">' +
+            '  <span class="lab-badge public">公测</span>' +
+            '  <span class="lab-state" id="labState-ml"></span>' +
+            '</div>' +
+            '<div class="lab-desc">在选课时页可同时勾选多个课时（再点一次取消），学习、配对、拼写都用合并后的词表。</div>' +
+            '<div class="lab-ver" id="labVerLine-ml"></div>' +
+            '<div class="lab-actions" id="labActions-ml"></div>';
+
+        paint(el);
+        labOnChange(function () { if (document.body.contains(el)) paint(el); });
+        versionOnChange(function () { if (document.body.contains(el)) paint(el); });
+    }
+
+    function paintVersion(el) {
+        var box = el.querySelector("#labVerLine-ml");
+        var v = featVersionGetActive(FEATURE);
+        if (!v) { box.innerHTML = '<span class="ver-tag">尚未登记版本</span>'; return; }
+        var left = featVersionDaysLeft(v);
+        var leftText = (left === Infinity) ? "永久有效"
+            : (left <= 0 ? "已过期" : "剩余 " + left + " 天");
+        box.innerHTML =
+            '<span class="ver-tag">该功能版本 <b>' + v.version + '</b></span>' +
+            '<span class="badge-mini ' + versionChannelClass(v.channel) + '">' + v.channel + '</span>' +
+            '<span class="ver-left' + (left <= 0 ? " dead" : "") + '">' + leftText + '</span>' +
+            '<button class="ver-link" type="button" id="labVerGo-ml">版本记录</button>';
+        box.querySelector("#labVerGo-ml").onclick = function () {
+            location.href = "dict/versions.html?f=" + encodeURIComponent(FEATURE);
+        };
+    }
+
+    function paint(el) {
+        var on = labEnabled(FEATURE);
+        var st = el.querySelector("#labState-ml");
+        var ac = el.querySelector("#labActions-ml");
+
+        paintVersion(el);
+
+        st.className = "lab-state " + (on ? "on" : "off");
+        st.innerText = on ? "已开启（默认）" : "已关闭";
+
+        if (on) {
+            ac.innerHTML =
+                '<button class="lab-btn primary" type="button" id="labGo-ml">📚 去选课时页多选</button>' +
+                '<button class="lab-btn" type="button" id="labOff-ml">关闭该功能</button>';
+            ac.querySelector("#labGo-ml").onclick = function () {
+                location.href = "dict/chooser.html";
+            };
+            ac.querySelector("#labOff-ml").onclick = function () {
+                if (!confirm("关闭「" + NAME + "」后，选课时页会退回单选，已多选的课时会收敛成一个。")) return;
+                labSetEnabled(FEATURE, false);
+            };
+        } else {
+            ac.innerHTML = '<button class="lab-btn primary" type="button" id="labOn-ml">重新开启</button>';
+            ac.querySelector("#labOn-ml").onclick = function () {
+                labSetEnabled(FEATURE, true);
+            };
+        }
+    }
+
+    Lab.register({ id: FEATURE, title: "📚 " + NAME, render: render });
 })();
 
 // ---------- 模块：功能版本总览 ----------

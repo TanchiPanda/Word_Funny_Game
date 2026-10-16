@@ -253,7 +253,14 @@ function safeName(s) {
     return String(s).replace(/[\\/:*?"<>|\s]+/g, "_");
 }
 function fileName(blankEn) {
-    var lv = scopeValue() === "book" ? "全册" : book.levels[currentLevel].name;
+    var lv;
+    if (scopeValue() === "book") {
+        lv = "全册";
+    } else if (activeLevelCount() === 1) {
+        lv = activeLevelLabel();
+    } else {
+        lv = activeLevelCount() + "个课时";
+    }
     return safeName(book.name) + "_" + safeName(lv) + "_" + (blankEn ? "默写版" : "单词表") + ".csv";
 }
 
@@ -300,9 +307,19 @@ function init() {
         return;
     }
 
+    var refs = activeLevelRefs();
+    var scopeTxt;
+    if (refs.length === 1) {
+        scopeTxt = book.levels[refs[0].li].name;
+    } else {
+        var bookIdx = {};
+        refs.forEach(function (r) { bookIdx[r.bi] = 1; });
+        var names = Object.keys(bookIdx).map(function (k) { return getAllBooks()[k].name; });
+        scopeTxt = names.join("、") + " · 已选 " + refs.length + " 个课时";
+    }
     document.getElementById("bookInfo").innerHTML =
         "📖 <b>" + book.name + "</b>" + (book.free ? "（免费）" : "") + "<br>" +
-        '<span class="dim">当前课时：' + book.levels[currentLevel].name +
+        '<span class="dim">当前范围：' + scopeTxt +
         " · 共 " + activeWordList().length + " 词</span><br>" +
         '<span class="dim">整本：' + book.levels.length + " 个课时 · 共 " + bookTotalWords(book) + " 词</span>";
 

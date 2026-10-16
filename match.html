@@ -898,8 +898,8 @@ function renderBookSelect() {
 }
 function switchBook(idx) {
     playClickSound();
-    currentBook = idx;
-    currentLevel = 0;
+    // 换词书 = 收敛成该词书第 1 个课时（多选请回选课时页）
+    setSingleLevelRef(idx, 0);
     document.getElementById("bookSelect").value = String(currentBook);
     renderLevelSelect();
     renderWordTags();
@@ -914,18 +914,41 @@ function initLevels() {
 }
 // 渲染当前词本/课时只读展示条
 function renderCurrentBanner() {
-    const book = activeBook();
-    const lv = book.levels[currentLevel];
+    const refs = activeLevelRefs();
+    const books = getAllBooks();
     const nameEl = document.getElementById("cbName");
     const levelEl = document.getElementById("cbLevel");
-    if (nameEl) nameEl.innerText = "📖 " + book.name + (book.free ? "（免费）" : "");
-    if (levelEl) levelEl.innerText = "🏷 " + lv.name + "（" + lv.words.length + "词）";
+
+    if (refs.length === 1) {
+        const book = books[refs[0].bi];
+        const lv = book.levels[refs[0].li];
+        if (nameEl) nameEl.innerText = "📖 " + book.name + (book.free ? "（免费）" : "");
+        if (levelEl) levelEl.innerText = "🏷 " + lv.name + "（" + lv.words.length + "词）";
+        return;
+    }
+    const bookIdx = {};
+    refs.forEach(r => bookIdx[r.bi] = 1);
+    const names = Object.keys(bookIdx).map(k => books[k].name);
+    if (nameEl) nameEl.innerText = "📖 " + names.join("、");
+    if (levelEl) levelEl.innerText = "🏷 已选 " + refs.length + " 个课时（" + activeWordList().length + "词）";
 }
 function renderLevelSelect() {
     const sel = document.getElementById("levelSelect");
+    if (!sel) return;
+    const refs = activeLevelRefs();
+
+    // 多选课时：这里不再单独切课时，回选课时页调整
+    if (refs.length > 1) {
+        sel.innerHTML = '<option value="multi">已选 ' + refs.length + ' 个课时</option>';
+        sel.value = "multi";
+        sel.disabled = true;
+        sel.onchange = null;
+        return;
+    }
+    sel.disabled = false;
     sel.innerHTML = "";
     const guest = isGuest();
-    const book = activeBook();
+    const book = getAllBooks()[refs[0].bi];
     book.levels.forEach((lv, i) => {
         if (guest && !book.free && i > GUEST_MAX_LEVEL) return; // 非免费词本受限只列前 3 章
         const opt = document.createElement("option");
@@ -939,11 +962,11 @@ function renderLevelSelect() {
         lock.textContent = "🔒 解锁全部章节…";
         sel.appendChild(lock);
     }
-    sel.value = String(Math.min(currentLevel, book.levels.length - 1));
+    sel.value = String(Math.min(refs[0].li, book.levels.length - 1));
     sel.onchange = () => {
         const v = sel.value;
         if (v === "-1") {
-            sel.value = String(currentLevel);
+            sel.value = String(refs[0].li);
             openGate({ type: "moreLevels" });
             return;
         }
@@ -956,19 +979,35 @@ function switchLevel(idx) {
         return;
     }
     playClickSound();
-    currentLevel = idx;
-    saveCurrentSelection();
+    // 从下拉框切课时 = 收敛成单课时
+    setSingleLevelRef(currentBook, idx);
     syncPushDebounced();
     const levelSel = document.getElementById("levelSelect");
     if (levelSel) levelSel.value = String(currentLevel);
+
     renderCurrentBanner();
     renderWordTags();
     renderLeaderboard();
 }
+// 划词剔除：单课时沿用旧的 book/level 键（兼容历史存档），多课时另用一个合并键
+function removedKeyForScope() {
+    const refs = activeLevelRefs();
+    if (refs.length === 1) return String(refs[0].li);
+    return "m:" + refs.map(r => r.bi + "-" + r.li).join("_");
+}
 function getRemovedList() {
-    if (!removedMap[currentBook]) removedMap[currentBook] = {};
-    if (!removedMap[currentBook][currentLevel]) removedMap[currentBook][currentLevel] = [];
-    return removedMap[currentBook][currentLevel];
+    const refs = activeLevelRefs();
+    const bi = (refs.length === 1) ? refs[0].bi : currentBook;
+    if (!removedMap[bi]) removedMap[bi] = {};
+    const key = removedKeyForScope();
+    if (!removedMap[bi][key]) removedMap[bi][key] = [];
+    return removedMap[bi][key];
+}
+function setRemovedList(arr) {
+    const refs = activeLevelRefs();
+    const bi = (refs.length === 1) ? refs[0].bi : currentBook;
+    if (!removedMap[bi]) removedMap[bi] = {};
+    removedMap[bi][removedKeyForScope()] = arr;
 }
 function renderWordTags() {
     const box = document.getElementById("tagBox");
@@ -987,27 +1026,43 @@ function renderWordTags() {
 function renderSelectTip() {
     const tip = document.getElementById("selectTip");
     if (!tip) return;
-    const book = activeBook();
-    const lv = book.levels[currentLevel];
-    if (isGuest()) {
-        tip.innerText = "客人模式 · " + book.name + " " + lv.name + "（共" + lv.words.length + "词）：点击单词可剔除（划掉）；" + (book.free ? "本词本全部章节免费可玩，特色模式需解锁" : "更多章节与特色模式需解锁");
-    } else {
-        tip.innerText = book.name + " " + lv.name + "（共" + lv.words.length + "词）：点击单词可剔除（划掉）";
+    const refs = activeLevelRefs();
+    const books = getAllBooks();
+
+    if (refs.length === 1) {
+        const book = books[refs[0].bi];
+        const lv = book.levels[refs[0].li];
+        if (isGuest()) {
+            tip.innerText = "客人模式 · " + book.name + " " + lv.name + "（共" + lv.words.length + "词）：点击单词可剔除（划掉）；" + (book.free ? "本词本全部章节免费可玩，特色模式需解锁" : "更多章节与特色模式需解锁");
+        } else {
+            tip.innerText = book.name + " " + lv.name + "（共" + lv.words.length + "词）：点击单词可剔除（划掉）";
+        }
+        return;
     }
+    const bookIdx = {};
+    refs.forEach(r => bookIdx[r.bi] = 1);
+    const names = Object.keys(bookIdx).map(k => books[k].name);
+    tip.innerText = names.join("、") + " · 已选 " + refs.length + " 个课时（共" +
+        activeWordList().length + "词）：点击单词可剔除（划掉）";
 }
 function toggleRemove(dom, index) {
     const removed = getRemovedList();
     if (dom.classList.contains("remove")) {
         dom.classList.remove("remove");
-        removedMap[currentBook][currentLevel] = removed.filter(i => i !== index);
+        setRemovedList(removed.filter(i => i !== index));
     } else {
         dom.classList.add("remove");
-        removedMap[currentBook][currentLevel] = removed.concat([index]);
+        setRemovedList(removed.concat([index]));
     }
 }
 
+// 单课时沿用旧的记录键（兼容历史成绩），多课时另起一个合并键
 function getRecordKey(mode) {
-    return "wordGameBest_B" + currentBook + "_L" + currentLevel + "_" + mode;
+    const refs = activeLevelRefs();
+    if (refs.length === 1) {
+        return "wordGameBest_B" + refs[0].bi + "_L" + refs[0].li + "_" + mode;
+    }
+    return "wordGameBest_M" + refs.map(r => r.bi + "-" + r.li).join("_") + "_" + mode;
 }
 function getRecord(mode) {
     const raw = localStorage.getItem(getRecordKey(mode));
@@ -1025,7 +1080,7 @@ function saveRecord(mode, time, words) {
 function renderLeaderboard() {
     const grid = document.getElementById("leaderboardGrid");
     const titleEl = document.getElementById("leaderboardTitle");
-    if (titleEl) titleEl.innerText = "🏆 最佳用时排行榜 · " + activeBook().name + " " + activeBook().levels[currentLevel].name;
+    if (titleEl) titleEl.innerText = "🏆 最佳用时排行榜 · " + activeScopeName();
     grid.innerHTML = "";
     const modes = ["heaven", "easy", "race", "hell"];
     modes.forEach(mode => {
@@ -1125,7 +1180,7 @@ function startMatchGame() {
         cnBox.appendChild(div);
     });
     document.getElementById("resetBtn").onclick = () => { playClickSound(); startGame(gameMode); };
-    document.getElementById("statusText").innerText = activeBook().name + " " + activeBook().levels[currentLevel].name + " · 请开始配对单词（共" + keptWords.length + "组）";
+    document.getElementById("statusText").innerText = activeScopeName() + " · 请开始配对单词（共" + keptWords.length + "组）";
     document.getElementById("progressBar").style.width = "0%";
     if (gameMode === "race") {
         let totalTime = keptWords.length * 5;
