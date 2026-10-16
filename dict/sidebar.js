@@ -12,6 +12,7 @@
     { icon: "✏️", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },
     { icon: "📕", label: "词典学习", href: base + "study.html", match: ["study.html"] },
     { icon: "📖", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },
+    { icon: "🧪", label: "实验室", href: base + "lab.html", match: ["lab.html"] },
     { icon: "⚙️", label: "设置", href: base + "settings.html", match: ["settings.html", "advanced-sync.html"] },
     { icon: "👤", label: "账号管理", href: "https://myacc.r6t5.dpdns.org/?app=wordgm", match: [] },
   ];
@@ -115,11 +116,14 @@
   if (typeof onSyncStateChange === "function") {
     onSyncStateChange(updateSync);
   } else {
-    // 等 sync.js 加载
+    // 等 sync.js 加载，最多等 15 秒，避免页面没引 sync.js 时空转
+    let tries = 0;
     const t = setInterval(() => {
       if (typeof onSyncStateChange === "function") {
         clearInterval(t);
         onSyncStateChange(updateSync);
+      } else if (++tries >= 50) {
+        clearInterval(t);
       }
     }, 300);
   }
