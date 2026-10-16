@@ -29,6 +29,15 @@ var FEATURE_VERSIONS = {
               title: "首发：CSV + 默写版导出",
               note: "支持当前课时 / 整本词书两种导出范围" }
         ]
+    },
+
+    multiLevel: {
+        name: "多选课时",
+        versions: [
+            { version: "ae18605", channel: "Public", date: "2026-10-16",
+              title: "首发：选课时页多选课时",
+              note: "可跨词书勾选；学习 / 配对 / 拼写 / 导出共用合并词表" }
+        ]
     }
 
 };
