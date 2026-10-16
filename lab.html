@@ -177,6 +177,7 @@ body {
 <script src="dict/msauth.js?v=20261016"></script>
 <script src="dict/auth.js?v=20261016"></script>
 <script src="dict/lab.js?v=20261016"></script>
+<script src="dict/version.js?v=20261016"></script>
 <script>
 // ===== 实验室：模块注册表 =====
 // 后续每个试验功能写成 { id, title, render(el) }，
@@ -283,6 +284,54 @@ window.Lab = (function () {
     }
 
     Lab.register({ id: FEATURE, title: "📥 " + NAME, render: render });
+})();
+
+// ---------- 模块：版本管理 ----------
+(function () {
+    function render(el) {
+        el.innerHTML =
+            '<div class="lab-meta">' +
+            '  <span class="lab-state" id="labVerState"></span>' +
+            '</div>' +
+            '<div class="lab-desc" id="labVerDesc"></div>' +
+            '<div class="lab-actions">' +
+            '  <button class="lab-btn primary" type="button" id="labVerGo">🏷️ 打开版本管理</button>' +
+            '</div>';
+
+        paint(el);
+        el.querySelector("#labVerGo").onclick = function () {
+            location.href = "dict/versions.html";
+        };
+        versionOnChange(function () {
+            if (document.body.contains(el)) paint(el);
+        });
+    }
+
+    function paint(el) {
+        var v = versionGetActive();
+        var st = el.querySelector("#labVerState");
+        var desc = el.querySelector("#labVerDesc");
+        if (!v) { st.innerText = "登记表为空"; st.className = "lab-state off"; return; }
+
+        var left = versionDaysLeft(v);
+        var expired = left <= 0;
+        var leftText = (left === Infinity) ? "永久有效"
+            : (expired ? "已过期 " + Math.abs(left) + " 天" : "剩余 " + left + " 天");
+
+        st.className = "lab-state " + (expired ? "off" : "on");
+        st.innerText = v.version + " · " + v.channel + " · " + leftText;
+
+        desc.innerHTML =
+            escapeHtml(v.title || "") + "<br>" +
+            "共登记 " + VERSION_REGISTRY.length + " 个版本，" +
+            versionValidCount() + " 个仍在有效期内。";
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    Lab.register({ id: "versions", title: "🏷️ 版本管理", render: render });
 })();
 
 Lab.renderAll();
