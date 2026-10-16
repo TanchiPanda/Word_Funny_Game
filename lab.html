@@ -99,6 +99,61 @@ body {
     color: #ffd700;
     margin-bottom: 10px;
 }
+/* 模块内通用元件 */
+.lab-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.lab-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,107,107,0.2);
+    color: #ff8888;
+    border: 1px solid rgba(255,107,107,0.4);
+}
+.lab-state {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+.lab-state.on {
+    background: rgba(57,217,138,0.18);
+    color: #39d98a;
+    border: 1px solid rgba(57,217,138,0.4);
+}
+.lab-state.off {
+    background: rgba(255,255,255,0.08);
+    color: #a8a8d8;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.lab-desc {
+    font-size: 13px;
+    color: #a8a8d8;
+    line-height: 1.8;
+    margin-bottom: 14px;
+}
+.lab-actions { display: flex; flex-direction: column; gap: 8px; }
+.lab-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 11px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    transition: transform 0.15s;
+}
+.lab-btn:active { transform: scale(0.98); }
+.lab-btn.primary {
+    background: linear-gradient(90deg,#39d98a,#4ecdc4);
+    color: #0d3b2e;
+    box-shadow: 0 5px 16px rgba(57,217,138,0.3);
+}
 </style>
 </head>
 <body>
@@ -121,6 +176,7 @@ body {
 <script src="dict/sync.js?v=20261016"></script>
 <script src="dict/msauth.js?v=20261016"></script>
 <script src="dict/auth.js?v=20261016"></script>
+<script src="dict/lab.js?v=20261016"></script>
 <script>
 // ===== 实验室：模块注册表 =====
 // 后续每个试验功能写成 { id, title, render(el) }，
@@ -179,6 +235,56 @@ window.Lab = (function () {
 })();
 
 // ===== 启动 =====
+// ---------- 模块：下载词典 ----------
+(function () {
+    var FEATURE = "downloadDict";
+    var NAME = "下载词典";
+
+    function render(el) {
+        el.innerHTML =
+            '<div class="lab-meta">' +
+            '  <span class="lab-badge">内部实验</span>' +
+            '  <span class="lab-state" id="labState-dl"></span>' +
+            '</div>' +
+            '<div class="lab-desc">把当前词书导出成 CSV，或者生成英语列留空的默写版打印手写。</div>' +
+            '<div class="lab-actions" id="labActions-dl"></div>';
+
+        paint(el);
+        labOnChange(function () {
+            if (document.body.contains(el)) paint(el);
+        });
+    }
+
+    function paint(el) {
+        var on = labEnabled(FEATURE);
+        var st = el.querySelector("#labState-dl");
+        var ac = el.querySelector("#labActions-dl");
+
+        st.className = "lab-state " + (on ? "on" : "off");
+        st.innerText = on ? "已开启" : "未开启";
+
+        if (on) {
+            ac.innerHTML =
+                '<button class="lab-btn primary" type="button" id="labGo-dl">📥 进入下载页</button>' +
+                '<button class="lab-btn" type="button" id="labOff-dl">关闭该功能</button>';
+            ac.querySelector("#labGo-dl").onclick = function () {
+                location.href = "dict/download.html";
+            };
+            ac.querySelector("#labOff-dl").onclick = function () {
+                if (!confirm("确定关闭「" + NAME + "」？关闭后首页的「线下记背」会重新上锁。")) return;
+                labSetEnabled(FEATURE, false);
+            };
+        } else {
+            ac.innerHTML = '<button class="lab-btn primary" type="button" id="labOn-dl">🔒 输入口令开启</button>';
+            ac.querySelector("#labOn-dl").onclick = function () {
+                if (labAskPass(FEATURE, NAME)) location.href = "dict/download.html";
+            };
+        }
+    }
+
+    Lab.register({ id: FEATURE, title: "📥 " + NAME, render: render });
+})();
+
 Lab.renderAll();
 </script>
 <script src="dict/sidebar.js?v=20261016"></script>
