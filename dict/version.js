@@ -38,6 +38,15 @@ var FEATURE_VERSIONS = {
               title: "首发：选课时页多选课时",
               note: "可跨词书勾选；学习 / 配对 / 拼写 / 导出共用合并词表" }
         ]
+    },
+
+    gameParams: {
+        name: "连连看游戏参数",
+        versions: [
+            { version: "f5c8784", channel: "Private", date: "2026-10-17",
+              title: "首发：难度预设 + 形式预设两组互斥",
+              note: "本次只做设置与存储；形式预设的生命值 / 每词计时规则尚未实装进连连看" }
+        ]
     }
 
 };
