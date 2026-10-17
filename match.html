@@ -156,64 +156,44 @@
             color: #bbbbbb;
             text-decoration: line-through;
         }
-        /* ========== 最佳用时排行榜 ========== */
-        .leaderboard {
+        /* ========== 练习记录入口 ========== */
+        .practice-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
             background: rgba(255,255,255,0.08);
-            border: 2px solid rgba(255,215,0,0.3);
+            border: 2px solid rgba(78,205,196,0.35);
             border-radius: 16px;
-            padding: 18px 14px;
-            margin: 20px 0;
+            padding: 16px 18px;
+            margin: 20px auto;
             max-width: 520px;
-            margin-left: auto;
-            margin-right: auto;
+            text-align: left;
         }
-        .leaderboard-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ffd700;
-            margin-bottom: 14px;
-            letter-spacing: 2px;
-        }
-        .leaderboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .leaderboard-item {
-            background: rgba(255,255,255,0.06);
-            border-radius: 10px;
-            padding: 10px 8px;
-            text-align: center;
-        }
-        .leaderboard-item .mode-name {
-            font-size: 12px;
-            color: #a8a8d8;
-            margin-bottom: 5px;
-        }
-        .leaderboard-item .best-time {
-            font-size: 18px;
+        .practice-entry-title {
+            font-size: 16px;
             font-weight: bold;
             color: #4ecdc4;
+            letter-spacing: 1px;
         }
-        .leaderboard-item .best-words {
-            font-size: 11px;
-            color: #888;
-            margin-top: 2px;
-        }
-        .leaderboard-item .best-time.no-record {
-            color: #666;
-            font-size: 13px;
-        }
-        .leaderboard-clear {
-            margin-top: 12px;
-            padding: 7px 18px;
-            border: 1px solid rgba(255,107,107,0.5);
-            background: rgba(255,107,107,0.15);
-            color: #ff8888;
-            border-radius: 8px;
+        .practice-entry-sub {
             font-size: 12px;
+            color: #a8a8d8;
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+        .practice-entry-btn {
+            flex: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(78,205,196,0.22);
+            color: #4ecdc4;
+            font-size: 14px;
+            font-weight: bold;
             cursor: pointer;
         }
+        .practice-entry-btn:active { transform: scale(0.96); }
         /* ========== 模式按钮 ========== */
         .mode-btn {
             width: 100%;
@@ -625,11 +605,13 @@
         </div>
         <div class="tip-info" id="selectTip">默认本课时全部单词都将加入游戏，点击单词即可剔除（划掉）</div>
         <div class="word-tag-wrap" id="tagBox"></div>
-        <!-- 最佳用时排行榜 -->
-        <div class="leaderboard">
-            <div class="leaderboard-title" id="leaderboardTitle">🏆 最佳用时排行榜</div>
-            <div class="leaderboard-grid" id="leaderboardGrid"></div>
-            <button class="leaderboard-clear" onclick="clearLeaderboard()">清除全部记录</button>
+        <!-- 练习记录入口 -->
+        <div class="practice-entry">
+            <div>
+                <div class="practice-entry-title">📊 练习记录</div>
+                <div class="practice-entry-sub" id="practiceEntrySub">查看用时、正确率、模式、错误次数等统计</div>
+            </div>
+            <button class="practice-entry-btn" onclick="goPracticeRecords()">查看 ›</button>
         </div>
         <div class="bottom-select-area">
             <button class="mode-btn heaven-btn" onclick="handleModeClick('heaven')">☁️ 天堂模式</button>
@@ -689,10 +671,10 @@
         </div>
     </div>
 </div>
-<script src="dict/wbook.js?v=20261016"></script>
-<script src="dict/sync.js?v=20261016"></script>
-<script src="dict/msauth.js?v=20261016"></script>
-<script src="dict/auth.js?v=20261016"></script>
+<script src="dict/wbook.js?v=20261017"></script>
+<script src="dict/sync.js?v=20261017"></script>
+<script src="dict/msauth.js?v=20261017"></script>
+<script src="dict/auth.js?v=20261017"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -903,14 +885,14 @@ function switchBook(idx) {
     document.getElementById("bookSelect").value = String(currentBook);
     renderLevelSelect();
     renderWordTags();
-    renderLeaderboard();
+    renderPracticeEntry();
     renderSelectTip();
 }
 function initLevels() {
     loadCurrentSelection();
     renderCurrentBanner();
     renderWordTags();
-    renderLeaderboard();
+    renderPracticeEntry();
 }
 // 渲染当前词本/课时只读展示条
 function renderCurrentBanner() {
@@ -987,7 +969,6 @@ function switchLevel(idx) {
 
     renderCurrentBanner();
     renderWordTags();
-    renderLeaderboard();
 }
 // 划词剔除：单课时沿用旧的 book/level 键（兼容历史存档），多课时另用一个合并键
 function removedKeyForScope() {
@@ -1056,57 +1037,60 @@ function toggleRemove(dom, index) {
     }
 }
 
-// 单课时沿用旧的记录键（兼容历史成绩），多课时另起一个合并键
-function getRecordKey(mode) {
-    const refs = activeLevelRefs();
-    if (refs.length === 1) {
-        return "wordGameBest_B" + refs[0].bi + "_L" + refs[0].li + "_" + mode;
-    }
-    return "wordGameBest_M" + refs.map(r => r.bi + "-" + r.li).join("_") + "_" + mode;
-}
-function getRecord(mode) {
-    const raw = localStorage.getItem(getRecordKey(mode));
-    if (!raw) return null;
+// ===== 练习记录 =====
+// 每局结束（完成或超时失败）追加一条，正确率按「中途点错也算」口径统计
+const PRACTICE_LOG_KEY = "wordGamePracticeLog";
+const PRACTICE_LOG_MAX = 200;
+let matchCount = 0;   // 本局成功配对数
+let errorCount = 0;   // 本局错误次数（选错两张牌）
+
+function readPracticeLog() {
     try {
-        return JSON.parse(raw);
-    } catch(e) {
-        return { time: parseFloat(raw), words: activeWordList().length };
-    }
+        const arr = JSON.parse(localStorage.getItem(PRACTICE_LOG_KEY) || "[]");
+        return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
 }
-function saveRecord(mode, time, words) {
-    localStorage.setItem(getRecordKey(mode), JSON.stringify({time: time, words: words}));
+function pushPracticeRecord(rec) {
+    const arr = readPracticeLog();
+    arr.unshift(rec);
+    if (arr.length > PRACTICE_LOG_MAX) arr.length = PRACTICE_LOG_MAX;
+    localStorage.setItem(PRACTICE_LOG_KEY, JSON.stringify(arr));
     syncPushDebounced();
+    renderPracticeEntry();
 }
-function renderLeaderboard() {
-    const grid = document.getElementById("leaderboardGrid");
-    const titleEl = document.getElementById("leaderboardTitle");
-    if (titleEl) titleEl.innerText = "🏆 最佳用时排行榜 · " + activeScopeName();
-    grid.innerHTML = "";
-    const modes = ["heaven", "easy", "race", "hell"];
-    modes.forEach(mode => {
-        const record = getRecord(mode);
-        const item = document.createElement("div");
-        item.className = "leaderboard-item";
-        if (record) {
-            item.innerHTML = '<div class="mode-name">' + modeNames[mode] + '</div>' +
-                             '<div class="best-time">' + record.time + '秒</div>' +
-                             '<div class="best-words">(' + record.words + '词)</div>';
-        } else {
-            item.innerHTML = '<div class="mode-name">' + modeNames[mode] + '</div>' +
-                             '<div class="best-time no-record">暂无记录</div>';
-        }
-        grid.appendChild(item);
-    });
+// 正确率 = 成功配对数 /（成功配对数 + 错误次数）
+function buildPracticeRecord(ok) {
+    const attempts = matchCount + errorCount;
+    const acc = attempts ? (matchCount / attempts * 100) : 0;
+    return {
+        t: Date.now(),
+        mode: gameMode,
+        scope: activeScopeName(),
+        refs: activeLevelRefs().map(r => r.bi + ":" + r.li),
+        words: keptWords.length,
+        matched: matchCount,
+        errors: errorCount,
+        ms: gameStartTime ? (Date.now() - gameStartTime) : 0,
+        acc: Math.round(acc * 10) / 10,
+        ok: !!ok
+    };
 }
-function clearLeaderboard() {
-    if (confirm("确定要清除全部最佳用时记录吗？")) {
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith("wordGameBest_")) {
-                localStorage.removeItem(key);
-            }
-        });
-        renderLeaderboard();
+// 选词页入口副标题：显示累计局数与平均正确率
+function renderPracticeEntry() {
+    const el = document.getElementById("practiceEntrySub");
+    if (!el) return;
+    const arr = readPracticeLog();
+    if (!arr.length) {
+        el.innerText = "查看用时、正确率、模式、错误次数等统计";
+        return;
     }
+    const done = arr.filter(r => r.ok && typeof r.acc === "number" && isFinite(r.acc));
+    const avg = done.length ? (done.reduce((a, r) => a + r.acc, 0) / done.length) : 0;
+    el.innerText = "已完成 " + done.length + " 局 · 平均正确率 " + avg.toFixed(1) + "%";
+}
+function goPracticeRecords() {
+    playClickSound();
+    location.href = "dict/records.html";
 }
 // ===== 开始游戏 =====
 function handleModeClick(mode) {
@@ -1125,6 +1109,8 @@ function startGame(mode) {
     }
     gameMode = mode;
     keptWords = [];
+    matchCount = 0;
+    errorCount = 0;
     const removed = getRemovedList();
     activeWordList().forEach((word, idx) => {
         if (!removed.includes(idx)) keptWords.push(word);
@@ -1194,7 +1180,10 @@ function startMatchGame() {
             if (left <= 0) {
                 clearInterval(timer);
                 playErrorSound();
-                alert("⏰ 时间结束！挑战失败");
+                const failRec = buildPracticeRecord(false);
+                pushPracticeRecord(failRec);
+                alert("⏰ 时间结束！挑战失败\n已配对 " + failRec.matched + "/" + failRec.words +
+                      " 组 · 正确率 " + failRec.acc + "%");
                 backToSelect();
             }
         }, 1000);
@@ -1251,16 +1240,18 @@ function clickSelectItem(dom) {
             selectedItem.classList.remove("selected");
             selectedItem = null;
             playSuccessSound();
+            matchCount++;
             checkWin();
         } else {
             playErrorSound();
+            errorCount++;
             alert("❌ 配对错误，请重试");
             selectedItem.classList.remove("selected");
             selectedItem = null;
         }
     }
 }
-// ===== 通关检测 + 最佳用时记录 =====
+// ===== 通关检测 + 练习记录 =====
 function checkWin() {
     let matchedCount = document.querySelectorAll(".item.matched").length / 2;
     let total = keptWords.length;
@@ -1268,21 +1259,14 @@ function checkWin() {
     if (matchedCount === total) {
         clearInterval(timer);
         playWinSound();
-        let usedMs = Date.now() - gameStartTime;
-        let usedSec = (usedMs / 1000).toFixed(1);
-        let wordCount = keptWords.length;
-        let oldRecord = getRecord(gameMode);
-        let isNewRecord = false;
-        if (!oldRecord || Number(usedSec) < Number(oldRecord.time)) {
-            saveRecord(gameMode, usedSec, wordCount);
-            isNewRecord = true;
-        }
+        const usedSec = ((Date.now() - gameStartTime) / 1000).toFixed(1);
+        const rec = buildPracticeRecord(true);
+        pushPracticeRecord(rec);
         setTimeout(() => {
-            if (isNewRecord) {
-                alert("🎉恭喜！所有单词配对闯关成功！\n本局用时：" + usedSec + "秒（" + wordCount + "词）\n✨刷新新纪录！太棒啦！");
-            } else {
-                alert("🎉恭喜！所有单词配对闯关成功！\n本局用时：" + usedSec + "秒（" + wordCount + "词）\n历史最佳：" + oldRecord.time + "秒（" + oldRecord.words + "词）");
-            }
+            alert("🎉恭喜！所有单词配对闯关成功！\n" +
+                  "本局用时：" + usedSec + "秒（" + rec.words + "词）\n" +
+                  "正确率：" + rec.acc + "%" +
+                  (rec.errors ? "（错误 " + rec.errors + " 次）" : "（零失误）"));
             backToSelect();
         }, 600);
     }
@@ -1295,7 +1279,6 @@ function goHome() {
 function backToSelect() {
     playClickSound();
     clearInterval(timer);
-    renderLeaderboard();
     showPage("selectPage");
 }
 function goSettings() {
@@ -1401,11 +1384,11 @@ if (isSyncEnabled()) {
         loadCurrentSelection();
         renderCurrentBanner();
         renderWordTags();
-        renderLeaderboard();
+        renderPracticeEntry();
         renderAccessUI();
     });
 }
 </script>
-<script src="dict/sidebar.js?v=20261016"></script>
+<script src="dict/sidebar.js?v=20261017"></script>
 </body>
 </html>

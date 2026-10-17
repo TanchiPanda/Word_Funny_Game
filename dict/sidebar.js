@@ -9,6 +9,7 @@
   const items = [
     { icon: "🏠", label: "首页", href: base + "index.html", match: ["index.html"] },
     { icon: "📚", label: "连连看", href: base + "match.html", match: ["match.html"] },
+    { icon: "📊", label: "练习记录", href: base + "dict/records.html", match: ["records.html"] },
     { icon: "✏️", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },
     { icon: "📕", label: "词典学习", href: base + "study.html", match: ["study.html"] },
     { icon: "📖", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },

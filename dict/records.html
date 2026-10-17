@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>练习记录 · 单词游戏</title>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(135deg, #2c1b54, #422880, #201440);
+        color: #e8e8f5;
+        min-height: 100vh;
+    }
+    .wrap {
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 22px 16px 48px;
+    }
+    .page-title {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        margin-bottom: 4px;
+        background: linear-gradient(90deg, #ffd700, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .page-sub {
+        font-size: 13px;
+        color: #a8a8d8;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    /* 汇总 */
+    .summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 22px;
+    }
+    .sum-card {
+        background: rgba(255,255,255,0.07);
+        border: 2px solid rgba(78,205,196,0.3);
+        border-radius: 14px;
+        padding: 14px;
+        text-align: left;
+    }
+    .sum-label {
+        font-size: 12px;
+        color: #a8a8d8;
+        margin-bottom: 6px;
+    }
+    .sum-value {
+        font-size: 22px;
+        font-weight: 900;
+        color: #4ecdc4;
+        letter-spacing: 1px;
+    }
+    .sum-value.gold { color: #ffd700; }
+    .sum-value.red { color: #ff8888; }
+    /* 筛选 */
+    .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .filter-chip {
+        padding: 7px 14px;
+        border-radius: 20px;
+        border: 1.5px solid rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.05);
+        color: #c8c8e8;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.15s;
+    }
+    .filter-chip.on {
+        border-color: #ffd700;
+        background: rgba(255,215,0,0.14);
+        color: #ffd700;
+        font-weight: bold;
+    }
+    .filter-chip:active { transform: scale(0.96); }
+    /* 记录卡片 */
+    .rec {
+        background: rgba(255,255,255,0.07);
+        border: 2px solid rgba(255,255,255,0.1);
+        border-left: 4px solid #4ecdc4;
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+    }
+    .rec.fail { border-left-color: #ff6b6b; }
+    .rec-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .rec-mode {
+        font-size: 15px;
+        font-weight: bold;
+        color: #e8e8f5;
+    }
+    .rec-result {
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 8px;
+        flex: none;
+    }
+    .rec-result.ok {
+        background: rgba(57,217,138,0.18);
+        color: #39d98a;
+    }
+    .rec-result.bad {
+        background: rgba(255,107,107,0.18);
+        color: #ff8888;
+    }
+    .rec-scope {
+        font-size: 12px;
+        color: #a8a8d8;
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+    .rec-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    .rec-stat .k {
+        font-size: 11px;
+        color: #8888b0;
+        margin-bottom: 3px;
+    }
+    .rec-stat .v {
+        font-size: 16px;
+        font-weight: bold;
+        color: #4ecdc4;
+    }
+    .rec-stat .v.warn { color: #ff8888; }
+    .rec-foot {
+        font-size: 11px;
+        color: #6f6f96;
+        margin-top: 10px;
+    }
+    .empty {
+        text-align: center;
+        padding: 56px 20px;
+        color: #8888b0;
+        font-size: 14px;
+        line-height: 1.8;
+    }
+    .empty .big { font-size: 40px; display: block; margin-bottom: 12px; }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    .primary-btn, .ghost-btn {
+        flex: 1;
+        padding: 13px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .primary-btn { background: linear-gradient(135deg, #4ecdc4, #44a08d); color: #fff; }
+    .ghost-btn {
+        background: rgba(255,255,255,0.08);
+        border: 1.5px solid rgba(255,107,107,0.4);
+        color: #ff8888;
+    }
+    .primary-btn:active, .ghost-btn:active { transform: scale(0.98); }
+    .note {
+        font-size: 12px;
+        color: #6f6f96;
+        line-height: 1.7;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed rgba(255,255,255,0.12);
+    }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="page-title">📊 练习记录</div>
+    <div class="page-sub" id="pageSub">连连看的每一局都会记一条：用时、正确率、模式、错误次数、课时。</div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="filters" id="filters"></div>
+
+    <div id="list"></div>
+
+    <div class="btn-group">
+        <button class="primary-btn" type="button" onclick="goMatch()">🎮 去连连看</button>
+        <button class="ghost-btn" type="button" onclick="clearRecords()">🗑 清空记录</button>
+    </div>
+
+    <div class="note">
+        正确率 = 成功配对数 ÷（成功配对数 + 错误次数），中途点错也计入分母。<br>
+        记录保存在本机并随云同步走，最多保留最近 200 局。
+    </div>
+</div>
+
+<script src="sync.js?v=20261017"></script>
+<script>
+// ===== 练习记录读取 =====
+const PRACTICE_LOG_KEY = "wordGamePracticeLog";
+
+const MODE_NAMES = {
+    heaven: "☁️ 天堂模式",
+    easy: "🟢 简单模式",
+    race: "🔴 困难模式",
+    hell: "💀 地狱模式",
+    f_heaven: "☁️ 天堂模式",
+    f_challenge: "❌ 挑战赛",
+    f_timed: "🕒 计时赛",
+    f_combo: "⏳ 综合赛"
+};
+
+let activeFilter = "all";
+
+function readLog() {
+    try {
+        const arr = JSON.parse(localStorage.getItem(PRACTICE_LOG_KEY) || "[]");
+        return Array.isArray(arr) ? arr.map(fixRecord) : [];
+    } catch (e) { return []; }
+}
+
+// 容错：补齐可能缺失的字段，避免旧数据/外部写入把页面搞崩
+function fixRecord(r) {
+    if (!r || typeof r !== "object") return null;
+    const num = v => { const n = Number(v); return isFinite(n) && n > 0 ? n : 0; };
+    const words = num(r.words);
+    const matched = num(r.matched);
+    const errors = num(r.errors);
+    const attempts = matched + errors;
+    return {
+        t: Number(r.t) || 0,
+        mode: r.mode || "",
+        scope: r.scope || "（未知范围）",
+        words: words,
+        matched: matched,
+        errors: errors,
+        ms: num(r.ms),
+        acc: (typeof r.acc === "number" && isFinite(r.acc) && r.acc >= 0)
+            ? r.acc : (attempts ? matched / attempts * 100 : 0),
+        ok: !!r.ok
+    };
+}
+
+function modeLabel(id) {
+    return MODE_NAMES[id] || id || "未知模式";
+}
+function fmtDuration(ms) {
+    const s = ms / 1000;
+    if (s < 60) return s.toFixed(1) + "秒";
+    const m = Math.floor(s / 60);
+    const rest = Math.round(s % 60);
+    return m + "分" + rest + "秒";
+}
+function fmtTime(ts) {
+    if (!ts) return "—";
+    const d = new Date(ts);
+    const p = n => (n < 10 ? "0" + n : "" + n);
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+           " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+// ===== 汇总 =====
+function renderSummary(arr) {
+    const box = document.getElementById("summary");
+    if (!arr.length) { box.innerHTML = ""; return; }
+    const done = arr.filter(r => r.ok);
+    const avgAcc = done.length ? done.reduce((a, r) => a + r.acc, 0) / done.length : 0;
+    const totalMs = arr.reduce((a, r) => a + r.ms, 0);
+    const totalErr = arr.reduce((a, r) => a + r.errors, 0);
+    box.innerHTML =
+        '<div class="sum-card"><div class="sum-label">练习局数</div>' +
+        '<div class="sum-value">' + arr.length + ' <span style="font-size:13px;color:#a8a8d8;">局</span></div></div>' +
+        '<div class="sum-card"><div class="sum-label">平均正确率（仅完成局）</div>' +
+        '<div class="sum-value gold">' + avgAcc.toFixed(1) + '%</div></div>' +
+        '<div class="sum-card"><div class="sum-label">累计用时</div>' +
+        '<div class="sum-value" style="font-size:19px;">' + fmtDuration(totalMs) + '</div></div>' +
+        '<div class="sum-card"><div class="sum-label">累计错误次数</div>' +
+        '<div class="sum-value red">' + totalErr + ' 次</div></div>';
+}
+
+// ===== 筛选 =====
+function renderFilters(arr) {
+    const box = document.getElementById("filters");
+    if (!arr.length) { box.innerHTML = ""; return; }
+    const modes = [];
+    arr.forEach(r => { if (r.mode && modes.indexOf(r.mode) < 0) modes.push(r.mode); });
+    let html = '<div class="filter-chip' + (activeFilter === "all" ? " on" : "") +
+               '" onclick="setFilter(\'all\')">全部 ' + arr.length + '</div>';
+    modes.forEach(m => {
+        const n = arr.filter(r => r.mode === m).length;
+        html += '<div class="filter-chip' + (activeFilter === m ? " on" : "") +
+                '" onclick="setFilter(\'' + m + '\')">' + modeLabel(m) + ' ' + n + '</div>';
+    });
+    box.innerHTML = html;
+}
+function setFilter(f) {
+    activeFilter = f;
+    render();
+}
+
+// ===== 列表 =====
+function renderList(arr) {
+    const box = document.getElementById("list");
+    const rows = activeFilter === "all" ? arr : arr.filter(r => r.mode === activeFilter);
+    if (!rows.length) {
+        box.innerHTML = '<div class="empty"><span class="big">🗒</span>还没有练习记录<br>去连连看玩一局，结束后就会出现在这里</div>';
+        return;
+    }
+    box.innerHTML = rows.map(r => {
+        const accCls = r.acc >= 90 ? "" : (r.acc >= 70 ? "" : " warn");
+        return '<div class="rec' + (r.ok ? "" : " fail") + '">' +
+            '<div class="rec-head">' +
+            '  <div class="rec-mode">' + modeLabel(r.mode) + '</div>' +
+            '  <div class="rec-result ' + (r.ok ? "ok" : "bad") + '">' +
+                   (r.ok ? "✅ 完成" : "⏰ 超时") + '</div>' +
+            '</div>' +
+            '<div class="rec-scope">' + escapeHtml(r.scope) + ' · ' + r.words + ' 词</div>' +
+            '<div class="rec-stats">' +
+            '  <div class="rec-stat"><div class="k">用时</div><div class="v">' + fmtDuration(r.ms) + '</div></div>' +
+            '  <div class="rec-stat"><div class="k">正确率</div><div class="v' + accCls + '">' + r.acc.toFixed(1) + '%</div></div>' +
+            '  <div class="rec-stat"><div class="k">错误次数</div><div class="v' + (r.errors ? " warn" : "") + '">' + r.errors + '</div></div>' +
+            '</div>' +
+            '<div class="rec-foot">' + fmtTime(r.t) + ' · 配对 ' + r.matched + '/' + r.words + ' 组</div>' +
+            '</div>';
+    }).join("");
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[c]);
+}
+
+function render() {
+    const arr = readLog().filter(Boolean);
+    renderSummary(arr);
+    renderFilters(arr);
+    renderList(arr);
+    document.getElementById("pageSub").innerText = arr.length
+        ? "共 " + arr.length + " 条记录，最新的在最上面。"
+        : "连连看的每一局都会记一条：用时、正确率、模式、错误次数、课时。";
+}
+
+function clearRecords() {
+    if (!readLog().length) { alert("目前没有练习记录"); return; }
+    if (!confirm("确定清空全部练习记录吗？此操作不可恢复。")) return;
+    localStorage.removeItem(PRACTICE_LOG_KEY);
+    if (typeof syncPushDebounced === "function") syncPushDebounced();
+    activeFilter = "all";
+    render();
+}
+function goMatch() {
+    location.href = "../match.html";
+}
+
+render();
+if (typeof onSyncStateChange === "function") onSyncStateChange(() => render());
+</script>
+<script src="sidebar.js?v=20261017"></script>
+</body>
+</html>
