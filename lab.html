@@ -422,6 +422,75 @@ window.Lab = (function () {
     Lab.register({ id: FEATURE, title: "📚 " + NAME, render: render });
 })();
 
+// ---------- 模块：连连看游戏参数（内测）----------
+(function () {
+    var FEATURE = "gameParams";
+    var NAME = "连连看游戏参数";
+
+    function render(el) {
+        el.innerHTML =
+            '<div class="lab-meta">' +
+            '  <span class="lab-badge">Private 实验</span>' +
+            '  <span class="lab-state" id="labState-gp"></span>' +
+            '</div>' +
+            '<div class="lab-desc">在设置页挑选连连看的玩法预设：难度预设（当前 4 个）与形式预设（天堂／挑战赛／计时赛／综合赛）两组互斥，选中一个即整体替换。</div>' +
+            '<div class="lab-ver" id="labVerLine-gp"></div>' +
+            '<div class="lab-actions" id="labActions-gp"></div>';
+
+        paint(el);
+        labOnChange(function () { if (document.body.contains(el)) paint(el); });
+        versionOnChange(function () { if (document.body.contains(el)) paint(el); });
+    }
+
+    function paintVersion(el) {
+        var box = el.querySelector("#labVerLine-gp");
+        var v = featVersionGetActive(FEATURE);
+        if (!v) { box.innerHTML = '<span class="ver-tag">尚未登记版本</span>'; return; }
+        var left = featVersionDaysLeft(v);
+        var leftText = (left === Infinity) ? "永久有效"
+            : (left <= 0 ? "已过期" : "剩余 " + left + " 天");
+        box.innerHTML =
+            '<span class="ver-tag">该功能版本 <b>' + v.version + '</b></span>' +
+            '<span class="badge-mini ' + versionChannelClass(v.channel) + '">' + v.channel + '</span>' +
+            '<span class="ver-left' + (left <= 0 ? " dead" : "") + '">' + leftText + '</span>' +
+            '<button class="ver-link" type="button" id="labVerGo-gp">版本记录</button>';
+        box.querySelector("#labVerGo-gp").onclick = function () {
+            location.href = "dict/versions.html?f=" + encodeURIComponent(FEATURE);
+        };
+    }
+
+    function paint(el) {
+        var on = labEnabled(FEATURE);
+        var st = el.querySelector("#labState-gp");
+        var ac = el.querySelector("#labActions-gp");
+
+        paintVersion(el);
+
+        st.className = "lab-state " + (on ? "on" : "off");
+        st.innerText = on ? "已开启" : "未开启";
+
+        if (on) {
+            ac.innerHTML =
+                '<button class="lab-btn primary" type="button" id="labGo-gp">🎮 去设置页调整</button>' +
+                '<button class="lab-btn" type="button" id="labOff-gp">关闭该功能</button>';
+            ac.querySelector("#labGo-gp").onclick = function () {
+                location.href = "settings.html";
+            };
+            ac.querySelector("#labOff-gp").onclick = function () {
+                if (!confirm("确定关闭「" + NAME + "」？关闭后设置页里的预设选择会被收起。")) return;
+                labSetEnabled(FEATURE, false);
+            };
+        } else {
+            ac.innerHTML = '<button class="lab-btn primary" type="button" id="labOn-gp">🔒 输入口令开启</button>';
+            ac.querySelector("#labOn-gp").onclick = function () {
+                if (labAskPass(FEATURE, NAME)) location.href = "settings.html";
+            };
+        }
+    }
+
+    Lab.register({ id: FEATURE, title: "🎮 " + NAME, render: render });
+})();
+
 // ---------- 模块：功能版本总览 ----------
 (function () {
     function render(el) {

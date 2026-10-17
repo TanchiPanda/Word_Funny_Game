@@ -11,7 +11,8 @@ var LAB_OFF_KEY = "wordGameLabOff";          // 公测：被用户手动关掉�
 // 功能清单：id -> 展示名
 var LAB_FEATURES = {
     downloadDict: "下载词典",
-    multiLevel: "多选课时"
+    multiLevel: "多选课时",
+    gameParams: "连连看游戏参数"
 };
 
 // 公测功能：默认开启，无需口令
