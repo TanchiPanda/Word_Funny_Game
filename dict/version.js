@@ -43,6 +43,9 @@ var FEATURE_VERSIONS = {
     gameParams: {
         name: "连连看游戏参数",
         versions: [
+            { version: "2f7d628", channel: "Private", date: "2026-10-17",
+              title: "自定义游戏参数（C 预设 · 自定义预设）",
+              note: "图标/名称/描述与全部玩法参数可自定，图形编辑 + 代码编辑双模式；每项可关掉＝不限，越界自动夹取，脏数据回落默认" },
             { version: "edc07ca", channel: "Private", date: "2026-10-17",
               title: "接进实际玩法；两组改名 A 预设 / B 预设",
               note: "选中组整体替换选词页 4 个按钮；实装挑战赛 5 生命值、计时赛每词 15 秒、综合赛两者叠加，新增生命/倒计时 HUD" },
