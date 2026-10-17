@@ -246,6 +246,8 @@ function fixRecord(r) {
     return {
         t: Number(r.t) || 0,
         mode: r.mode || "",
+        // 自定义预设会改名：存下当次的名字，历史记录就不会被后来的改名带偏
+        modeName: (typeof r.modeName === "string" && r.modeName.trim()) ? r.modeName.trim() : "",
         scope: r.scope || "（未知范围）",
         words: words,
         matched: matched,
@@ -260,6 +262,11 @@ function fixRecord(r) {
 
 function modeLabel(id) {
     return MODE_NAMES[id] || id || "未知模式";
+}
+// 有存下来的名字就用它（自定义预设会改名），否则回落到模式表
+function recordModeLabel(r) {
+    if (r && r.modeName) return r.modeName;
+    return modeLabel(r ? r.mode : "");
 }
 function fmtDuration(ms) {
     const s = ms / 1000;
@@ -304,9 +311,11 @@ function renderFilters(arr) {
     let html = '<div class="filter-chip' + (activeFilter === "all" ? " on" : "") +
                '" onclick="setFilter(\'all\')">全部 ' + arr.length + '</div>';
     modes.forEach(m => {
-        const n = arr.filter(r => r.mode === m).length;
+        const own = arr.filter(r => r.mode === m);
+        // 自定义预设会改名，用最近一条记录里存下的名字
+        const label = recordModeLabel(own[0]) || modeLabel(m);
         html += '<div class="filter-chip' + (activeFilter === m ? " on" : "") +
-                '" onclick="setFilter(\'' + m + '\')">' + modeLabel(m) + ' ' + n + '</div>';
+                '" onclick="setFilter(\'' + m + '\')">' + escapeHtml(label) + ' ' + own.length + '</div>';
     });
     box.innerHTML = html;
 }
@@ -329,7 +338,7 @@ function renderList(arr) {
         const icon = r.ok ? "✅" : (r.end === "生命耗尽" ? "💔" : "⏰");
         return '<div class="rec' + (r.ok ? "" : " fail") + '">' +
             '<div class="rec-head">' +
-            '  <div class="rec-mode">' + modeLabel(r.mode) + '</div>' +
+            '  <div class="rec-mode">' + escapeHtml(recordModeLabel(r)) + '</div>' +
             '  <div class="rec-result ' + (r.ok ? "ok" : "bad") + '">' +
                    icon + " " + escapeHtml(r.end) + '</div>' +
             '</div>' +

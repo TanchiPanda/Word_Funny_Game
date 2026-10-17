@@ -182,6 +182,9 @@
         .mode-btn.challenge-btn { background: linear-gradient(135deg,#ff6b6b,#c92a2a); }
         .mode-btn.timed-btn { background: linear-gradient(135deg,#ffb84d,#e8590c); }
         .mode-btn.combo-btn { background: linear-gradient(135deg,#9775fa,#5f3dc4); }
+        .mode-btn.custom-btn { background: linear-gradient(135deg,#20c997,#0b7285); }
+        .hud-hint { color: #ffb84d; font-weight: bold; font-size: 13px; }
+        .hud-lives { letter-spacing: 1px; }
         .mode-hud {
             max-width: 520px;
             margin: 0 auto 10px;
@@ -707,6 +710,7 @@
     </div>
 </div>
 <script src="dict/wbook.js?v=20261017"></script>
+<script src="dict/lab.js?v=20261017"></script>
 <script src="dict/presets.js?v=20261017"></script>
 <script src="dict/sync.js?v=20261017"></script>
 <script src="dict/msauth.js?v=20261017"></script>
@@ -1120,7 +1124,18 @@ function renderHud() {
         const warn = wordLeft <= 5 ? " warn" : "";
         parts.push('<span class="hud-clock' + warn + '">🕒 本词剩余 ' + Math.max(0, wordLeft) + ' 秒</span>');
     }
-    el.innerHTML = parts.join('<span class="hud-sep">|</span>');
+    el.innerHTML = parts.join('<span class="hud-sep">|</span>') +
+                   (hudHintText ? '<span class="hud-sep">|</span><span class="hud-hint">' +
+                                  hudHintText + '</span>' : "");
+}
+// 瞬时提示：总时限每秒刷新 statusText，这类一次性提示放 HUD 里才不会被冲掉
+let hudHintText = "";
+let hudHintTimer = null;
+function showHudHint(text) {
+    hudHintText = text;
+    renderHud();
+    if (hudHintTimer) clearTimeout(hudHintTimer);
+    hudHintTimer = setTimeout(() => { hudHintText = ""; hudHintTimer = null; renderHud(); }, 2600);
 }
 // 每词 15 秒：从一个词配对成功（或开局）开始计时
 function startWordTimer() {
@@ -1150,8 +1165,11 @@ function onWordTimeout() {
         renderHud();
         if (lives <= 0) { endGameFail("生命耗尽", "❌"); return; }
         playErrorSound();
-        document.getElementById("statusText").innerText =
-            "⏰ 本词超时，扣 1 点生命 · 还剩 " + lives + " 点";
+        showHudHint("⏰ 超时 -1 命");
+        const st = document.getElementById("statusText");
+        if (!modeConfig(gameMode).totalTimePerWord) {
+            st.innerText = "⏰ 本词超时，扣 1 点生命 · 还剩 " + lives + " 点";
+        }
         startWordTimer();
     }
 }
@@ -1196,6 +1214,8 @@ function buildPracticeRecord(ok, end) {
         t: Date.now(),
         end: ok ? "完成" : (end || "失败"),
         mode: gameMode,
+        // 存下当时的模式名：自定义预设改名后，历史记录仍显示当次的名字
+        modeName: matchPresetName(gameMode),
         scope: activeScopeName(),
         refs: activeLevelRefs().map(r => r.bi + ":" + r.li),
         words: keptWords.length,
@@ -1261,10 +1281,16 @@ function shuffle(arr) {
     }
     return temp;
 }
+function clearHudHint() {
+    if (hudHintTimer) { clearTimeout(hudHintTimer); hudHintTimer = null; }
+    hudHintText = "";
+}
 function startMatchGame() {
     showPage("gamePage");
     selectedItem = null;
     clearInterval(timer);
+    clearInterval(wordTimer);
+    clearHudHint();
     gameStartTime = Date.now();
     let enBox = document.getElementById("enBox");
     let cnBox = document.getElementById("cnBox");
@@ -1379,6 +1405,7 @@ function clickSelectItem(dom) {
             const cfg = modeConfig(gameMode);
             if (cfg.lives) {
                 lives--;
+                showHudHint("❌ 点错 -1 命");
                 renderHud();
                 if (lives <= 0) {
                     selectedItem.classList.remove("selected");
@@ -1425,6 +1452,9 @@ function backToSelect() {
     playClickSound();
     clearInterval(timer);
     clearInterval(wordTimer);
+    clearHudHint();
+    const hud = document.getElementById("modeHud");
+    if (hud) hud.innerHTML = "";
     showPage("selectPage");
 }
 function goSettings() {

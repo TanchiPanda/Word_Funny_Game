@@ -177,6 +177,91 @@
             box-shadow: 0 0 12px rgba(255,215,0,0.3);
         }
         .num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        /* 自定义预设编辑器 */
+        .preset.custom-card { grid-column: 1 / -1; }
+        .cp-editor {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(255,215,0,0.3);
+            background: rgba(255,255,255,0.04);
+        }
+        .cp-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .cp-tab {
+            flex: 1;
+            padding: 9px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.05);
+            color: #c8c8e8;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .cp-tab.on {
+            border-color: #ffd700;
+            background: rgba(255,215,0,0.14);
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .cp-subtitle {
+            font-size: 12px;
+            font-weight: bold;
+            color: #4ecdc4;
+            letter-spacing: 1px;
+            margin: 16px 0 8px;
+        }
+        .cp-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+        .cp-row.indent { padding-left: 10px; }
+        .cp-row label { font-size: 13px; color: #c8c8e8; flex: none; width: 72px; }
+        .cp-in {
+            flex: 1;
+            min-width: 0;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(78,205,196,0.4);
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .cp-in:focus { border-color: #4ecdc4; }
+        .cp-unit { font-size: 11px; color: #7f7fa8; flex: none; }
+        .cp-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+        }
+        .cp-switch span { font-size: 13px; color: #e8e8f5; line-height: 1.5; }
+        .num-input:disabled, .cp-in:disabled { opacity: 0.35; }
+        .cp-code {
+            width: 100%;
+            min-height: 240px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(78,205,196,0.35);
+            background: rgba(0,0,0,0.35);
+            color: #b8f5d0;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 12.5px;
+            line-height: 1.6;
+            outline: none;
+            resize: vertical;
+        }
+        .cp-code:focus { border-color: #4ecdc4; }
+        .cp-hint { font-size: 12px; color: #a8a8d8; line-height: 1.7; margin-bottom: 10px; }
+        .cp-preview-box {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(78,205,196,0.08);
+            border: 1px dashed rgba(78,205,196,0.35);
+        }
+        .cp-preview-box .cp-subtitle { margin-top: 0; }
+        .cp-sum { font-size: 11px !important; color: #7f9fb8 !important; }
+        .cp-warn { font-size: 12px; color: #ffb84d; line-height: 1.7; margin-top: 10px; min-height: 0; }
         /* 开关 */
         .switch {
             position: relative;
@@ -868,9 +953,7 @@ function resetDictTpl() {
 }
 
 // ===== 连连看游戏参数（Private 实验）=====
-// 预设清单在 dict/presets.js 里，与游戏页共用同一份，避免两处走形
-function getMatchPresetOr() { return getMatchPreset(); }
-
+// 预设清单与自定义预设的数据层在 dict/presets.js，与游戏页共用同一份
 function setMatchPreset(id) {
     if (!matchPresetById(id)) return;
     localStorage.setItem(MATCH_PRESET_KEY, id);
@@ -879,8 +962,7 @@ function setMatchPreset(id) {
     const st = document.getElementById("gameParamsStatus");
     if (st) {
         st.innerText = "✅ 已选：" + matchPresetName(id) +
-                       "（" + (matchPresetGroupOf(id) === "B" ? "B 预设组" : "A 预设组") +
-                       "已在连连看选词页生效）";
+                       "（" + MATCH_GROUP_LABEL[matchPresetGroupOf(id)] + " 已在连连看选词页生效）";
     }
 }
 
@@ -898,35 +980,271 @@ function renderGameParams() {
         return;
     }
 
-    const cur = getMatchPresetOr();
+    const cur = getMatchPreset();
     let html = "";
-    ["A", "B"].forEach((g, gi) => {
+    MATCH_GROUP_IDS.forEach((g, gi) => {
         html += '<div class="preset-group-title' + (gi === 0 ? " first" : "") + '">' +
                 MATCH_GROUP_LABEL[g] + '</div>';
-        html += '<div class="preset-grid">';
-        MATCH_PRESETS[g].forEach(it => {
-            html += '<div class="preset' + (it.id === cur ? " on" : "") +
-                '" onclick="setMatchPreset(\'' + it.id + '\')">' +
-                '<div class="p-name">' + it.name + '</div>' +
-                '<div class="p-note">' + it.note + '</div>' +
-                '</div>';
-        });
-        html += '</div>';
+        if (g === "C") {
+            const p = getCustomPreset();
+            html += '<div class="preset custom-card' + (cur === "custom" ? " on" : "") +
+                    '" onclick="setMatchPreset(\'custom\')">' +
+                    '<div class="p-name">' + escapeHtml2(p.icon + " " + p.name) + '</div>' +
+                    '<div class="p-note">' + escapeHtml2(p.desc) + '</div>' +
+                    '<div class="p-note cp-sum">' + escapeHtml2(customPresetSummary(p)) + '</div>' +
+                    '</div>';
+        } else {
+            html += '<div class="preset-grid">';
+            MATCH_PRESETS[g].forEach(it => {
+                html += '<div class="preset' + (it.id === cur ? " on" : "") +
+                    '" onclick="setMatchPreset(\'' + it.id + '\')">' +
+                    '<div class="p-name">' + it.name + '</div>' +
+                    '<div class="p-note">' + it.note + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+        }
     });
-    html += '<button class="preset-custom" type="button" onclick="customPresetTodo()">➕ 自定义预设</button>';
-    html += '<div class="dev-note">正在开发中</div>';
-    html += '<div class="status-line" id="gameParamsStatus">选中的组会整体替换连连看选词页的 4 个模式按钮</div>';
+    html += '<button class="preset-custom" type="button" onclick="toggleCustomEditor()" id="cpToggleBtn">' +
+            (cpEditorOpen ? "✖ 收起自定义预设编辑" : "➕ 自定义预设") + '</button>';
+    html += '<div id="cpEditorWrap"></div>';
+    html += '<div class="status-line" id="gameParamsStatus">选中的组会整体替换连连看选词页的模式按钮</div>';
     box.innerHTML = html;
+    if (cpEditorOpen) renderCustomEditor();
+}
+
+function escapeHtml2(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[c]);
 }
 
 function unlockGameParams() {
     if (typeof labAskPass !== "function") return;
     if (labAskPass("gameParams", "连连看游戏参数")) renderGameParams();
 }
-function customPresetTodo() {
-    const st = document.getElementById("gameParamsStatus");
-    if (st) st.innerText = "➕ 自定义预设正在开发中";
+
+// ---------- 自定义预设编辑器（图形 / 代码 双模式）----------
+let cpEditorOpen = false;
+let cpTab = "form";        // form | code
+let cpDraft = null;        // 图形编辑区正在改的草稿
+
+function toggleCustomEditor() {
+    cpEditorOpen = !cpEditorOpen;
+    if (cpEditorOpen) {
+        cpDraft = getCustomPreset();
+        cpTab = "form";
+    } else {
+        cpDraft = null;
+    }
+    renderGameParams();
 }
+let cpPendingNote = "";
+function cpSwitchTab(tab) {
+    // 切页签前先把当前编辑区的内容收进草稿，避免来回切丢掉改动
+    if (cpTab === "form" && cpDraft) {
+        readFormIntoDraft();
+    } else if (cpTab === "code" && cpDraft) {
+        // 代码里的改动也带过去；JSON 不合法就保留原草稿并说明
+        const txt = (document.getElementById("cpCode") || {}).value;
+        if (txt != null) {
+            try {
+                cpDraft = normalizeCustomPreset(JSON.parse(txt));
+                cpPendingNote = "";
+            } catch (e) {
+                cpPendingNote = "⚠️ 代码编辑区内容不是合法 JSON（" + e.message + "），已保留上一次的设置";
+            }
+        }
+    }
+    cpTab = tab;
+    renderCustomEditor();
+}
+function readFormIntoDraft() {
+    const g = id => document.getElementById(id);
+    if (!g("cpName")) return;
+    cpDraft.icon = g("cpIcon").value;
+    cpDraft.name = g("cpName").value;
+    cpDraft.desc = g("cpDesc").value;
+    cpDraft.shuffle = g("cpShuffle").checked;
+    cpDraft.hell = g("cpHell").checked;
+    cpDraft.totalLimit = g("cpTotalOn").checked;
+    cpDraft.totalSec = parseInt(g("cpTotalSec").value, 10);
+    cpDraft.lives = g("cpLivesOn").checked;
+    cpDraft.livesN = parseInt(g("cpLivesN").value, 10);
+    cpDraft.perWord = g("cpPerWordOn").checked;
+    cpDraft.perWordSec = parseInt(g("cpPerWordSec").value, 10);
+}
+function cpToggleLimit(which) {
+    if (which === "total") {
+        document.getElementById("cpTotalSec").disabled = !document.getElementById("cpTotalOn").checked;
+    } else if (which === "lives") {
+        document.getElementById("cpLivesN").disabled = !document.getElementById("cpLivesOn").checked;
+    } else if (which === "perWord") {
+        document.getElementById("cpPerWordSec").disabled = !document.getElementById("cpPerWordOn").checked;
+    }
+    cpRefreshPreview();
+}
+function cpRefreshPreview() {
+    const el = document.getElementById("cpPreview");
+    if (!el || !document.getElementById("cpName")) return;
+    readFormIntoDraft();
+    const clean = normalizeCustomPreset(cpDraft);
+    el.innerHTML = '<b>' + escapeHtml2(clean.icon + " " + clean.name) + '</b>' +
+                   '<div class="p-note">' + escapeHtml2(clean.desc) + '</div>' +
+                   '<div class="p-note cp-sum">' + escapeHtml2(customPresetSummary(clean)) + '</div>';
+    const warn = document.getElementById("cpWarn");
+    if (warn) warn.innerText = "";
+}
+
+function renderCustomEditor() {
+    const wrap = document.getElementById("cpEditorWrap");
+    if (!wrap) return;
+    const d = cpDraft || getCustomPreset();
+    let html = '<div class="cp-editor">';
+    html += '<div class="cp-tabs">' +
+            '<button type="button" class="cp-tab' + (cpTab === "form" ? " on" : "") +
+            '" onclick="cpSwitchTab(\'form\')">🎛 图形编辑</button>' +
+            '<button type="button" class="cp-tab' + (cpTab === "code" ? " on" : "") +
+            '" onclick="cpSwitchTab(\'code\')">📝 代码编辑</button></div>';
+
+    if (cpTab === "form") {
+        const L = CUSTOM_LIMITS;
+        html += '<div class="cp-row"><label>图标</label><input class="cp-in" id="cpIcon" maxlength="8" value="' +
+                escapeHtml2(d.icon) + '" oninput="cpRefreshPreview()" placeholder="🎯"></div>';
+        html += '<div class="cp-row"><label>模式名称</label><input class="cp-in" id="cpName" maxlength="12" value="' +
+                escapeHtml2(d.name) + '" oninput="cpRefreshPreview()" placeholder="自定义玩法"></div>';
+        html += '<div class="cp-row"><label>描述</label><input class="cp-in" id="cpDesc" maxlength="30" value="' +
+                escapeHtml2(d.desc) + '" oninput="cpRefreshPreview()" placeholder="自己调配的玩法"></div>';
+
+        html += '<div class="cp-subtitle">棋盘</div>';
+        html += '<div class="cp-switch"><span>洗牌（关掉＝英中同序不洗牌）</span>' +
+                '<label class="switch"><input type="checkbox" id="cpShuffle"' + (d.shuffle ? " checked" : "") +
+                ' onchange="cpRefreshPreview()"><span class="slider"></span></label></div>';
+        html += '<div class="cp-switch"><span>翻牌（卡片背面朝上，翻牌配对）</span>' +
+                '<label class="switch"><input type="checkbox" id="cpHell"' + (d.hell ? " checked" : "") +
+                ' onchange="cpRefreshPreview()"><span class="slider"></span></label></div>';
+
+        html += '<div class="cp-subtitle">限制（不勾选＝不限）</div>';
+        html += '<div class="cp-switch"><span>总时限（词数 × N 秒）</span>' +
+                '<label class="switch"><input type="checkbox" id="cpTotalOn"' + (d.totalLimit ? " checked" : "") +
+                ' onchange="cpToggleLimit(\'total\')"><span class="slider"></span></label></div>';
+        html += '<div class="cp-row indent"><label>每词秒数</label><input class="num-input" type="number" id="cpTotalSec" min="' +
+                L.totalSec.min + '" max="' + L.totalSec.max + '" value="' + d.totalSec + '"' +
+                (d.totalLimit ? "" : " disabled") + ' oninput="cpRefreshPreview()"><span class="cp-unit">' +
+                L.totalSec.min + "~" + L.totalSec.max + '</span></div>';
+
+        html += '<div class="cp-switch"><span>生命值（点错扣 1 点，扣完判负）</span>' +
+                '<label class="switch"><input type="checkbox" id="cpLivesOn"' + (d.lives ? " checked" : "") +
+                ' onchange="cpToggleLimit(\'lives\')"><span class="slider"></span></label></div>';
+        html += '<div class="cp-row indent"><label>生命点数</label><input class="num-input" type="number" id="cpLivesN" min="' +
+                L.livesN.min + '" max="' + L.livesN.max + '" value="' + d.livesN + '"' +
+                (d.lives ? "" : " disabled") + ' oninput="cpRefreshPreview()"><span class="cp-unit">' +
+                L.livesN.min + "~" + L.livesN.max + '</span></div>';
+
+        html += '<div class="cp-switch"><span>每词计时（配对成功即重置）</span>' +
+                '<label class="switch"><input type="checkbox" id="cpPerWordOn"' + (d.perWord ? " checked" : "") +
+                ' onchange="cpToggleLimit(\'perWord\')"><span class="slider"></span></label></div>';
+        html += '<div class="cp-row indent"><label>每词秒数</label><input class="num-input" type="number" id="cpPerWordSec" min="' +
+                L.perWordSec.min + '" max="' + L.perWordSec.max + '" value="' + d.perWordSec + '"' +
+                (d.perWord ? "" : " disabled") + ' oninput="cpRefreshPreview()"><span class="cp-unit">' +
+                L.perWordSec.min + "~" + L.perWordSec.max + '</span></div>';
+    } else {
+        html += '<div class="cp-hint">直接改 JSON。字段写错、类型不对或数值越界都会在下面提示，越界的会被自动夹到范围内。</div>';
+        html += '<textarea class="cp-code" id="cpCode" spellcheck="false" oninput="cpCodeLive()">' +
+                escapeHtml2(JSON.stringify(cpDraft || getCustomPreset(), null, 2)) + '</textarea>';
+        html += '<div class="status-line" id="cpCodeOut"></div>';
+    }
+
+    html += '<div class="cp-preview-box"><div class="cp-subtitle">预览</div><div id="cpPreview"></div></div>';
+    html += '<div class="cp-warn" id="cpWarn"></div>';
+    html += '<div class="btn-group">' +
+            '<button class="primary-btn" type="button" onclick="cpSave()">💾 保存并启用</button>' +
+            '<button class="ghost-btn" type="button" onclick="cpReset()">↺ 恢复默认</button>' +
+            '</div>';
+    html += '</div>';
+    wrap.innerHTML = html;
+    if (cpTab === "form") {
+        cpRefreshPreview();
+        if (cpPendingNote) { cpWarn(cpPendingNote); cpPendingNote = ""; }
+    } else {
+        cpCodeLive();
+    }
+}
+
+// 代码编辑区边打边校验：解析失败 / 越界 / 拼错字段都当场说
+function cpCodeLive() {
+    const ta = document.getElementById("cpCode");
+    const out = document.getElementById("cpCodeOut");
+    if (!ta || !out) return;
+    let raw;
+    try {
+        raw = JSON.parse(ta.value);
+    } catch (e) {
+        out.innerText = "❌ JSON 解析失败：" + e.message;
+        cpWarn("");
+        return;
+    }
+    const issues = [];
+    const clean = normalizeCustomPreset(raw, issues);
+    cpPreviewApply(clean);
+    out.innerText = issues.length ? "⚠️ " + issues.join("；") : "✅ 格式正确，可以保存";
+    cpWarn("");
+}
+
+function cpCollectIssues() {
+    // 走一遍规范化并收集提示，让用户知道哪些值被改了
+    let raw;
+    if (cpTab === "code") {
+        const txt = document.getElementById("cpCode").value;
+        try {
+            raw = JSON.parse(txt);
+        } catch (e) {
+            cpWarn("❌ JSON 解析失败：" + e.message);
+            return null;
+        }
+    } else {
+        readFormIntoDraft();
+        raw = cpDraft;
+    }
+    const issues = [];
+    const clean = normalizeCustomPreset(raw, issues);
+    return { clean: clean, issues: issues };
+}
+function cpWarn(msg) {
+    const w = document.getElementById("cpWarn");
+    if (w) w.innerText = msg;
+}
+function cpPreviewApply(clean) {
+    const pv = document.getElementById("cpPreview");
+    if (!pv) return;
+    pv.innerHTML = '<b>' + escapeHtml2(clean.icon + " " + clean.name) + '</b>' +
+                   '<div class="p-note">' + escapeHtml2(clean.desc) + '</div>' +
+                   '<div class="p-note cp-sum">' + escapeHtml2(customPresetSummary(clean)) + '</div>';
+}
+function cpSave() {
+    const r = cpCollectIssues();
+    if (!r) return;
+    saveCustomPreset(r.clean);
+    // 保存即启用 C 组，免得用户以为没生效
+    localStorage.setItem(MATCH_PRESET_KEY, CUSTOM_MODE_ID);
+    if (typeof syncPushDebounced === "function") syncPushDebounced();
+    cpDraft = r.clean;
+    cpEditorOpen = false;
+    renderGameParams();
+    const st = document.getElementById("gameParamsStatus");
+    if (st) {
+        st.innerText = "✅ 已保存并启用：" + r.clean.icon + " " + r.clean.name +
+            (r.issues.length ? "（" + r.issues.join("；") + "）" : "");
+    }
+}
+function cpReset() {
+    if (!confirm("恢复自定义预设为默认值？")) return;
+    cpDraft = normalizeCustomPreset(null);
+    cpTab = "form";
+    renderCustomEditor();
+    cpWarn("已恢复默认，点「保存并启用」才会写入");
+}
+
 if (typeof labOnChange === "function") labOnChange(renderGameParams);
 
 // ===== 同步状态 UI =====
