@@ -97,7 +97,7 @@
             color: #4a3a00;
             box-shadow: 0 6px 20px rgba(255,215,0,0.35);
         }
-        /* 未开启实验功能时：灰化但仍可点击（点击后询问口令） */
+        /* 未开启实验功能时：灰化但仍可点击（点击后先确认《实验室公约》） */
         .offline-btn.locked {
             background: rgba(255,255,255,0.08);
             color: #7f7fa8;
@@ -249,7 +249,7 @@
         <span class="icon">✏️</span> 单词拼写
     </button>
 
-    <!-- 第四个按钮：线下记背（dict/download.html，内部实验，受口令控制） -->
+    <!-- 第四个按钮：线下记背（dict/download.html，实验室功能，默认关） -->
     <button class="entry-btn offline-btn locked" type="button" id="offlineBtn" onclick="goOffline()">
         <span class="icon" id="offlineIcon">🔒</span> 线下记背
     </button>
@@ -281,10 +281,10 @@
 <button class="settings-toggle" type="button" onclick="goSettings()" aria-label="设置" title="设置">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 </button>
-<script src="dict/wbook.js?v=20261017"></script>
-<script src="dict/msauth.js?v=20261017"></script>
-<script src="dict/auth.js?v=20261017"></script>
-<script src="dict/lab.js?v=20261017"></script>
+<script src="dict/wbook.js?v=20261017b"></script>
+<script src="dict/msauth.js?v=20261017b"></script>
+<script src="dict/auth.js?v=20261017b"></script>
+<script src="dict/lab.js?v=20261017b"></script>
 <script>
 // ===== 身份检测 =====
 function renderStatus() {
@@ -337,7 +337,7 @@ function goLogout() {
 function goSettings() {
     location.href = "settings.html";
 }
-// ===== 线下记背（内部实验：下载词典）=====
+// ===== 线下记背（实验室功能：下载词典）=====
 const OFFLINE_FEATURE = "downloadDict";
 function renderOfflineBtn() {
     const btn = document.getElementById("offlineBtn");
@@ -346,17 +346,18 @@ function renderOfflineBtn() {
     const on = (typeof labEnabled === "function") && labEnabled(OFFLINE_FEATURE);
     btn.classList.toggle("locked", !on);
     icon.innerText = on ? "📥" : "🔒";
-    btn.title = on ? "导出词书 / 默写版" : "内部实验功能，需口令开启";
+    btn.title = on ? "导出词书 / 默写版" : "实验室功能，还没开启";
 }
 function goOffline() {
     if (typeof labEnabled === "function" && labEnabled(OFFLINE_FEATURE)) {
         location.href = "dict/download.html";
         return;
     }
-    // 未开启：询问内部测试口令，通过后直接进入
-    if (typeof labAskPass === "function" && labAskPass(OFFLINE_FEATURE, "下载词典")) {
-        renderOfflineBtn();
-        location.href = "dict/download.html";
+    // 未开启：先确认《实验室公约》，确认后就地开启并直接进入
+    if (typeof labEnable === "function") {
+        labEnable(OFFLINE_FEATURE, function (ok) {
+            if (ok) location.href = "dict/download.html";
+        });
     }
 }
 if (typeof labOnChange === "function") labOnChange(renderOfflineBtn);
@@ -374,6 +375,6 @@ renderStatus();
 renderCurrentBook();
 renderOfflineBtn();
 </script>
-<script src="dict/sidebar.js?v=20261017"></script>
+<script src="dict/sidebar.js?v=20261017b"></script>
 </body>
 </html>

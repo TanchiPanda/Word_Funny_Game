@@ -34,8 +34,8 @@ body {
     display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px;
     vertical-align:middle; margin-left:8px; letter-spacing:0;
 }
-.badge.private { background:rgba(255,107,107,0.2); color:#ff8888; border:1px solid rgba(255,107,107,0.4); }
 .badge.public  { background:rgba(57,217,138,0.18); color:#39d98a; border:1px solid rgba(57,217,138,0.4); }
+.badge.stable  { background:rgba(32,201,151,0.22); color:#4ecdc4; border:1px solid rgba(78,205,196,0.5); }
 
 .bar { height:8px; border-radius:4px; background:rgba(255,255,255,0.12); overflow:hidden; margin:10px 0 6px; }
 .bar > div { height:100%; background:linear-gradient(90deg,#4ecdc4,#39d98a); transition:width .3s; }
@@ -87,8 +87,8 @@ a.vrow { cursor:pointer; }
 
 <div id="root"></div>
 
-<script src="version.js?v=20261017"></script>
-<script src="sidebar.js?v=20261017"></script>
+<script src="version.js?v=20261017b"></script>
+<script src="sidebar.js?v=20261017b"></script>
 <script>
 var FID = new URLSearchParams(location.search).get("f") || "";
 
@@ -122,7 +122,7 @@ function renderIndex() {
                   '<div class="sha" style="font-size:15px">' + esc(featVersionName(id)) + '</div>' +
                   '<div class="sub">' +
                     (cur ? '当前 ' + esc(cur.version) +
-                        '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(cur.channel) + '</span>' +
+                        '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(versionChannelLabel(cur.channel)) + '</span>' +
                         ' · ' + leftHtml(cur)
                        : "暂无登记版本") +
                     '<br>共 ' + total + ' 个版本，' + valid + ' 个有效' +
@@ -161,7 +161,7 @@ function renderDetail(id) {
 
         html +=
             '<div class="cur-sha">' + esc(cur.version) +
-              '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(cur.channel) + '</span>' +
+              '<span class="badge ' + versionChannelClass(cur.channel) + '">' + esc(versionChannelLabel(cur.channel)) + '</span>' +
             '</div>' +
             '<div class="cur-title">' + esc(cur.title || "") + '</div>' +
             '<div class="cur-sub">登记于 ' + esc(cur.date) + ' · ' + esc(featVersionExpiryText(cur)) + '</div>' +
@@ -187,7 +187,7 @@ function renderDetail(id) {
             html += '<div class="vrow' + (isCur ? " active" : "") + (expired ? " dead" : "") + '">' +
                 '<div class="info">' +
                   '<div class="sha">' + esc(v.version) +
-                    '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(v.channel) + '</span>' +
+                    '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(versionChannelLabel(v.channel)) + '</span>' +
                   '</div>' +
                   '<div class="sub">' + esc(v.title || "") + '<br>' +
                     '登记 ' + esc(v.date) + ' · 有效期 ' + ((typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS) + ' 天 · ' + leftHtml(v) +

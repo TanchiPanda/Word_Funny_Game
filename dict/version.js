@@ -10,7 +10,8 @@
 //
 // 字段说明：
 //   version : 版号，git 提交短 SHA
-//   channel : "Private" 内测 | "Public" 公测
+//   channel : "Public" 公测 | "Stable" 稳定发行
+//             （2026-10-17 起取消内测，历史记录里的 Private 已统一改写为 Public）
 //   date    : 登记日 YYYY-MM-DD，有效期从这天 00:00 起算
 //   days    : 可选，覆盖默认有效期；0 = 永不过期
 //   title   : 这一版改了什么
@@ -25,7 +26,7 @@ var FEATURE_VERSIONS = {
     downloadDict: {
         name: "下载词典",
         versions: [
-            { version: "d2e2842", channel: "Private", date: "2026-10-16",
+            { version: "d2e2842", channel: "Public", date: "2026-10-16",
               title: "首发：CSV + 默写版导出",
               note: "支持当前课时 / 整本词书两种导出范围" }
         ]
@@ -34,22 +35,23 @@ var FEATURE_VERSIONS = {
     multiLevel: {
         name: "多选课时",
         versions: [
-            { version: "ae18605", channel: "Public", date: "2026-10-16",
-              title: "首发：选课时页多选课时",
-              note: "可跨词书勾选；学习 / 配对 / 拼写 / 导出共用合并词表" }
+            // 稳定发行：不再是测试版，所以不设有效期（days: 0 = 永不过期）
+            { version: "ae18605", channel: "Stable", date: "2026-10-16", days: 0,
+              title: "稳定发行：选课时页多选课时",
+              note: "2026-10-17 结束实验期，转为稳定发行：常驻生效、不再提供开关；可跨词书勾选，学习 / 配对 / 拼写 / 导出共用合并词表" }
         ]
     },
 
     gameParams: {
         name: "连连看游戏参数",
         versions: [
-            { version: "2f7d628", channel: "Private", date: "2026-10-17",
+            { version: "2f7d628", channel: "Public", date: "2026-10-17",
               title: "自定义游戏参数（C 预设 · 自定义预设）",
               note: "图标/名称/描述与全部玩法参数可自定，图形编辑 + 代码编辑双模式；每项可关掉＝不限，越界自动夹取，脏数据回落默认" },
-            { version: "edc07ca", channel: "Private", date: "2026-10-17",
+            { version: "edc07ca", channel: "Public", date: "2026-10-17",
               title: "接进实际玩法；两组改名 A 预设 / B 预设",
               note: "选中组整体替换选词页 4 个按钮；实装挑战赛 5 生命值、计时赛每词 15 秒、综合赛两者叠加，新增生命/倒计时 HUD" },
-            { version: "f5c8784", channel: "Private", date: "2026-10-17",
+            { version: "f5c8784", channel: "Public", date: "2026-10-17",
               title: "首发：难度预设 + 形式预设两组互斥",
               note: "仅做设置与存储，玩法未实装" }
         ]
@@ -117,10 +119,10 @@ function featVersionValidCount(id) {
 }
 
 function versionChannelLabel(ch) {
-    return ch === "Public" ? "公测" : "内测";
+    return ch === "Stable" ? "稳定" : "公测";
 }
 function versionChannelClass(ch) {
-    return ch === "Public" ? "public" : "private";
+    return ch === "Stable" ? "stable" : "public";
 }
 
 // ---------- 当前启用的版本（按功能各存一份）----------

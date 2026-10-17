@@ -566,9 +566,9 @@
         <div class="status-line" id="dictTplStatus"></div>
     </div>
 
-    <!-- ========== 连连看游戏参数（Private 实验） ========== -->
+    <!-- ========== 连连看游戏参数（实验室功能，默认关） ========== -->
     <div class="card">
-        <div class="card-title">🎮 连连看游戏参数 <span class="lab-chip private">Private 实验</span></div>
+        <div class="card-title">🎮 连连看游戏参数 <span class="lab-chip">实验室功能</span></div>
         <div class="card-desc">设置连连看（配对游戏）的玩法预设。A 预设与 B 预设互斥，选中任意一组即整体替换连连看选词页的模式按钮，改完立即生效。</div>
         <div id="gameParamsBody"></div>
     </div>
@@ -600,11 +600,11 @@
     </div>
 </div>
 
-<script src="dict/sync.js?v=20261017"></script>
-<script src="dict/lab.js?v=20261017"></script>
-<script src="dict/presets.js?v=20261017"></script>
-<script src="dict/msauth.js?v=20261017"></script>
-<script src="dict/auth.js?v=20261017"></script>
+<script src="dict/sync.js?v=20261017b"></script>
+<script src="dict/lab.js?v=20261017b"></script>
+<script src="dict/presets.js?v=20261017b"></script>
+<script src="dict/msauth.js?v=20261017b"></script>
+<script src="dict/auth.js?v=20261017b"></script>
 <script>
 // ===== 音效系统（全部离线生成）=====
 let audioCtx = null;
@@ -952,7 +952,7 @@ function resetDictTpl() {
     document.getElementById("dictTplStatus").innerText = "✅ 已重置为默认地址";
 }
 
-// ===== 连连看游戏参数（Private 实验）=====
+// ===== 连连看游戏参数（实验室功能）=====
 // 预设清单与自定义预设的数据层在 dict/presets.js，与游戏页共用同一份
 function setMatchPreset(id) {
     if (!matchPresetById(id)) return;
@@ -974,7 +974,7 @@ function renderGameParams() {
     if (typeof labEnabled !== "function" || !labEnabled("gameParams")) {
         box.innerHTML =
             '<div class="btn-group">' +
-            '  <button class="primary-btn" type="button" onclick="unlockGameParams()">🔒 输入口令开启</button>' +
+            '  <button class="primary-btn" type="button" onclick="unlockGameParams()">开启该功能</button>' +
             '</div>' +
             '<div class="status-line" id="gameParamsStatus"></div>';
         return;
@@ -1020,8 +1020,8 @@ function escapeHtml2(s) {
 }
 
 function unlockGameParams() {
-    if (typeof labAskPass !== "function") return;
-    if (labAskPass("gameParams", "连连看游戏参数")) renderGameParams();
+    if (typeof labEnable !== "function") return;
+    labEnable("gameParams", function (ok) { if (ok) renderGameParams(); });
 }
 
 // ---------- 自定义预设编辑器（图形 / 代码 双模式）----------
@@ -1296,6 +1296,6 @@ renderAccount();
 renderOneDrive();
 (function(){ var s = getSyncState(); updateSettingsSyncRow(s.state, s.error, s.lastOk); })();
 </script>
-<script src="dict/sidebar.js?v=20261017"></script>
+<script src="dict/sidebar.js?v=20261017b"></script>
 </body>
 </html>
