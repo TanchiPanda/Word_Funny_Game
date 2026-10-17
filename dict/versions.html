@@ -190,7 +190,9 @@ function renderDetail(id) {
                     '<span class="badge ' + versionChannelClass(v.channel) + '">' + esc(versionChannelLabel(v.channel)) + '</span>' +
                   '</div>' +
                   '<div class="sub">' + esc(v.title || "") + '<br>' +
-                    '登记 ' + esc(v.date) + ' · 有效期 ' + ((typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS) + ' 天 · ' + leftHtml(v) +
+                    '登记 ' + esc(v.date) + ' · ' +
+                    ((v.days === 0) ? '' : '有效期 ' + ((typeof v.days === "number") ? v.days : VERSION_DEFAULT_DAYS) + ' 天 · ') +
+                    leftHtml(v) +
                   '</div>' +
                 '</div>' +
                 '<div class="act">' + act + '</div>' +
