@@ -484,7 +484,7 @@
     <!-- ========== 连连看游戏参数（Private 实验） ========== -->
     <div class="card">
         <div class="card-title">🎮 连连看游戏参数 <span class="lab-chip private">Private 实验</span></div>
-        <div class="card-desc">设置连连看（配对游戏）的玩法预设。两组预设互斥，选中一个即整体替换原有模式。</div>
+        <div class="card-desc">设置连连看（配对游戏）的玩法预设。A 预设与 B 预设互斥，选中任意一组即整体替换连连看选词页的模式按钮，改完立即生效。</div>
         <div id="gameParamsBody"></div>
     </div>
 </div>
@@ -517,6 +517,7 @@
 
 <script src="dict/sync.js?v=20261017"></script>
 <script src="dict/lab.js?v=20261017"></script>
+<script src="dict/presets.js?v=20261017"></script>
 <script src="dict/msauth.js?v=20261017"></script>
 <script src="dict/auth.js?v=20261017"></script>
 <script>
@@ -867,53 +868,20 @@ function resetDictTpl() {
 }
 
 // ===== 连连看游戏参数（Private 实验）=====
-// 两组预设互斥：选中任意一个即整体替换连连看原有模式
-const MATCH_PRESET_KEY = "wordGameMatchPreset";
-const MATCH_PRESET_DEFAULT = "easy";
-const MATCH_PRESET_GROUPS = [
-    {
-        key: "difficulty",
-        title: "难度预设",
-        items: [
-            { id: "heaven", name: "☁️ 天堂模式", note: "顺序已排好" },
-            { id: "easy",   name: "🟢 简单模式", note: "顺序打乱，不限时" },
-            { id: "race",   name: "🔴 困难模式", note: "总时限 = 词数 × 5 秒" },
-            { id: "hell",   name: "💀 地狱模式", note: "卡片背面朝上，翻牌配对" }
-        ]
-    },
-    {
-        key: "form",
-        title: "形式预设",
-        items: [
-            { id: "f_heaven",    name: "☁️ 天堂模式", note: "顺序已排好" },
-            { id: "f_challenge", name: "❌ 挑战赛",   note: "5 点生命值" },
-            { id: "f_timed",     name: "🕒 计时赛",   note: "每词 15 秒" },
-            { id: "f_combo",     name: "⏳ 综合赛",   note: "挑战赛 + 计时赛" }
-        ]
-    }
-];
+// 预设清单在 dict/presets.js 里，与游戏页共用同一份，避免两处走形
+function getMatchPresetOr() { return getMatchPreset(); }
 
-function matchPresetAll() {
-    const out = [];
-    MATCH_PRESET_GROUPS.forEach(g => g.items.forEach(it => out.push(it)));
-    return out;
-}
-function matchPresetById(id) {
-    return matchPresetAll().filter(it => it.id === id)[0] || null;
-}
-function getMatchPreset() {
-    const raw = localStorage.getItem(MATCH_PRESET_KEY);
-    if (raw && matchPresetById(raw)) return raw;
-    if (raw) localStorage.setItem(MATCH_PRESET_KEY, MATCH_PRESET_DEFAULT);
-    return MATCH_PRESET_DEFAULT;
-}
 function setMatchPreset(id) {
     if (!matchPresetById(id)) return;
     localStorage.setItem(MATCH_PRESET_KEY, id);
     if (typeof syncPushDebounced === "function") syncPushDebounced();
     renderGameParams();
     const st = document.getElementById("gameParamsStatus");
-    if (st) st.innerText = "✅ 已选：" + matchPresetById(id).name;
+    if (st) {
+        st.innerText = "✅ 已选：" + matchPresetName(id) +
+                       "（" + (matchPresetGroupOf(id) === "B" ? "B 预设组" : "A 预设组") +
+                       "已在连连看选词页生效）";
+    }
 }
 
 function renderGameParams() {
@@ -930,13 +898,15 @@ function renderGameParams() {
         return;
     }
 
-    const cur = getMatchPreset();
+    const cur = getMatchPresetOr();
     let html = "";
-    MATCH_PRESET_GROUPS.forEach((g, gi) => {
-        html += '<div class="preset-group-title' + (gi === 0 ? " first" : "") + '">' + g.title + '</div>';
+    ["A", "B"].forEach((g, gi) => {
+        html += '<div class="preset-group-title' + (gi === 0 ? " first" : "") + '">' +
+                MATCH_GROUP_LABEL[g] + '</div>';
         html += '<div class="preset-grid">';
-        g.items.forEach(it => {
-            html += '<div class="preset' + (it.id === cur ? " on" : "") + '" onclick="setMatchPreset(\'' + it.id + '\')">' +
+        MATCH_PRESETS[g].forEach(it => {
+            html += '<div class="preset' + (it.id === cur ? " on" : "") +
+                '" onclick="setMatchPreset(\'' + it.id + '\')">' +
                 '<div class="p-name">' + it.name + '</div>' +
                 '<div class="p-note">' + it.note + '</div>' +
                 '</div>';
@@ -945,7 +915,7 @@ function renderGameParams() {
     });
     html += '<button class="preset-custom" type="button" onclick="customPresetTodo()">➕ 自定义预设</button>';
     html += '<div class="dev-note">正在开发中</div>';
-    html += '<div class="status-line" id="gameParamsStatus"></div>';
+    html += '<div class="status-line" id="gameParamsStatus">选中的组会整体替换连连看选词页的 4 个模式按钮</div>';
     box.innerHTML = html;
 }
 

@@ -156,6 +156,45 @@
             color: #bbbbbb;
             text-decoration: line-through;
         }
+        /* ========== 预设组提示 / 当前预设标记 / 对局 HUD ========== */
+        .preset-hint {
+            font-size: 12px;
+            color: #a8a8d8;
+            margin: 14px auto 6px;
+            max-width: 520px;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        .preset-hint b { color: #ffd700; }
+        .preset-hint a { color: #4ecdc4; text-decoration: none; }
+        .mode-btn .cur-preset {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 1px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: normal;
+            background: rgba(255,215,0,0.22);
+            color: #ffd700;
+            border: 1px solid rgba(255,215,0,0.5);
+            vertical-align: middle;
+        }
+        .mode-btn.challenge-btn { background: linear-gradient(135deg,#ff6b6b,#c92a2a); }
+        .mode-btn.timed-btn { background: linear-gradient(135deg,#ffb84d,#e8590c); }
+        .mode-btn.combo-btn { background: linear-gradient(135deg,#9775fa,#5f3dc4); }
+        .mode-hud {
+            max-width: 520px;
+            margin: 0 auto 10px;
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #ffd700;
+            min-height: 0;
+        }
+        .mode-hud .hud-lives { color: #ff6b6b; letter-spacing: 3px; }
+        .mode-hud .hud-clock { color: #4ecdc4; }
+        .mode-hud .hud-clock.warn { color: #ff6b6b; }
+        .mode-hud .hud-sep { color: #6f6f96; margin: 0 10px; font-weight: normal; }
         /* ========== 练习记录入口 ========== */
         .practice-entry {
             display: flex;
@@ -613,18 +652,14 @@
             </div>
             <button class="practice-entry-btn" onclick="goPracticeRecords()">查看 ›</button>
         </div>
-        <div class="bottom-select-area">
-            <button class="mode-btn heaven-btn" onclick="handleModeClick('heaven')">☁️ 天堂模式</button>
-            <button class="mode-btn simple-btn" onclick="handleModeClick('easy')">🟢 简单模式</button>
-            <button class="mode-btn challenge-btn" id="modeBtnRace" onclick="handleModeClick('race')">🔴 困难模式</button>
-            <button class="mode-btn hell-btn" id="modeBtnHell" onclick="handleModeClick('hell')">💀 地狱模式</button>
-            <button class="mode-btn home-btn" onclick="goHome()">🏠 返回首页</button>
-        </div>
+        <div class="preset-hint" id="presetHint"></div>
+        <div class="bottom-select-area" id="modeBtnArea"></div>
     </div>
     <!-- ========== 连连看游戏页 ========== -->
     <div id="gamePage" class="page">
         <h2>单词配对游戏</h2>
         <div class="tip">✅ 可自由先点英文或者中文进行配对</div>
+        <div class="mode-hud" id="modeHud"></div>
         <div class="progress-wrap">
             <div class="progress-bar" id="progressBar"></div>
         </div>
@@ -672,6 +707,7 @@
     </div>
 </div>
 <script src="dict/wbook.js?v=20261017"></script>
+<script src="dict/presets.js?v=20261017"></script>
 <script src="dict/sync.js?v=20261017"></script>
 <script src="dict/msauth.js?v=20261017"></script>
 <script src="dict/auth.js?v=20261017"></script>
@@ -779,13 +815,9 @@ function playUnlockSound() {
 
 
 
-// ===== 模式名称映射 =====
-const modeNames = {
-    heaven: "☁️ 天堂模式",
-    easy: "🟢 简单模式",
-    race: "🔴 困难模式",
-    hell: "💀 地狱模式"
-};
+// ===== 模式名称映射（8 个模式，来自 dict/presets.js）=====
+const modeNames = {};
+matchPresetAll().forEach(p => { modeNames[p.id] = p.name; });
 // ===== 全局变量 =====
 let gameMode = "easy";
 let removedMap = {};   // 每个单词本/课时各自记录被剔除的单词下标：{词本: {课时: [词下标,...]}}
@@ -798,7 +830,6 @@ const HELL_DELAY = 3000;
 let gameStartTime = 0;
 // ===== 身份/权限（客人模式受限） =====
 const ACCESS_KEY = "wordGameAccess"; // 兼容旧数据（导出导入跳过用）
-const LOCKED_MODES = ["race", "hell"];
 const GUEST_MAX_LEVEL = 2;
 function isGuest() {
     return !isLoggedIn();
@@ -831,8 +862,7 @@ function renderAccessUI() {
         document.getElementById("accessLabel").innerText = "✅ " + (user ? (user.name || user.login) : "已登录");
     }
     document.getElementById("accessLogin").classList.toggle("hidden", !guest);
-    document.getElementById("modeBtnRace").classList.toggle("locked", guest);
-    document.getElementById("modeBtnHell").classList.toggle("locked", guest);
+    renderModeButtons();
     renderSelectTip();
 }
 // ===== 登录弹窗（Microsoft OAuth）=====
@@ -1037,6 +1067,106 @@ function toggleRemove(dom, index) {
     }
 }
 
+// ===== 预设分组渲染 =====
+function renderPresetHint() {
+    const el = document.getElementById("presetHint");
+    if (!el) return;
+    const g = activePresetGroup();
+    const cur = matchPresetById(getMatchPreset());
+    el.innerHTML = '当前预设组：<b>' + MATCH_GROUP_LABEL[g] + '</b>' +
+                   (cur ? " · 默认 " + cur.name : "") +
+                   ' · <a href="settings.html">前往设置</a>';
+}
+function renderModeButtons() {
+    const area = document.getElementById("modeBtnArea");
+    if (!area) return;
+    const cur = getMatchPreset();
+    const guest = isGuest();
+    let html = "";
+    matchPresetList(activePresetGroup()).forEach(m => {
+        const locked = m.locked && guest;
+        html += '<button class="mode-btn ' + m.cls + (locked ? " locked" : "") +
+                '" onclick="handleModeClick(\'' + m.id + '\')">' + m.name +
+                (m.id === cur ? '<span class="cur-preset">当前预设</span>' : '') +
+                (locked ? ' 🔒' : '') + '</button>';
+    });
+    html += '<button class="mode-btn home-btn" onclick="goHome()">🏠 返回首页</button>';
+    area.innerHTML = html;
+}
+function renderModeUI() {
+    renderPresetHint();
+    renderModeButtons();
+    renderSelectTip();
+}
+
+// ===== 玩法机制：生命值 / 每词计时 =====
+let lives = 0;
+let wordTimer = null;
+let wordLeft = 0;
+let wordDeadline = 0;
+
+function renderHud() {
+    const el = document.getElementById("modeHud");
+    if (!el) return;
+    const cfg = modeConfig(gameMode);
+    const parts = [];
+    if (cfg.lives) {
+        const full = Math.max(0, lives);
+        const empty = Math.max(0, cfg.lives - full);
+        parts.push('<span class="hud-lives">' + "❤️".repeat(full) + "🖤".repeat(empty) +
+                   '</span> <span style="font-size:13px;color:#a8a8d8;">生命 ' + full + '/' + cfg.lives + '</span>');
+    }
+    if (cfg.perWordSec) {
+        const warn = wordLeft <= 5 ? " warn" : "";
+        parts.push('<span class="hud-clock' + warn + '">🕒 本词剩余 ' + Math.max(0, wordLeft) + ' 秒</span>');
+    }
+    el.innerHTML = parts.join('<span class="hud-sep">|</span>');
+}
+// 每词 15 秒：从一个词配对成功（或开局）开始计时
+function startWordTimer() {
+    clearInterval(wordTimer);
+    const cfg = modeConfig(gameMode);
+    if (!cfg.perWordSec) { wordLeft = 0; renderHud(); return; }
+    wordDeadline = Date.now() + cfg.perWordSec * 1000;
+    wordLeft = cfg.perWordSec;
+    renderHud();
+    wordTimer = setInterval(() => {
+        wordLeft = Math.ceil((wordDeadline - Date.now()) / 1000);
+        renderHud();
+        if (wordLeft <= 0) {
+            clearInterval(wordTimer);
+            onWordTimeout();
+        }
+    }, 250);
+}
+function onWordTimeout() {
+    const cfg = modeConfig(gameMode);
+    if (cfg.timeoutLose) {
+        endGameFail("超时", "⏰");
+        return;
+    }
+    if (cfg.timeoutLoseLife) {
+        lives--;
+        renderHud();
+        if (lives <= 0) { endGameFail("生命耗尽", "❌"); return; }
+        playErrorSound();
+        document.getElementById("statusText").innerText =
+            "⏰ 本词超时，扣 1 点生命 · 还剩 " + lives + " 点";
+        startWordTimer();
+    }
+}
+// 判负收尾：记一条失败局，回选词页
+function endGameFail(reason, icon) {
+    clearInterval(timer);
+    clearInterval(wordTimer);
+    playErrorSound();
+    const rec = buildPracticeRecord(false, reason);
+    pushPracticeRecord(rec);
+    alert((icon || "❌") + " 挑战失败 — " + reason + "\n已配对 " + rec.matched + "/" + rec.words +
+          " 组 · 正确率 " + rec.acc + "%" + (rec.errors ? "（点错 " + rec.errors + " 次）" : ""));
+    backToSelect();
+}
+
 // ===== 练习记录 =====
 // 每局结束（完成或超时失败）追加一条，正确率按「中途点错也算」口径统计
 const PRACTICE_LOG_KEY = "wordGamePracticeLog";
@@ -1059,11 +1189,12 @@ function pushPracticeRecord(rec) {
     renderPracticeEntry();
 }
 // 正确率 = 成功配对数 /（成功配对数 + 错误次数）
-function buildPracticeRecord(ok) {
+function buildPracticeRecord(ok, end) {
     const attempts = matchCount + errorCount;
     const acc = attempts ? (matchCount / attempts * 100) : 0;
     return {
         t: Date.now(),
+        end: ok ? "完成" : (end || "失败"),
         mode: gameMode,
         scope: activeScopeName(),
         refs: activeLevelRefs().map(r => r.bi + ":" + r.li),
@@ -1095,7 +1226,7 @@ function goPracticeRecords() {
 // ===== 开始游戏 =====
 function handleModeClick(mode) {
     playClickSound();
-    if (isGuest() && LOCKED_MODES.includes(mode)) {
+    if (isModeLocked(mode)) {
         openGate({ type: "mode", mode: mode });
         return;
     }
@@ -1103,7 +1234,7 @@ function handleModeClick(mode) {
 }
 function startGame(mode) {
     playClickSound();
-    if (isGuest() && LOCKED_MODES.includes(mode)) {
+    if (isModeLocked(mode)) {
         openGate({ type: "mode", mode: mode });
         return;
     }
@@ -1139,8 +1270,9 @@ function startMatchGame() {
     let cnBox = document.getElementById("cnBox");
     enBox.innerHTML = "";
     cnBox.innerHTML = "";
+    const cfg = modeConfig(gameMode);
     let enList, cnList;
-    if (gameMode === 'heaven') {
+    if (cfg.noShuffle) {
         enList = [...keptWords];
         cnList = [...keptWords];
     } else {
@@ -1150,7 +1282,7 @@ function startMatchGame() {
     enList.forEach(word => {
         let div = document.createElement("div");
         div.className = "item";
-        if (gameMode === 'hell') div.classList.add('hell-cover');
+        if (cfg.hell) div.classList.add('hell-cover');
         div.innerText = word.en;
         div.dataset.en = word.en;
         div.onclick = () => clickCard(div);
@@ -1159,7 +1291,7 @@ function startMatchGame() {
     cnList.forEach(word => {
         let div = document.createElement("div");
         div.className = "item";
-        if (gameMode === 'hell') div.classList.add('hell-cover');
+        if (cfg.hell) div.classList.add('hell-cover');
         div.innerText = word.cn;
         div.dataset.en = word.en;
         div.onclick = () => clickCard(div);
@@ -1168,8 +1300,12 @@ function startMatchGame() {
     document.getElementById("resetBtn").onclick = () => { playClickSound(); startGame(gameMode); };
     document.getElementById("statusText").innerText = activeScopeName() + " · 请开始配对单词（共" + keptWords.length + "组）";
     document.getElementById("progressBar").style.width = "0%";
-    if (gameMode === "race") {
-        let totalTime = keptWords.length * 5;
+    // 生命值 / 每词计时初始化
+    lives = cfg.lives || 0;
+    renderHud();
+    startWordTimer();
+    if (cfg.totalTimePerWord) {
+        let totalTime = keptWords.length * cfg.totalTimePerWord;
         let left = totalTime;
         let bar = document.getElementById("progressBar");
         bar.classList.add("time");
@@ -1178,13 +1314,7 @@ function startMatchGame() {
             bar.style.width = (left / totalTime * 100) + "%";
             document.getElementById("statusText").innerText = "剩余时间：" + left + "秒";
             if (left <= 0) {
-                clearInterval(timer);
-                playErrorSound();
-                const failRec = buildPracticeRecord(false);
-                pushPracticeRecord(failRec);
-                alert("⏰ 时间结束！挑战失败\n已配对 " + failRec.matched + "/" + failRec.words +
-                      " 组 · 正确率 " + failRec.acc + "%");
-                backToSelect();
+                endGameFail("时间结束", "⏰");
             }
         }, 1000);
     } else {
@@ -1241,11 +1371,25 @@ function clickSelectItem(dom) {
             selectedItem = null;
             playSuccessSound();
             matchCount++;
+            startWordTimer();   // 配对成功即进入下一个词的 15 秒
             checkWin();
         } else {
             playErrorSound();
             errorCount++;
-            alert("❌ 配对错误，请重试");
+            const cfg = modeConfig(gameMode);
+            if (cfg.lives) {
+                lives--;
+                renderHud();
+                if (lives <= 0) {
+                    selectedItem.classList.remove("selected");
+                    selectedItem = null;
+                    endGameFail("生命耗尽", "❌");
+                    return;
+                }
+                alert("❌ 配对错误，扣 1 点生命\n还剩 " + lives + " 点生命");
+            } else {
+                alert("❌ 配对错误，请重试");
+            }
             selectedItem.classList.remove("selected");
             selectedItem = null;
         }
@@ -1258,6 +1402,7 @@ function checkWin() {
     document.getElementById("progressBar").style.width = (matchedCount / total * 100) + "%";
     if (matchedCount === total) {
         clearInterval(timer);
+        clearInterval(wordTimer);
         playWinSound();
         const usedSec = ((Date.now() - gameStartTime) / 1000).toFixed(1);
         const rec = buildPracticeRecord(true);
@@ -1279,6 +1424,7 @@ function goHome() {
 function backToSelect() {
     playClickSound();
     clearInterval(timer);
+    clearInterval(wordTimer);
     showPage("selectPage");
 }
 function goSettings() {
@@ -1375,6 +1521,7 @@ onSyncStateChange(updateSyncPill);
 updateSoundBtn();
 loadCurrentSelection();
 renderAccessUI();
+renderModeUI();
 checkResumeGate();
 initLevels();
 teenStart();

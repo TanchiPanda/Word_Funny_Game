@@ -250,6 +250,7 @@ function fixRecord(r) {
         words: words,
         matched: matched,
         errors: errors,
+        end: r.end || (r.ok ? "完成" : "失败"),
         ms: num(r.ms),
         acc: (typeof r.acc === "number" && isFinite(r.acc) && r.acc >= 0)
             ? r.acc : (attempts ? matched / attempts * 100 : 0),
@@ -324,11 +325,13 @@ function renderList(arr) {
     }
     box.innerHTML = rows.map(r => {
         const accCls = r.acc >= 90 ? "" : (r.acc >= 70 ? "" : " warn");
+        // 失败原因不同（超时 / 生命耗尽 / 时间结束），徽标跟着变
+        const icon = r.ok ? "✅" : (r.end === "生命耗尽" ? "💔" : "⏰");
         return '<div class="rec' + (r.ok ? "" : " fail") + '">' +
             '<div class="rec-head">' +
             '  <div class="rec-mode">' + modeLabel(r.mode) + '</div>' +
             '  <div class="rec-result ' + (r.ok ? "ok" : "bad") + '">' +
-                   (r.ok ? "✅ 完成" : "⏰ 超时") + '</div>' +
+                   icon + " " + escapeHtml(r.end) + '</div>' +
             '</div>' +
             '<div class="rec-scope">' + escapeHtml(r.scope) + ' · ' + r.words + ' 词</div>' +
             '<div class="rec-stats">' +
