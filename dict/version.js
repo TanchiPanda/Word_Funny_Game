@@ -43,9 +43,12 @@ var FEATURE_VERSIONS = {
     gameParams: {
         name: "连连看游戏参数",
         versions: [
+            { version: "edc07ca", channel: "Private", date: "2026-10-17",
+              title: "接进实际玩法；两组改名 A 预设 / B 预设",
+              note: "选中组整体替换选词页 4 个按钮；实装挑战赛 5 生命值、计时赛每词 15 秒、综合赛两者叠加，新增生命/倒计时 HUD" },
             { version: "f5c8784", channel: "Private", date: "2026-10-17",
               title: "首发：难度预设 + 形式预设两组互斥",
-              note: "本次只做设置与存储；形式预设的生命值 / 每词计时规则尚未实装进连连看" }
+              note: "仅做设置与存储，玩法未实装" }
         ]
     }
 
