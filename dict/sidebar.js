@@ -14,6 +14,7 @@
     { icon: "📕", label: "词典学习", href: base + "study.html", match: ["study.html"] },
     { icon: "📖", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },
     { icon: "🧪", label: "实验室", href: base + "lab.html", match: ["lab.html"] },
+    { icon: "⚠️", label: "服务变更", href: "https://my.feishu.cn/docx/FCNqdudLioHO7SxganIc0Pbinxb", match: [] },
     { icon: "⚙️", label: "设置", href: base + "settings.html", match: ["settings.html", "advanced-sync.html"] },
     { icon: "👤", label: "账号管理", href: "https://myacc.r6t5.dpdns.org/?app=wordgm", match: [] },
   ];
