@@ -17,7 +17,7 @@
         }
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg,#2c1b54,#422880,#201440);
+            background: linear-gradient(135deg,#244a36,#2d6a4a,#1a3a2e);
             padding: 20px 12px 40px;
             text-align: center;
             overflow-x: hidden;
@@ -113,7 +113,7 @@
             padding: 7px 10px;
             border-radius: 8px;
             border: 1.5px solid rgba(255,215,0,0.5);
-            background: #2c1b54;
+            background: #244a36;
             color: #fff;
             font-size: 15px;
             font-weight: bold;
@@ -121,7 +121,7 @@
             cursor: pointer;
             min-width: 118px;
         }
-        #bookSelect option, #levelSelect option { background: #2c1b54; color: #fff; }
+        #bookSelect option, #levelSelect option { background: #244a36; color: #fff; }
         @media (max-width: 640px) {
             .select-header { flex-direction: column; gap: 12px; }
             .select-controls { position: static; transform: none; align-items: center; }
@@ -159,7 +159,7 @@
         /* ========== 预设组提示 / 当前预设标记 / 对局 HUD ========== */
         .preset-hint {
             font-size: 12px;
-            color: #a8a8d8;
+            color: #b8d8c8;
             margin: 14px auto 6px;
             max-width: 520px;
             text-align: center;
@@ -197,7 +197,7 @@
         .mode-hud .hud-lives { color: #ff6b6b; letter-spacing: 3px; }
         .mode-hud .hud-clock { color: #4ecdc4; }
         .mode-hud .hud-clock.warn { color: #ff6b6b; }
-        .mode-hud .hud-sep { color: #6f6f96; margin: 0 10px; font-weight: normal; }
+        .mode-hud .hud-sep { color: #8ab09a; margin: 0 10px; font-weight: normal; }
         /* ========== 练习记录入口 ========== */
         .practice-entry {
             display: flex;
@@ -220,7 +220,7 @@
         }
         .practice-entry-sub {
             font-size: 12px;
-            color: #a8a8d8;
+            color: #b8d8c8;
             margin-top: 5px;
             line-height: 1.5;
         }
@@ -268,7 +268,7 @@
             box-shadow: 0 4px 15px rgba(192,57,43,0.4);
         }
         .home-btn {
-            background: linear-gradient(90deg,#6c5ce7,#a29bfe);
+            background: linear-gradient(90deg,#2a9d8f,#4ecdc4);
             box-shadow: 0 4px 15px rgba(108,92,231,0.35);
         }
         .bottom-select-area {
@@ -324,7 +324,7 @@
         }
         .col-title {
             font-size: 14px;
-            color: #a8a8d8;
+            color: #b8d8c8;
             margin-bottom: 8px;
             letter-spacing: 2px;
             font-weight: bold;
@@ -397,7 +397,7 @@
             max-width: 200px;
         }
         .reset-btn { background: linear-gradient(90deg,#ff6b6b,#ee4c4c); }
-        .home-back-btn { background: linear-gradient(90deg,#6c5ce7,#a29bfe); }
+        .home-back-btn { background: linear-gradient(90deg,#2a9d8f,#4ecdc4); }
         /* ========== 全局音效开关 ========== */
         .sound-toggle {
             position: fixed;
@@ -411,7 +411,7 @@
             padding: 0 14px;
             border-radius: 999px;
             border: 1.5px solid rgba(255,215,0,0.5);
-            background: rgba(44,27,84,0.88);
+            background: rgba(26,58,46,0.88);
             color: #ffd700;
             font-size: 13px;
             font-weight: bold;
@@ -423,7 +423,7 @@
         .sound-toggle:active { transform: scale(0.95); }
         .sound-toggle svg { display: block; }
         .sound-toggle.off {
-            color: #a8a8d8;
+            color: #b8d8c8;
             border-color: rgba(255,255,255,0.25);
         }
         /* ========== 同步状态灯 ========== */
@@ -439,7 +439,7 @@
             padding: 0 14px;
             border-radius: 999px;
             border: 1.5px solid rgba(255,255,255,0.2);
-            background: rgba(44,27,84,0.88);
+            background: rgba(26,58,46,0.88);
             font-size: 13px;
             font-weight: bold;
             letter-spacing: 1px;
@@ -474,7 +474,7 @@
             height: 44px;
             border-radius: 50%;
             border: 1.5px solid rgba(255,215,0,0.5);
-            background: rgba(44,27,84,0.88);
+            background: rgba(26,58,46,0.88);
             color: #ffd700;
             cursor: pointer;
             backdrop-filter: blur(8px);
@@ -544,7 +544,7 @@
         .gate-box {
             width: 100%;
             max-width: 380px;
-            background: linear-gradient(160deg,#3a2470,#2c1b54);
+            background: linear-gradient(160deg,#2d5a3e,#244a36);
             border: 2px solid rgba(255,215,0,0.5);
             border-radius: 18px;
             padding: 28px 22px 22px;
@@ -1118,7 +1118,7 @@ function renderHud() {
         const full = Math.max(0, lives);
         const empty = Math.max(0, cfg.lives - full);
         parts.push('<span class="hud-lives">' + "❤️".repeat(full) + "🖤".repeat(empty) +
-                   '</span> <span style="font-size:13px;color:#a8a8d8;">生命 ' + full + '/' + cfg.lives + '</span>');
+                   '</span> <span style="font-size:13px;color:#b8d8c8;">生命 ' + full + '/' + cfg.lives + '</span>');
     }
     if (cfg.perWordSec) {
         const warn = wordLeft <= 5 ? " warn" : "";

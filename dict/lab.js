@@ -153,21 +153,21 @@ function labShowConvention(id, cb) {
             ".labcv-mask{position:fixed;inset:0;z-index:99999;background:rgba(8,4,24,.78);" +
             "display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;}" +
             ".labcv-box{width:100%;max-width:380px;box-sizing:border-box;padding:20px;border-radius:16px;" +
-            "background:linear-gradient(135deg,#2c1b54,#422880);border:1.5px solid rgba(255,215,0,.35);" +
+            "background:linear-gradient(135deg,#244a36,#2d6a4a);border:1.5px solid rgba(255,215,0,.35);" +
             "box-shadow:0 18px 50px rgba(0,0,0,.55);font-family:inherit;}" +
             ".labcv-title{font-size:16px;font-weight:bold;color:#ffd700;margin-bottom:12px;line-height:1.5;}" +
-            ".labcv-text{font-size:13px;color:#c8c8e8;line-height:1.75;margin-bottom:14px;}" +
+            ".labcv-text{font-size:13px;color:#c8e0d0;line-height:1.75;margin-bottom:14px;}" +
             ".labcv-open{display:block;width:100%;padding:11px;border-radius:10px;cursor:pointer;" +
             "border:1.5px solid rgba(78,205,196,.5);background:rgba(78,205,196,.12);color:#4ecdc4;" +
             "font-size:14px;font-weight:bold;}" +
             ".labcv-open.done{border-color:rgba(78,205,196,.25);color:#7fbfb8;background:rgba(78,205,196,.05);}" +
             ".labcv-check{display:flex;align-items:flex-start;gap:9px;margin:16px 0 0;cursor:pointer;" +
-            "font-size:13px;color:#e8e8f5;line-height:1.6;}" +
+            "font-size:13px;color:#e8f5ec;line-height:1.6;}" +
             ".labcv-check input{width:18px;height:18px;margin:1px 0 0;flex:none;accent-color:#4ecdc4;cursor:pointer;}" +
             ".labcv-tip{font-size:12px;color:#ffb84d;line-height:1.6;margin-top:8px;min-height:19px;}" +
             ".labcv-btns{display:flex;gap:10px;margin-top:16px;}" +
             ".labcv-btn{flex:1;padding:11px;border-radius:10px;cursor:pointer;font-size:14px;" +
-            "border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#c8c8e8;}" +
+            "border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#c8e0d0;}" +
             ".labcv-btn.primary{border:none;background:linear-gradient(135deg,#ffd700,#ff9500);" +
             "color:#2a1a00;font-weight:bold;}" +
             ".labcv-btn.primary:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5);}";

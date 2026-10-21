@@ -23,7 +23,7 @@
   style.textContent = `
     .sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:none}
     .sb-overlay.show{display:block}
-    .sb{position:fixed;top:0;left:0;width:240px;height:100vh;background:linear-gradient(180deg,#1a1a2e,#16213e);z-index:9999;transform:translateX(-100%);transition:transform 0.25s ease;display:flex;flex-direction:column;padding:16px 0;box-shadow:4px 0 20px rgba(0,0,0,0.3)}
+    .sb{position:fixed;top:0;left:0;width:240px;height:100vh;background:linear-gradient(180deg,#162a22,#1a3a2e);z-index:9999;transform:translateX(-100%);transition:transform 0.25s ease;display:flex;flex-direction:column;padding:16px 0;box-shadow:4px 0 20px rgba(0,0,0,0.3)}
     .sb.show{transform:translateX(0)}
     .sb-title{color:#ffd700;font-size:18px;font-weight:bold;text-align:center;padding:8px 0 16px;letter-spacing:2px}
     .sb-item{display:flex;align-items:center;gap:10px;padding:12px 20px;color:#ccc;text-decoration:none;font-size:15px;cursor:pointer;border-left:3px solid transparent;transition:0.15s}
@@ -40,7 +40,7 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
     .sb-sync-time{font-size:11px;color:#888;margin-left:20px}
     .sb-sound{display:flex;align-items:center;gap:8px;font-size:13px;color:#aaa;cursor:pointer;padding:4px 0}
-    .sb-toggle{position:fixed;top:14px;left:14px;z-index:9997;width:40px;height:40px;border-radius:8px;background:rgba(44,27,84,0.9);border:1px solid rgba(255,215,0,0.4);color:#ffd700;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+    .sb-toggle{position:fixed;top:14px;left:14px;z-index:9997;width:40px;height:40px;border-radius:8px;background:rgba(26,58,46,0.9);border:1px solid rgba(255,215,0,0.4);color:#ffd700;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
     body{padding-left:0!important}
   `;
   document.head.appendChild(style);

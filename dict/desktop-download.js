@@ -36,10 +36,10 @@
     // ---- 样式（全部 dd- 前缀，不和页面已有样式冲突）----
     var style = document.createElement("style");
     style.textContent = [
-      ".dd-gear{position:fixed;bottom:14px;right:14px;z-index:999;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,215,0,0.5);background:rgba(44,27,84,0.88);color:#ffd700;cursor:pointer;backdrop-filter:blur(8px);transition:0.2s}",
+      ".dd-gear{position:fixed;bottom:14px;right:14px;z-index:999;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,215,0,0.5);background:rgba(26,58,46,0.88);color:#ffd700;cursor:pointer;backdrop-filter:blur(8px);transition:0.2s}",
       ".dd-gear:active{transform:scale(0.92) rotate(30deg)}",
-      ".dd-download{position:fixed;z-index:999;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(255,215,0,0.5);background:rgba(44,27,84,0.88);color:#ffd700;text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;backdrop-filter:blur(8px);transition:0.2s;white-space:nowrap;box-sizing:border-box}",
-      ".dd-download:hover{background:rgba(60,38,110,0.95);border-color:rgba(255,215,0,0.85)}",
+      ".dd-download{position:fixed;z-index:999;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:1.5px solid rgba(255,215,0,0.5);background:rgba(26,58,46,0.88);color:#ffd700;text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;backdrop-filter:blur(8px);transition:0.2s;white-space:nowrap;box-sizing:border-box}",
+      ".dd-download:hover{background:rgba(45,90,60,0.95);border-color:rgba(255,215,0,0.85)}",
       ".dd-download:active{transform:scale(0.96)}",
       ".dd-download.dd-other{border-color:rgba(255,255,255,0.18);color:#9a9ab8}",
       ".dd-download.dd-other .dd-ico{filter:grayscale(1);opacity:0.55}",

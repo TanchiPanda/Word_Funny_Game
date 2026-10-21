@@ -10,8 +10,8 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-        background: linear-gradient(135deg, #2c1b54, #422880, #201440);
-        color: #e8e8f5;
+        background: linear-gradient(135deg, #244a36, #2d6a4a, #1a3a2e);
+        color: #e8f5ec;
         min-height: 100vh;
     }
     .wrap {
@@ -31,7 +31,7 @@
     }
     .page-sub {
         font-size: 13px;
-        color: #a8a8d8;
+        color: #b8d8c8;
         margin-bottom: 20px;
         line-height: 1.6;
     }
@@ -51,7 +51,7 @@
     }
     .sum-label {
         font-size: 12px;
-        color: #a8a8d8;
+        color: #b8d8c8;
         margin-bottom: 6px;
     }
     .sum-value {
@@ -74,7 +74,7 @@
         border-radius: 20px;
         border: 1.5px solid rgba(255,255,255,0.18);
         background: rgba(255,255,255,0.05);
-        color: #c8c8e8;
+        color: #c8e0d0;
         font-size: 13px;
         cursor: pointer;
         transition: 0.15s;
@@ -106,7 +106,7 @@
     .rec-mode {
         font-size: 15px;
         font-weight: bold;
-        color: #e8e8f5;
+        color: #e8f5ec;
     }
     .rec-result {
         font-size: 12px;
@@ -124,7 +124,7 @@
     }
     .rec-scope {
         font-size: 12px;
-        color: #a8a8d8;
+        color: #b8d8c8;
         margin-bottom: 12px;
         line-height: 1.5;
     }
@@ -146,7 +146,7 @@
     .rec-stat .v.warn { color: #ff8888; }
     .rec-foot {
         font-size: 11px;
-        color: #6f6f96;
+        color: #8ab09a;
         margin-top: 10px;
     }
     .empty {
@@ -180,7 +180,7 @@
     .primary-btn:active, .ghost-btn:active { transform: scale(0.98); }
     .note {
         font-size: 12px;
-        color: #6f6f96;
+        color: #8ab09a;
         line-height: 1.7;
         margin-top: 18px;
         padding-top: 16px;
@@ -293,7 +293,7 @@ function renderSummary(arr) {
     const totalErr = arr.reduce((a, r) => a + r.errors, 0);
     box.innerHTML =
         '<div class="sum-card"><div class="sum-label">练习局数</div>' +
-        '<div class="sum-value">' + arr.length + ' <span style="font-size:13px;color:#a8a8d8;">局</span></div></div>' +
+        '<div class="sum-value">' + arr.length + ' <span style="font-size:13px;color:#b8d8c8;">局</span></div></div>' +
         '<div class="sum-card"><div class="sum-label">平均正确率（仅完成局）</div>' +
         '<div class="sum-value gold">' + avgAcc.toFixed(1) + '%</div></div>' +
         '<div class="sum-card"><div class="sum-label">累计用时</div>' +
