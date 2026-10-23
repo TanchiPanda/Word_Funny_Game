@@ -49,6 +49,17 @@
             -webkit-text-fill-color: #ffd700;
             color: #ffd700;
         }
+        .inline-icon {
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: -0.2em;
+            object-fit: contain;
+        }
+        .entry-btn .icon img {
+            width: 26px;
+            height: 26px;
+            vertical-align: middle;
+        }
         .sub-title {
             color: #b8d8c8;
             font-size: 15px;
@@ -231,32 +242,32 @@
 </head>
 <body>
 <div class="container">
-    <div class="logo-title"><span class="bolt">⚡</span> 单词闯关 <span class="bolt">⚡</span></div>
+    <div class="logo-title"><img class="inline-icon" src="site-icon/bolt.svg" alt="" style="width:22px;height:22px" /> 单词闯关 <img class="inline-icon" src="site-icon/bolt.svg" alt="" style="width:22px;height:22px" /></div>
     <div class="sub-title">英文单词配对闯关小游戏</div>
 
     <!-- 第一个按钮：进入游戏（match.html） -->
     <button class="entry-btn" type="button" onclick="enterGame()">
-        <span class="icon">📚</span> 单词闯关连连看
+        <span class="icon"><img src="site-icon/gamepad.svg" alt="" /></span> 单词闯关连连看
     </button>
 
     <!-- 第二个按钮：词典学习（study.html） -->
     <button class="entry-btn study-btn" type="button" onclick="goStudy()">
-        <span class="icon">📕</span> 词典学习
+        <span class="icon"><img src="site-icon/book-red.svg" alt="" /></span> 词典学习
     </button>
 
     <!-- 第三个按钮：拼写游戏（spell.html） -->
     <button class="entry-btn spell-btn" type="button" onclick="goSpell()">
-        <span class="icon">✏️</span> 单词拼写
+        <span class="icon"><img src="site-icon/pencil.svg" alt="" /></span> 单词拼写
     </button>
 
     <!-- 第四个按钮：线下记背（dict/download.html，实验室功能，默认关） -->
     <button class="entry-btn offline-btn locked" type="button" id="offlineBtn" onclick="goOffline()">
-        <span class="icon" id="offlineIcon">🔒</span> 线下记背
+        <span class="icon" id="offlineIcon"><img src="site-icon/lock.svg" alt="" /></span> 线下记背
     </button>
 
     <!-- 当前词本/课时卡片：点击切换到 chooser.html -->
     <div class="book-current-card" onclick="goChooser()" role="button" tabindex="0" aria-label="切换单词本与课时">
-        <div class="cover">📖</div>
+        <div class="cover"><img src="site-icon/book-open.svg" alt="" style="width:28px;height:28px" /></div>
         <div class="bc-info">
             <div class="bc-book" id="currentBookName">加载中…</div>
             <div class="bc-level" id="currentLevelName">加载中…</div>
@@ -267,10 +278,10 @@
     <!-- 底部状态区：左侧身份状态，右侧登录（未登录时显示） -->
     <div class="status-area">
         <div class="status-box">
-            <span class="status-text" id="statusText">👤 客人模式</span>
+            <span class="status-text" id="statusText"><img class="inline-icon" src="site-icon/user.svg" alt="" /> 客人模式</span>
         </div>
         <div class="status-box">
-            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()">🔑 登录解锁</button>
+            <button class="login-btn" id="loginBtn" type="button" onclick="goLogin()"><img class="inline-icon" src="site-icon/key.svg" alt="" /> 登录解锁</button>
             <button class="login-btn" id="logoutBtn" type="button" onclick="goLogout()" style="display:none;background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.5);color:#ff8888;">退出登录</button>
         </div>
     </div>
@@ -292,10 +303,10 @@ function renderStatus() {
     const loggedIn = isLoggedIn();
     const statusEl = document.getElementById("statusText");
     if (loggedIn && user) {
-        statusEl.innerText = "✅ " + (user.name || user.login);
+        statusEl.innerHTML = '<img class="inline-icon" src="site-icon/check.svg" alt="" /> ' + (user.name || user.login);
         statusEl.classList.add("activated");
     } else {
-        statusEl.innerText = "👤 客人模式";
+        statusEl.innerHTML = '<img class="inline-icon" src="site-icon/user.svg" alt="" /> 客人模式';
         statusEl.classList.remove("activated");
     }
     document.getElementById("loginBtn").style.display = loggedIn ? "none" : "";
@@ -345,7 +356,9 @@ function renderOfflineBtn() {
     if (!btn) return;
     const on = (typeof labEnabled === "function") && labEnabled(OFFLINE_FEATURE);
     btn.classList.toggle("locked", !on);
-    icon.innerText = on ? "📥" : "🔒";
+    icon.innerHTML = on
+        ? '<img src="site-icon/download.svg" alt="" style="width:26px;height:26px;vertical-align:middle" />'
+        : '<img src="site-icon/lock.svg" alt="" style="width:26px;height:26px;vertical-align:middle" />';
     btn.title = on ? "导出词书 / 默写版" : "实验室功能，还没开启";
 }
 function goOffline() {
