@@ -18,7 +18,10 @@
          cursor:pointer; text-decoration:none; }
   .btn-ghost { background:rgba(255,255,255,0.12); color:#fff; margin-left:8px; }
   .user { color:#ffd700; font-weight:bold; }
+  .turnstile-wrap { margin:16px auto 8px; display:flex; justify-content:center; min-height:65px; }
+  .btn:disabled { opacity:0.45; cursor:not-allowed; }
 </style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 <div class="box">
@@ -75,15 +78,28 @@
       spinner.style.display = "none";
       title.innerText = "🔐 微软账号登录";
       msg.innerHTML = '使用 Microsoft 账号登录《单词闯关》<br>同时可访问 OneDrive 同步学习数据<br><br>';
+
+      // Cloudflare Turnstile 人机验证：通过后才启用登录按钮
+      var tsWrap = document.createElement("div");
+      tsWrap.className = "turnstile-wrap";
+      tsWrap.innerHTML = '<div class="cf-turnstile" data-sitekey="1x00000000000000000000AA" data-callback="onTurnstilePass"></div>';
+      msg.appendChild(tsWrap);
+
       var b = document.createElement("button");
       b.className = "btn";
       b.innerText = "使用 Microsoft 账号登录";
+      b.disabled = true; // 初始禁用，等 Turnstile 通过
       b.onclick = function () {
         b.disabled = true;
         b.innerText = "正在跳转…";
         msLogin({ redirectUri: redirectUri, returnTo: returnTo, prompt: "select_account" });
       };
       msg.appendChild(b);
+
+      // Turnstile 通过回调：启用按钮
+      window.onTurnstilePass = function () {
+        b.disabled = false;
+      };
     } catch (e) {
       fail(e.message || String(e));
     }
