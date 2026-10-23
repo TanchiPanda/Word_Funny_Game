@@ -5,19 +5,22 @@
 (function () {
   const current = location.pathname.split("/").pop() || "index.html";
   const base = current === "index.html" ? "" : (location.pathname.includes("/dict/") ? "../" : "");
+  const ICON = base + "site-icon/";
 
   const items = [
-    { icon: "🏠", label: "首页", href: base + "index.html", match: ["index.html"] },
-    { icon: "📚", label: "连连看", href: base + "match.html", match: ["match.html"] },
-    { icon: "📊", label: "练习记录", href: base + "dict/records.html", match: ["records.html"] },
-    { icon: "✏️", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },
-    { icon: "📕", label: "词典学习", href: base + "study.html", match: ["study.html"] },
-    { icon: "📖", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },
-    { icon: "🧪", label: "实验室", href: base + "lab.html", match: ["lab.html"] },
-    { icon: "⚠️", label: "服务变更", href: "https://my.feishu.cn/docx/FCNqdudLioHO7SxganIc0Pbinxb", match: [] },
-    { icon: "⚙️", label: "设置", href: base + "settings.html", match: ["settings.html", "advanced-sync.html"] },
-    { icon: "👤", label: "账号管理", href: "https://myacc.r6t5.dpdns.org/?app=wordgm", match: [] },
+    { icon: "home.svg", label: "首页", href: base + "index.html", match: ["index.html"] },
+    { icon: "gamepad.svg", label: "连连看", href: base + "match.html", match: ["match.html"] },
+    { icon: "chart.svg", label: "练习记录", href: base + "dict/records.html", match: ["records.html"] },
+    { icon: "pencil.svg", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },
+    { icon: "book-red.svg", label: "词典学习", href: base + "study.html", match: ["study.html"] },
+    { icon: "books.svg", label: "选课时", href: base + "dict/chooser.html", match: ["chooser.html", "editor.html"] },
+    { icon: "flask.svg", label: "实验室", href: base + "lab.html", match: ["lab.html"] },
+    { icon: "warning.svg", label: "服务变更", href: "https://my.feishu.cn/docx/FCNqdudLioHO7SxganIc0Pbinxb", match: [] },
+    { icon: "gear.svg", label: "设置", href: base + "settings.html", match: ["settings.html", "advanced-sync.html"] },
+    { icon: "user.svg", label: "账号管理", href: "https://myacc.r6t5.dpdns.org/?app=wordgm", match: [] },
   ];
+
+  const iconImg = (file, cls) => `<img class="sb-icon ${cls || ""}" src="${ICON}${file}" alt="" />`;
 
   const style = document.createElement("style");
   style.textContent = `
@@ -27,6 +30,10 @@
     .sb.show{transform:translateX(0)}
     .sb-title{color:#ffd700;font-size:18px;font-weight:bold;text-align:center;padding:8px 0 16px;letter-spacing:2px}
     .sb-item{display:flex;align-items:center;gap:10px;padding:12px 20px;color:#ccc;text-decoration:none;font-size:15px;cursor:pointer;border-left:3px solid transparent;transition:0.15s}
+    .sb-icon{width:20px;height:20px;flex-shrink:0;object-fit:contain}
+    .sb-item .sb-icon{width:18px;height:18px}
+    .sb-toggle .sb-icon{width:20px;height:20px}
+    .sb-title .sb-icon{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
     .sb-item:hover{background:rgba(255,255,255,0.06);color:#fff}
     .sb-item.active{background:rgba(255,215,0,0.1);color:#ffd700;border-left-color:#ffd700}
     .sb-divider{height:1px;background:rgba(255,255,255,0.1);margin:10px 16px}
@@ -48,7 +55,7 @@
   // 汉堡按钮
   const toggle = document.createElement("button");
   toggle.className = "sb-toggle";
-  toggle.innerHTML = "☰";
+  toggle.innerHTML = `<img class="sb-icon" src="${ICON}menu.svg" alt="" />`;
   toggle.setAttribute("aria-label", "菜单");
   document.body.appendChild(toggle);
 
@@ -60,10 +67,10 @@
   // 侧边栏
   const sb = document.createElement("div");
   sb.className = "sb";
-  sb.innerHTML = '<div class="sb-title">⚡ 单词闯关</div>' +
+  sb.innerHTML = `<div class="sb-title">${iconImg("bolt.svg")}单词闯关</div>` +
     items.map(it => {
       const active = it.match.includes(current) ? " active" : "";
-      return `<a class="sb-item${active}" href="${it.href}"><span>${it.icon}</span><span>${it.label}</span></a>`;
+      return `<a class="sb-item${active}" href="${it.href}">${iconImg(it.icon)}<span>${it.label}</span></a>`;
     }).join("") +
     '<div class="sb-divider"></div>' +
     '<div class="sb-footer">' +
@@ -74,7 +81,7 @@
     '  <div class="sb-sync-time" id="sbSyncTime">上次同步：-</div>' +
     '  <div class="sb-divider"></div>' +
     '  <div class="sb-sound" id="sbSound">' +
-    '    <span id="sbSoundIcon">🔊</span><span id="sbSoundText">音效开</span>' +
+    `    <img class="sb-icon" id="sbSoundIcon" src="${ICON}volume.svg" alt="" /><span id="sbSoundText">音效开</span>` +
     '  </div>' +
     '</div>';
   document.body.appendChild(sb);
@@ -104,7 +111,7 @@
   const soundRow = document.getElementById("sbSound");
   function updateSound() {
     const on = localStorage.getItem("wordGameSoundEnabled") !== "0";
-    document.getElementById("sbSoundIcon").innerText = on ? "🔊" : "🔇";
+    document.getElementById("sbSoundIcon").src = ICON + (on ? "volume.svg" : "mute.svg");
     document.getElementById("sbSoundText").innerText = on ? "音效开" : "音效关";
   }
   soundRow.onclick = () => {
