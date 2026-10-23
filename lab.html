@@ -44,6 +44,27 @@ body {
     padding: 20px 18px;
     margin-bottom: 16px;
 }
+
+/* 变更警告条幅 */
+.lab-banner {
+    background: linear-gradient(90deg, rgba(255,180,77,0.18), rgba(255,107,107,0.18));
+    border: 1.5px solid rgba(255,180,77,0.55);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ffd9a8;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.lab-banner .lab-banner-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+.lab-banner b { color: #ffb84d; }
 .intro-title {
     font-size: 20px;
     font-weight: bold;
@@ -238,6 +259,11 @@ body {
 <div class="top-bar">
     <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
     <div class="page-title">🧪 实验室</div>
+</div>
+
+<div class="lab-banner">
+    <div class="lab-banner-icon">⚠️</div>
+    <div>本页即将<b>重点变更</b>：实验功能可能会调整、迁移或整合到其它页面，当前入口与开关状态可能随时失效，敬请谅解。</div>
 </div>
 
 <div class="intro-card">
