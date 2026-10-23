@@ -285,9 +285,9 @@ function renderSelect() {
         };
         box.appendChild(tag);
     });
-    // 已登录用户全部模式开放
-    document.getElementById("hardBtn").classList.remove("locked");
-    document.getElementById("hellBtn").classList.remove("locked");
+    // 锁定模式
+    document.getElementById("hardBtn").classList.toggle("locked", isGuest());
+    document.getElementById("hellBtn").classList.toggle("locked", isGuest());
 }
 
 // ===== 游戏状态 =====
@@ -300,6 +300,7 @@ let timeLeft = 0;
 
 function startGame(mode) {
     playClickSound();
+    if (isGuest() && LOCKED_MODES.includes(mode)) { location.href = "login.html"; return; }
     gameMode = mode;
     const removed = getRemovedList();
     gameWords = [];

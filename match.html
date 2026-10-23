@@ -837,11 +837,12 @@ let gameStartTime = 0;
 const ACCESS_KEY = "wordGameAccess"; // 兼容旧数据（导出导入跳过用）
 const GUEST_MAX_LEVEL = 2;
 function isGuest() {
-    // 客人模式已禁用：未登录不能进入游戏页面，进来的都是已登录用户
-    return false;
+    return !isLoggedIn();
 }
 function guestCanReach(levelIdx) {
-    return true;
+    if (!isGuest()) return true;
+    if (activeBook().free) return true;
+    return levelIdx <= GUEST_MAX_LEVEL;
 }
 function goLogin() {
     playClickSound();

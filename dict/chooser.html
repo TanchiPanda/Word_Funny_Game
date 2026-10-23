@@ -254,8 +254,9 @@
 const GUEST_MAX_LEVEL = 2;
 function isGuest() { return !isLoggedIn(); }
 function guestCanReach(book, levelIdx) {
-    // 已登录用户可使用全部词书（暂时不限制）
-    return true;
+    if (!isGuest()) return true;
+    if (book.free) return true;
+    return levelIdx <= GUEST_MAX_LEVEL;
 }
 // 多选课时功能（公测，默认开启）；lab.js 没加载时按开启处理
 function multiOn() {
