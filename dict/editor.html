@@ -36,7 +36,7 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
 </head>
 <body>
 <div class="wrap">
-<h1>📝 词书编辑器</h1>
+<h1><img class="inline-icon" src="../site-icon/note.svg" alt="" /> 词书编辑器</h1>
 
 <!-- 词书列表 -->
 <div class="card" id="listCard">
@@ -63,8 +63,8 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
   <div id="levelTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('basic')">📊 表格编辑</div>
-    <div class="tab" onclick="switchTab('code')">💻 代码编辑</div>
+    <div class="tab active" onclick="switchTab('basic')"><img class="inline-icon" src="../site-icon/chart.svg" alt="" /> 表格编辑</div>
+    <div class="tab" onclick="switchTab('code')"><img class="inline-icon" src="../site-icon/desktop.svg" alt="" /> 代码编辑</div>
   </div>
 
   <!-- 表格编辑 -->
@@ -85,8 +85,8 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
   </div>
 
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="saveBook()">💾 保存</button>
-    <button class="btn btn-red" onclick="deleteBook()">🗑 删除</button>
+    <button class="btn btn-primary" onclick="saveBook()"><img class="inline-icon" src="../site-icon/save.svg" alt="" /> 保存</button>
+    <button class="btn btn-red" onclick="deleteBook()"><img class="inline-icon" src="../site-icon/trash.svg" alt="" /> 删除</button>
     <button class="btn btn-ghost" onclick="backToList()">← 返回</button>
   </div>
 </div>
@@ -116,7 +116,7 @@ function renderList(){
     return `<div class="book-item" onclick="editBook(${b.id})">
       <div><div style="font-weight:bold">${b.name}</div><div style="font-size:12px;color:#b8d8c8">${b.data.length} 课时 · ${wc} 词</div></div>
       <div style="display:flex;gap:4px">
-        <button class="btn btn-red" onclick="event.stopPropagation();delBookById(${b.id})">🗑</button>
+        <button class="btn btn-red" onclick="event.stopPropagation();delBookById(${b.id})"><img class="inline-icon" src="../site-icon/trash.svg" alt="" /> </button>
       </div>
     </div>`;
   }).join("");
@@ -169,7 +169,7 @@ function addRow(word){
     <td><input value="${word?.phonetic||""}" data-f="phonetic"></td>
     <td><input value="${word?.pos||""}" data-f="pos"></td>
     <td><input value="${word?.cn||""}" data-f="cn"></td>
-    <td><button class="btn btn-red" style="padding:4px 8px" onclick="this.closest('tr').remove()">✕</button></td>`;
+    <td><button class="btn btn-red" style="padding:4px 8px" onclick="this.closest('tr').remove()"><img class="inline-icon" src="../site-icon/close.svg" alt="" /> </button></td>`;
   tbody.appendChild(tr);
 }
 

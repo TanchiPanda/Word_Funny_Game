@@ -132,7 +132,7 @@ function labShowConvention(id, cb) {
     mask.className = "labcv-mask";
     mask.innerHTML =
         '<div class="labcv-box" role="dialog" aria-modal="true">' +
-        '  <div class="labcv-title">📖 开启前请先阅读《实验室公约》</div>' +
+        '  <div class="labcv-title"><img class="inline-icon" src="../site-icon/book-open.svg" alt="" /> 开启前请先阅读《实验室公约》</div>' +
         '  <div class="labcv-text">「' + name + '」属于实验室的试验性功能，可能随时改动、失效或移除。' +
         '    继续前请先读一遍公约。</div>' +
         '  <button class="labcv-open" type="button" id="labCvOpen">打开《实验室公约》 ↗</button>' +

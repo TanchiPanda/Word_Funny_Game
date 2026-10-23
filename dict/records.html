@@ -190,7 +190,7 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="page-title">📊 练习记录</div>
+    <div class="page-title"><img class="inline-icon" src="../site-icon/chart.svg" alt="" /> 练习记录</div>
     <div class="page-sub" id="pageSub">连连看的每一局都会记一条：用时、正确率、模式、错误次数、课时。</div>
 
     <div class="summary" id="summary"></div>
@@ -200,8 +200,8 @@
     <div id="list"></div>
 
     <div class="btn-group">
-        <button class="primary-btn" type="button" onclick="goMatch()">🎮 去连连看</button>
-        <button class="ghost-btn" type="button" onclick="clearRecords()">🗑 清空记录</button>
+        <button class="primary-btn" type="button" onclick="goMatch()"><img class="inline-icon" src="../site-icon/gamepad.svg" alt="" /> 去连连看</button>
+        <button class="ghost-btn" type="button" onclick="clearRecords()"><img class="inline-icon" src="../site-icon/trash.svg" alt="" /> 清空记录</button>
     </div>
 
     <div class="note">
@@ -329,7 +329,7 @@ function renderList(arr) {
     const box = document.getElementById("list");
     const rows = activeFilter === "all" ? arr : arr.filter(r => r.mode === activeFilter);
     if (!rows.length) {
-        box.innerHTML = '<div class="empty"><span class="big">🗒</span>还没有练习记录<br>去连连看玩一局，结束后就会出现在这里</div>';
+        box.innerHTML = '<div class="empty"><span class="big"><img class="inline-icon" src="../site-icon/note.svg" alt="" /> </span>还没有练习记录<br>去连连看玩一局，结束后就会出现在这里</div>';
         return;
     }
     box.innerHTML = rows.map(r => {

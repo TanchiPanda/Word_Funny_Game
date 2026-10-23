@@ -166,7 +166,7 @@ body {
 <body>
 
 <button class="float-toggle sound" id="soundToggle" type="button" onclick="toggleSound()">音效</button>
-<button class="float-toggle settings" type="button" onclick="location.href='settings.html'">⚙️</button>
+<button class="float-toggle settings" type="button" onclick="location.href='settings.html'"><img class="inline-icon" src="site-icon/gear.svg" alt="" /> </button>
 
 <!-- ===== 选词页 ===== -->
 <div id="selectPage" class="page active">
@@ -181,11 +181,11 @@ body {
     <div class="tip">点击单词可剔除（划掉），未剔除的单词将进入拼写练习</div>
     <div class="tag-wrap" id="tagBox"></div>
     <div class="mode-area">
-        <button class="mode-btn heaven" onclick="startGame('heaven')">☁️ 天堂模式（字母已排好）</button>
-        <button class="mode-btn easy" onclick="startGame('easy')">🟢 简单模式</button>
-        <button class="mode-btn hard" id="hardBtn" onclick="startGame('hard')">🔴 困难模式（每词20秒）</button>
-        <button class="mode-btn hell" id="hellBtn" onclick="startGame('hell')">💀 地狱模式（字母自动隐藏）</button>
-        <button class="mode-btn home" onclick="location.href='index.html'">🏠 返回首页</button>
+        <button class="mode-btn heaven" onclick="startGame('heaven')"><img class="inline-icon" src="site-icon/cloud.svg" alt="" /> 天堂模式（字母已排好）</button>
+        <button class="mode-btn easy" onclick="startGame('easy')"><img class="inline-icon" src="site-icon/check.svg" alt="" /> 简单模式</button>
+        <button class="mode-btn hard" id="hardBtn" onclick="startGame('hard')"><img class="inline-icon" src="site-icon/close.svg" alt="" /> 困难模式（每词20秒）</button>
+        <button class="mode-btn hell" id="hellBtn" onclick="startGame('hell')"><img class="inline-icon" src="site-icon/skull.svg" alt="" /> 地狱模式（字母自动隐藏）</button>
+        <button class="mode-btn home" onclick="location.href='index.html'"><img class="inline-icon" src="site-icon/home.svg" alt="" /> 返回首页</button>
     </div>
 </div>
 
@@ -204,7 +204,7 @@ body {
     <div class="letters-area" id="lettersArea"></div>
     <div class="game-btn-area">
         <button class="game-btn retry" id="retryBtn" onclick="retryWord()" disabled>↺ Retry</button>
-        <button class="game-btn check" id="checkBtn" onclick="checkWord()">✓ Check</button>
+        <button class="game-btn check" id="checkBtn" onclick="checkWord()"><img class="inline-icon" src="site-icon/check.svg" alt="" /> Check</button>
         <button class="game-btn next" id="nextBtn" onclick="nextWord()" disabled>Next →</button>
     </div>
 </div>

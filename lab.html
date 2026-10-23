@@ -258,16 +258,16 @@ body {
 <body>
 <div class="top-bar">
     <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
-    <div class="page-title">🧪 实验室</div>
+    <div class="page-title"><img class="inline-icon" src="site-icon/flask.svg" alt="" /> 实验室</div>
 </div>
 
 <div class="lab-banner">
-    <div class="lab-banner-icon">⚠️</div>
+    <div class="lab-banner-icon"><img class="inline-icon" src="site-icon/warning.svg" alt="" /> </div>
     <div>本页即将<b>重点变更</b>：实验功能可能会调整、迁移或整合到其它页面，当前入口与开关状态可能随时失效，敬请谅解。</div>
 </div>
 
 <div class="intro-card">
-    <div class="intro-title">🧪 实验室</div>
+    <div class="intro-title"><img class="inline-icon" src="site-icon/flask.svg" alt="" /> 实验室</div>
     <div class="intro-desc">
         试验性功能都放在这里：默认全部关闭，要用自己开。首次开启前需要先读一遍《实验室公约》。
         跑完实验期的功能会收进「以前实验过」，常驻生效、不再需要开关。
@@ -316,7 +316,7 @@ window.Lab = (function () {
         if (!modules.length) {
             root.innerHTML =
                 '<div class="empty-state">' +
-                '  <div class="empty-icon">🧪</div>' +
+                '  <div class="empty-icon"><img class="inline-icon" src="site-icon/flask.svg" alt="" /> </div>' +
                 '  <div class="empty-title">还没有实验项目</div>' +
                 '  <div class="empty-hint">这里将陆续放入试验性功能<br>当前为空白页面</div>' +
                 '</div>';
@@ -349,7 +349,7 @@ window.Lab = (function () {
             if (mod.title) {
                 const t = document.createElement("div");
                 t.className = "lab-card-title";
-                t.innerText = mod.title;
+                t.innerHTML = mod.title;
                 card.appendChild(t);
             }
             const body = document.createElement("div");
@@ -421,7 +421,7 @@ window.Lab = (function () {
 
         if (on) {
             ac.innerHTML =
-                '<button class="lab-btn primary" type="button" id="labGo-dl">📥 进入下载页</button>' +
+                '<button class="lab-btn primary" type="button" id="labGo-dl"><img class="inline-icon" src="site-icon/download.svg" alt="" /> 进入下载页</button>' +
                 '<button class="lab-btn" type="button" id="labOff-dl">关闭该功能</button>';
             ac.querySelector("#labGo-dl").onclick = function () {
                 location.href = "dict/download.html";
@@ -440,7 +440,7 @@ window.Lab = (function () {
         }
     }
 
-    Lab.register({ id: FEATURE, title: "📥 " + NAME, render: render });
+    Lab.register({ id: FEATURE, title: '<img class="inline-icon" src="site-icon/download.svg" alt="" /> ' + NAME, render: render });
 })();
 
 // ---------- 模块：多选课时（稳定发行，收在「以前实验过」）----------
@@ -495,13 +495,13 @@ window.Lab = (function () {
         st.className = "lab-state stable";
         st.innerText = "已长期开启";
 
-        ac.innerHTML = '<button class="lab-btn primary" type="button" id="labGo-ml">📚 去选课时页多选</button>';
+        ac.innerHTML = '<button class="lab-btn primary" type="button" id="labGo-ml"><img class="inline-icon" src="site-icon/books.svg" alt="" /> 去选课时页多选</button>';
         ac.querySelector("#labGo-ml").onclick = function () {
             location.href = "dict/chooser.html";
         };
     }
 
-    Lab.register({ id: FEATURE, title: "📚 " + NAME, group: "graduated", render: render });
+    Lab.register({ id: FEATURE, title: '<img class="inline-icon" src="site-icon/books.svg" alt="" /> ' + NAME, group: "graduated", render: render });
 })();
 
 // ---------- 模块：连连看游戏参数 ----------
@@ -553,7 +553,7 @@ window.Lab = (function () {
 
         if (on) {
             ac.innerHTML =
-                '<button class="lab-btn primary" type="button" id="labGo-gp">🎮 去设置页调整</button>' +
+                '<button class="lab-btn primary" type="button" id="labGo-gp"><img class="inline-icon" src="site-icon/gamepad.svg" alt="" /> 去设置页调整</button>' +
                 '<button class="lab-btn" type="button" id="labOff-gp">关闭该功能</button>';
             ac.querySelector("#labGo-gp").onclick = function () {
                 location.href = "settings.html";
@@ -572,7 +572,7 @@ window.Lab = (function () {
         }
     }
 
-    Lab.register({ id: FEATURE, title: "🎮 " + NAME, render: render });
+    Lab.register({ id: FEATURE, title: '<img class="inline-icon" src="site-icon/gamepad.svg" alt="" /> ' + NAME, render: render });
 })();
 
 // ---------- 模块：功能版本总览 ----------
@@ -584,7 +584,7 @@ window.Lab = (function () {
             '</div>' +
             '<div class="lab-desc" id="labVerDesc"></div>' +
             '<div class="lab-actions">' +
-            '  <button class="lab-btn primary" type="button" id="labVerGo">🏷️ 查看各功能版本</button>' +
+            '  <button class="lab-btn primary" type="button" id="labVerGo"><img class="inline-icon" src="site-icon/tag.svg" alt="" /> 查看各功能版本</button>' +
             '</div>';
 
         paint(el);

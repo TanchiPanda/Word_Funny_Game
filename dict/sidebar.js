@@ -34,6 +34,11 @@
     .sb-item .sb-icon{width:18px;height:18px}
     .sb-toggle .sb-icon{width:20px;height:20px}
     .sb-title .sb-icon{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+    /* 全局 inline-icon：所有页面 emoji 替换后的 SVG 统一尺寸 */
+    .inline-icon{width:1.2em;height:1.2em;vertical-align:-0.2em;object-fit:contain;flex-shrink:0}
+    .entry-btn .inline-icon,.primary-btn .inline-icon,.ghost-btn .inline-icon,.btn .inline-icon{width:20px;height:20px;vertical-align:-3px}
+    .card-title .inline-icon,.gate-title .inline-icon,.page-title .inline-icon{width:0.9em;height:0.9em;vertical-align:-0.15em}
+    .cover .inline-icon{width:28px;height:28px}
     .sb-item:hover{background:rgba(255,255,255,0.06);color:#fff}
     .sb-item.active{background:rgba(255,215,0,0.1);color:#ffd700;border-left-color:#ffd700}
     .sb-divider{height:1px;background:rgba(255,255,255,0.1);margin:10px 16px}

@@ -82,7 +82,7 @@ a.vrow { cursor:pointer; }
 <body>
 <div class="top-bar">
     <button class="back-btn" id="backBtn" onclick="location.href='../lab.html'">← 实验室</button>
-    <div class="page-title" id="pageTitle">🏷️ 功能版本</div>
+    <div class="page-title" id="pageTitle"><img class="inline-icon" src="../site-icon/tag.svg" alt="" /> 功能版本</div>
 </div>
 
 <div id="root"></div>
@@ -144,7 +144,7 @@ function renderIndex() {
 function renderDetail(id) {
     var list = featVersionList(id);
     var name = featVersionName(id);
-    document.getElementById("pageTitle").innerText = "🏷️ " + name;
+    document.getElementById("pageTitle").innerText = '<img class="inline-icon" src="../site-icon/tag.svg" alt="" /> ' + name;
     document.getElementById("backBtn").setAttribute("onclick", "location.href='versions.html'");
     document.getElementById("backBtn").innerText = "← 全部功能";
 
@@ -169,7 +169,7 @@ function renderDetail(id) {
             '<div class="' + barClass + '"><div style="width:' + pct + '%"></div></div>' +
             '<div class="cur-sub">' + leftHtml(cur) + '</div>' +
             (cur.note ? '<div class="cur-sub">' + esc(cur.note) + '</div>' : '') +
-            (expired ? '<div class="expired-tip">⚠️ 这一版已超过 ' + total + ' 天有效期，建议切到仍有效的版本。</div>' : '');
+            (expired ? '<div class="expired-tip"><img class="inline-icon" src="../site-icon/warning.svg" alt="" /> 这一版已超过 ' + total + ' 天有效期，建议切到仍有效的版本。</div>' : '');
     }
     html += '</div>';
 

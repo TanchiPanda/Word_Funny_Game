@@ -226,15 +226,15 @@
     <div class="scope-bar" id="scopeBar"></div>
     <div id="bookList"></div>
     <div class="scope-hint" id="scopeHint"></div>
-    <div class="guest-tip" id="guestTip" style="display:none;">🔒 客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
+    <div class="guest-tip" id="guestTip" style="display:none;"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
     <div class="bottom-area">
-        <button class="back-btn" onclick="goBack()">✅ 完成选择，返回首页</button>
+        <button class="back-btn" onclick="goBack()"><img class="inline-icon" src="../site-icon/check.svg" alt="" /> 完成选择，返回首页</button>
     </div>
 </div>
 <!-- 解锁弹窗 -->
 <div class="gate-mask" id="gateModal">
     <div class="gate-box">
-        <div class="gate-title">🔒 此课时需要登录</div>
+        <div class="gate-title"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 此课时需要登录</div>
         <div class="gate-tip">登录后即可选择全部课时</div>
         <div class="gate-err" id="gateErr"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
@@ -304,11 +304,11 @@ function render() {
             if (reachable) {
                 levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
             } else {
-                levelsHtml += `<span class="lv-tag locked" onclick="tryLocked(${bi},${li})">🔒${lv.name}</span>`;
+                levelsHtml += `<span class="lv-tag locked" onclick="tryLocked(${bi},${li})"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> ${lv.name}</span>`;
             }
         });
         card.innerHTML = `
-            <div class="cover">📖</div>
+            <div class="cover"><img class="inline-icon" src="../site-icon/book-open.svg" alt="" /> </div>
             <div class="book-info">
                 <div class="book-name">${book.name}${book.free ? '<span class="free-tag">免费</span>' : ""}</div>
                 <div class="book-stats">共 ${book.levels.length} 课时 · ${totalWords} 词</div>
@@ -330,7 +330,7 @@ function render() {
             levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
         });
         card.innerHTML = `
-            <div class="cover">📝</div>
+            <div class="cover"><img class="inline-icon" src="../site-icon/note.svg" alt="" /> </div>
             <div class="book-info">
                 <div class="book-name">${cb.name}<span class="free-tag">自定义</span></div>
                 <div class="book-stats">共 ${cb.data.length} 课时 · ${cb.data.reduce((s,l)=>s+l.words.length,0)} 词</div>
@@ -343,7 +343,7 @@ function render() {
     add.className = "book-card";
     add.style.border = "2px dashed rgba(255,255,255,0.2)";
     add.style.cursor = "pointer";
-    add.innerHTML = `<div class="cover" style="opacity:0.5">➕</div><div class="book-info"><div class="book-name" style="color:#b8d8c8;">新建/编辑词书</div></div>`;
+    add.innerHTML = `<div class="cover" style="opacity:0.5"><img class="inline-icon" src="../site-icon/check.svg" alt="" /> </div><div class="book-info"><div class="book-name" style="color:#b8d8c8;">新建/编辑词书</div></div>`;
     add.onclick = () => location.href = "editor.html";
     list.appendChild(add);
 

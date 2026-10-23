@@ -632,14 +632,14 @@
     </button>
     <!-- ========== 身份提示条（客人模式 / 已解锁） ========== -->
     <div class="access-bar hidden" id="accessBar">
-        <span class="access-label" id="accessLabel">👤 客人模式</span>
+        <span class="access-label" id="accessLabel"><img class="inline-icon" src="site-icon/user.svg" alt="" /> 客人模式</span>
         <button class="access-login hidden" id="accessLogin" type="button" onclick="goLogin()">登录解锁全部</button>
         <button class="access-out" id="accessLogout" type="button" onclick="goLogout()">退出登录</button>
     </div>
 <!-- ========== 单词剔除选词页（默认首页，无密码） ========== -->
     <div id="selectPage" class="page active">
         <div class="select-header">
-            <h2>📚 剔除你不需要练习的单词</h2>
+            <h2><img class="inline-icon" src="site-icon/books.svg" alt="" /> 剔除你不需要练习的单词</h2>
         </div>
         <div class="current-book-banner" id="currentBookBanner">
             <span class="cb-name" id="cbName"></span>
@@ -650,7 +650,7 @@
         <!-- 练习记录入口 -->
         <div class="practice-entry">
             <div>
-                <div class="practice-entry-title">📊 练习记录</div>
+                <div class="practice-entry-title"><img class="inline-icon" src="site-icon/chart.svg" alt="" /> 练习记录</div>
                 <div class="practice-entry-sub" id="practiceEntrySub">查看用时、正确率、模式、错误次数等统计</div>
             </div>
             <button class="practice-entry-btn" onclick="goPracticeRecords()">查看 ›</button>
@@ -661,7 +661,7 @@
     <!-- ========== 连连看游戏页 ========== -->
     <div id="gamePage" class="page">
         <h2>单词配对游戏</h2>
-        <div class="tip">✅ 可自由先点英文或者中文进行配对</div>
+        <div class="tip"><img class="inline-icon" src="site-icon/check.svg" alt="" /> 可自由先点英文或者中文进行配对</div>
         <div class="mode-hud" id="modeHud"></div>
         <div class="progress-wrap">
             <div class="progress-bar" id="progressBar"></div>
@@ -669,25 +669,25 @@
         <div class="status-text" id="statusText"></div>
         <div class="two-col-wrap">
             <div class="col">
-                <div class="col-title">🔤 ENGLISH</div>
+                <div class="col-title"><img class="inline-icon" src="site-icon/alphabet.svg" alt="" /> ENGLISH</div>
                 <div id="enBox"></div>
             </div>
             <div class="col">
-                <div class="col-title">📖 中文释义</div>
+                <div class="col-title"><img class="inline-icon" src="site-icon/book-open.svg" alt="" /> 中文释义</div>
                 <div id="cnBox"></div>
             </div>
         </div>
         <div class="bottom-btn-area">
-            <button class="game-btn reset-btn" id="resetBtn">🔄 重置本局</button>
-            <button class="game-btn home-back-btn" onclick="backToSelect()">🏠 返回选词页</button>
-            <button class="game-btn home-back-btn" onclick="goHome()">🏠 返回首页</button>
+            <button class="game-btn reset-btn" id="resetBtn"><img class="inline-icon" src="site-icon/sync.svg" alt="" /> 重置本局</button>
+            <button class="game-btn home-back-btn" onclick="backToSelect()"><img class="inline-icon" src="site-icon/home.svg" alt="" /> 返回选词页</button>
+            <button class="game-btn home-back-btn" onclick="goHome()"><img class="inline-icon" src="site-icon/home.svg" alt="" /> 返回首页</button>
         </div>
     </div>
 </div>
 <!-- ========== 密码解锁弹窗 ========== -->
 <div class="gate-mask" id="gateModal">
     <div class="gate-box">
-        <div class="gate-title">🔒 此功能需要登录</div>
+        <div class="gate-title"><img class="inline-icon" src="site-icon/lock.svg" alt="" /> 此功能需要登录</div>
         <div class="gate-tip">登录后即可解锁全部课时与特色模式</div>
         <div class="gate-err" id="gateErr"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
@@ -701,10 +701,10 @@
 <!-- ========== 同步诊断弹窗 ========== -->
 <div class="gate-mask" id="diagModal">
     <div class="gate-box">
-        <div class="gate-title">🔍 同步诊断</div>
+        <div class="gate-title"><img class="inline-icon" src="site-icon/search.svg" alt="" /> 同步诊断</div>
         <div class="gate-tip" id="diagReport" style="white-space:pre-wrap;text-align:left;max-height:50vh;overflow-y:auto;"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
-            <button class="gate-btn ok" type="button" onclick="window.open('https://my.feishu.cn/docx/WCK5dHbcioYcssxMKiYc3nL5nHg','_blank')">📖 了解更多</button>
+            <button class="gate-btn ok" type="button" onclick="window.open('https://my.feishu.cn/docx/WCK5dHbcioYcssxMKiYc3nL5nHg','_blank')"><img class="inline-icon" src="site-icon/book-open.svg" alt="" /> 了解更多</button>
             <button class="gate-btn cancel" type="button" onclick="closeDiag()">关闭</button>
         </div>
     </div>
@@ -863,7 +863,7 @@ function renderAccessUI() {
     if (guest) {
         document.getElementById("accessLabel").innerText = "👤 客人模式";
     } else {
-        document.getElementById("accessLabel").innerText = "✅ " + (user ? (user.name || user.login) : "已登录");
+        document.getElementById("accessLabel").innerText = '<img class="inline-icon" src="site-icon/check.svg" alt="" /> ' + (user ? (user.name || user.login) : "已登录");
     }
     document.getElementById("accessLogin").classList.toggle("hidden", !guest);
     renderModeButtons();
@@ -938,14 +938,14 @@ function renderCurrentBanner() {
     if (refs.length === 1) {
         const book = books[refs[0].bi];
         const lv = book.levels[refs[0].li];
-        if (nameEl) nameEl.innerText = "📖 " + book.name + (book.free ? "（免费）" : "");
-        if (levelEl) levelEl.innerText = "🏷 " + lv.name + "（" + lv.words.length + "词）";
+        if (nameEl) nameEl.innerText = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + book.name + (book.free ? "（免费）" : "");
+        if (levelEl) levelEl.innerText = '<img class="inline-icon" src="site-icon/tag.svg" alt="" /> ' + lv.name + "（" + lv.words.length + "词）";
         return;
     }
     const bookIdx = {};
     refs.forEach(r => bookIdx[r.bi] = 1);
     const names = Object.keys(bookIdx).map(k => books[k].name);
-    if (nameEl) nameEl.innerText = "📖 " + names.join("、");
+    if (nameEl) nameEl.innerText = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + names.join("、");
     if (levelEl) levelEl.innerText = "🏷 已选 " + refs.length + " 个课时（" + activeWordList().length + "词）";
 }
 function renderLevelSelect() {
@@ -1094,7 +1094,7 @@ function renderModeButtons() {
                 (m.id === cur ? '<span class="cur-preset">当前预设</span>' : '') +
                 (locked ? ' 🔒' : '') + '</button>';
     });
-    html += '<button class="mode-btn home-btn" onclick="goHome()">🏠 返回首页</button>';
+    html += '<button class="mode-btn home-btn" onclick="goHome()"><img class="inline-icon" src="site-icon/home.svg" alt="" /> 返回首页</button>';
     area.innerHTML = html;
 }
 function renderModeUI() {
@@ -1122,7 +1122,7 @@ function renderHud() {
     }
     if (cfg.perWordSec) {
         const warn = wordLeft <= 5 ? " warn" : "";
-        parts.push('<span class="hud-clock' + warn + '">🕒 本词剩余 ' + Math.max(0, wordLeft) + ' 秒</span>');
+        parts.push('<span class="hud-clock' + warn + '"><img class="inline-icon" src="site-icon/clock.svg" alt="" /> 本词剩余 ' + Math.max(0, wordLeft) + ' 秒</span>');
     }
     el.innerHTML = parts.join('<span class="hud-sep">|</span>') +
                    (hudHintText ? '<span class="hud-sep">|</span><span class="hud-hint">' +

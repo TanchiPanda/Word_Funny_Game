@@ -137,7 +137,7 @@ body {
 <body>
 <div class="top-bar">
     <button class="back-btn" onclick="goBack()">← 返回</button>
-    <div class="page-title">📥 下载词典</div>
+    <div class="page-title"><img class="inline-icon" src="../site-icon/download.svg" alt="" /> 下载词典</div>
 </div>
 
 <div class="card">
@@ -164,8 +164,8 @@ body {
 
 <div class="card">
     <div class="card-title">下载</div>
-    <button class="btn btn-csv" type="button" onclick="doExport('full')">📄 导出 CSV（含英文）</button>
-    <button class="btn btn-blank" type="button" onclick="doExport('blank')">✍️ 下载默写版（英语列留空）</button>
+    <button class="btn btn-csv" type="button" onclick="doExport('full')"><img class="inline-icon" src="../site-icon/document.svg" alt="" /> 导出 CSV（含英文）</button>
+    <button class="btn btn-blank" type="button" onclick="doExport('blank')"><img class="inline-icon" src="../site-icon/pencil.svg" alt="" /> 下载默写版（英语列留空）</button>
     <div class="note">
         列顺序：<code>序号 / 英文 / 音标 / 词性 / 中文</code>（整本导出时多一列 <code>课时</code>）。<br>
         默写版的「英文」列保留但内容为空，方便打印后手写填空。<br>

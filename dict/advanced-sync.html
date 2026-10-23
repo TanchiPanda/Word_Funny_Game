@@ -46,10 +46,10 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 </head>
 <body>
 <div class="wrap">
-<h1>⚙️ 高级同步设置</h1>
+<h1><img class="inline-icon" src="../site-icon/gear.svg" alt="" /> 高级同步设置</h1>
 
 <div class="card">
-  <div class="card-title">📊 同步状态</div>
+  <div class="card-title"><img class="inline-icon" src="../site-icon/chart.svg" alt="" /> 同步状态</div>
   <div class="sync-status-row" id="syncRow">
     <span class="dot" id="syncDot"></span>
     <span id="syncText">同步未开启</span>
@@ -68,13 +68,13 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
   </div>
   <div id="toggleHint" style="font-size:12px;color:#b8d8c8;margin-top:4px"></div>
   <div class="row" style="margin-top:12px">
-    <button class="btn btn-green" onclick="doPull()">📥 拉取</button>
-    <button class="btn btn-primary" onclick="doPush()">📤 推送</button>
+    <button class="btn btn-green" onclick="doPull()"><img class="inline-icon" src="../site-icon/download.svg" alt="" /> 拉取</button>
+    <button class="btn btn-primary" onclick="doPush()"><img class="inline-icon" src="../site-icon/upload.svg" alt="" /> 推送</button>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-title">🔍 诊断</div>
+  <div class="card-title"><img class="inline-icon" src="../site-icon/search.svg" alt="" /> 诊断</div>
   <div class="row">
     <button class="btn btn-ghost" onclick="runDiag()">运行诊断</button>
     <button class="btn btn-red" onclick="reauth()">重新登录</button>
@@ -82,7 +82,7 @@ pre{background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:12px;ove
 </div>
 
 <div class="card">
-  <div class="card-title">📝 同步记录</div>
+  <div class="card-title"><img class="inline-icon" src="../site-icon/note.svg" alt="" /> 同步记录</div>
   <pre id="log">（暂无记录）</pre>
 </div>
 
