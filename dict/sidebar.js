@@ -3,6 +3,18 @@
 // 自动在所有页面注入侧边栏
 
 (function () {
+  // ===== 登录门控：客人模式不能进游戏页面 =====
+  var PROTECTED = ["match.html", "spell.html", "study.html", "chooser.html", "records.html", "editor.html"];
+  var currentPage = location.pathname.split("/").pop() || "index.html";
+  if (PROTECTED.indexOf(currentPage) !== -1) {
+    var _u = null;
+    try { _u = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+    if (!_u) {
+      location.href = (location.pathname.includes("/dict/") ? "../" : "") + "login.html?return=" + encodeURIComponent(location.pathname + location.search);
+      return;
+    }
+  }
+
   const current = location.pathname.split("/").pop() || "index.html";
   const base = current === "index.html" ? "" : (location.pathname.includes("/dict/") ? "../" : "");
   const ICON = base + "site-icon/";
