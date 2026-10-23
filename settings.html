@@ -1188,7 +1188,7 @@ function cpCodeLive() {
     const issues = [];
     const clean = normalizeCustomPreset(raw, issues);
     cpPreviewApply(clean);
-    out.innerText = issues.length ? '<img class="inline-icon" src="site-icon/warning.svg" alt="" /> ' + issues.join("；") : "✅ 格式正确，可以保存";
+    out.innerHTML = issues.length ? '<img class="inline-icon" src="site-icon/warning.svg" alt="" /> ' + issues.join("；") : "✅ 格式正确，可以保存";
     cpWarn("");
 }
 

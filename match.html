@@ -864,7 +864,7 @@ function renderAccessUI() {
     if (guest) {
         document.getElementById("accessLabel").innerText = "👤 客人模式";
     } else {
-        document.getElementById("accessLabel").innerText = '<img class="inline-icon" src="site-icon/check.svg" alt="" /> ' + (user ? (user.name || user.login) : "已登录");
+        document.getElementById("accessLabel").innerHTML = '<img class="inline-icon" src="site-icon/check.svg" alt="" /> ' + (user ? (user.name || user.login) : "已登录");
     }
     document.getElementById("accessLogin").classList.toggle("hidden", !guest);
     renderModeButtons();
@@ -939,14 +939,14 @@ function renderCurrentBanner() {
     if (refs.length === 1) {
         const book = books[refs[0].bi];
         const lv = book.levels[refs[0].li];
-        if (nameEl) nameEl.innerText = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + book.name + (book.free ? "（免费）" : "");
-        if (levelEl) levelEl.innerText = '<img class="inline-icon" src="site-icon/tag.svg" alt="" /> ' + lv.name + "（" + lv.words.length + "词）";
+        if (nameEl) nameEl.innerHTML = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + book.name + (book.free ? "（免费）" : "");
+        if (levelEl) levelEl.innerHTML = '<img class="inline-icon" src="site-icon/tag.svg" alt="" /> ' + lv.name + "（" + lv.words.length + "词）";
         return;
     }
     const bookIdx = {};
     refs.forEach(r => bookIdx[r.bi] = 1);
     const names = Object.keys(bookIdx).map(k => books[k].name);
-    if (nameEl) nameEl.innerText = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + names.join("、");
+    if (nameEl) nameEl.innerHTML = '<img class="inline-icon" src="site-icon/book-open.svg" alt="" /> ' + names.join("、");
     if (levelEl) levelEl.innerText = "🏷 已选 " + refs.length + " 个课时（" + activeWordList().length + "词）";
 }
 function renderLevelSelect() {

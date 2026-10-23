@@ -145,7 +145,7 @@ function renderIndex() {
 function renderDetail(id) {
     var list = featVersionList(id);
     var name = featVersionName(id);
-    document.getElementById("pageTitle").innerText = '<img class="inline-icon" src="../site-icon/tag.svg" alt="" /> ' + name;
+    document.getElementById("pageTitle").innerHTML = '<img class="inline-icon" src="../site-icon/tag.svg" alt="" /> ' + name;
     document.getElementById("backBtn").setAttribute("onclick", "location.href='versions.html'");
     document.getElementById("backBtn").innerText = "← 全部功能";
 
