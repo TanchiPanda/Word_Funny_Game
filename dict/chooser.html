@@ -388,14 +388,22 @@ function tryLocked(bi, li) {
         btnEl.onclick = function() { location.reload(); };
     } else if (USER_PLAN === "one") {
         titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要 Club One Pro';
-        tipEl.textContent = "Club One 只能体验前 3 课时，升级 Pro 解锁全部";
-        btnEl.textContent = "👑 升级 Pro";
-        btnEl.onclick = function() { location.href = "../one.html"; };
+        tipEl.textContent = "Club One 只能体验前 3 课时，升级 Pro 解锁全部，或单买本词书（8 折）";
+        btnEl.textContent = "👑 升级 Pro / 单买词书";
+        btnEl.onclick = function() {
+            var book = WORD_BOOKS[bi];
+            var bookId = book.name;
+            location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=wordgm&bookid=" + encodeURIComponent(bookId) + "&uid=" + encodeURIComponent(isGuest() ? "" : (JSON.parse(localStorage.getItem("wordGameGitHubUser")||"{}").email || ""));
+        };
     } else {
         titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要升级计划';
-        tipEl.textContent = "免费用户只能体验前 3 课时，升级解锁全部";
-        btnEl.textContent = "👑 查看会员计划";
-        btnEl.onclick = function() { location.href = "../one.html"; };
+        tipEl.textContent = "免费用户只能体验前 3 课时，升级解锁全部，或单买本词书";
+        btnEl.textContent = "👑 查看会员计划 / 单买词书";
+        btnEl.onclick = function() {
+            var book = WORD_BOOKS[bi];
+            var bookId = book.name;
+            location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=wordgm&bookid=" + encodeURIComponent(bookId) + "&uid=" + encodeURIComponent(isGuest() ? "" : (JSON.parse(localStorage.getItem("wordGameGitHubUser")||"{}").email || ""));
+        };
     }
     document.getElementById("gateModal").classList.add("show");
 }

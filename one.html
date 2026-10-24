@@ -118,11 +118,11 @@ function doCheckin() {
 }
 
 function buyOne() {
-  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=false";
+  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=false&uid=" + encodeURIComponent(uid);
 }
 
 function buyPro() {
-  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=true";
+  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=true&uid=" + encodeURIComponent(uid);
 }
 </script>
 </body>
