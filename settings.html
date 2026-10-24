@@ -597,6 +597,60 @@
           }).catch(function(){});
       }
       checkReady();
+
+      // ===== 云游戏模式 =====
+      var cloudGameBtn = document.getElementById("cloudGameBtn");
+      var cloudGameStatus = document.getElementById("cloudGameStatus");
+      var CLOUD_GAME_KEY = "wordGameCloudGameEnabled";
+
+      function refreshCloudGameUI() {
+        var enabledAt = localStorage.getItem(CLOUD_GAME_KEY);
+        var ready = !!(user || localStorage.getItem("wordGameD1ReadyGuest") === "1");
+
+        if (!ready) {
+          cloudGameBtn.disabled = true;
+          cloudGameBtn.textContent = "请先开启云端存储";
+          cloudGameStatus.innerHTML = "需要先在上方点击「我已准备好迁移」";
+          return;
+        }
+
+        if (!enabledAt) {
+          cloudGameBtn.disabled = false;
+          cloudGameBtn.textContent = "启用云游戏模式";
+          cloudGameStatus.innerHTML = "实验功能，有效期 90 天";
+          return;
+        }
+
+        var elapsed = Date.now() - parseInt(enabledAt);
+        var daysLeft = Math.floor((90 * 86400000 - elapsed) / 86400000);
+        if (daysLeft <= 0) {
+          cloudGameBtn.disabled = false;
+          cloudGameBtn.textContent = "已过期，重新启用";
+          cloudGameStatus.innerHTML = '<span style="color:#e88;">90 天有效期已过</span>';
+        } else {
+          cloudGameBtn.disabled = true;
+          cloudGameBtn.textContent = "✅ 云游戏模式已启用";
+          cloudGameStatus.innerHTML = '<span style="color:#7ee;">剩余 ' + daysLeft + ' 天（实验功能）</span>';
+        }
+      }
+      refreshCloudGameUI();
+
+      window.toggleCloudGame = function () {
+        var enabledAt = localStorage.getItem(CLOUD_GAME_KEY);
+        if (!enabledAt) {
+          localStorage.setItem(CLOUD_GAME_KEY, String(Date.now()));
+          cloudGameStatus.innerHTML = '<span style="color:#7ee;">已启用，有效期 90 天</span>';
+          cloudGameBtn.disabled = true;
+          cloudGameBtn.textContent = "✅ 云游戏模式已启用";
+          alert("云游戏模式已启用（实验功能，90 天有效）\n\n此功能暂未开放，敬请期待。");
+        } else {
+          // 过期重新启用
+          localStorage.setItem(CLOUD_GAME_KEY, String(Date.now()));
+          cloudGameBtn.disabled = true;
+          cloudGameBtn.textContent = "✅ 云游戏模式已启用";
+          cloudGameStatus.innerHTML = '<span style="color:#7ee;">已重新启用，有效期 90 天</span>';
+        }
+      };
     })();
 
     function d1ReadyFromSettings() {
@@ -646,6 +700,18 @@
             <span class="dot" id="settingsSyncDot"></span>
             <span id="settingsSyncText">同步未开启</span>
         </div>
+    </div>
+
+    <!-- ========== 云游戏模式（实验） ========== -->
+    <div class="card" id="cloudGameCard">
+        <div class="card-title"><img class="inline-icon" src="site-icon/flask.svg" alt="" /> 云游戏模式 <span style="font-size:11px;background:#f59e0b;color:#fff;padding:2px 8px;border-radius:4px;margin-left:6px;">实验</span></div>
+        <div class="card-desc">使用数据库和对象存储优化的游戏玩法。</div>
+        <div class="btn-group">
+            <button class="primary-btn" type="button" id="cloudGameBtn" onclick="toggleCloudGame()" style="background:#8b5cf6;" disabled>
+                <img class="inline-icon" src="site-icon/flask.svg" alt="" /> 启用云游戏模式
+            </button>
+        </div>
+        <div class="status-line" id="cloudGameStatus" style="margin-top:8px;color:#aaa;font-size:12px;"></div>
     </div>
 
     <!-- ========== OneDrive 云空间 ========== -->
