@@ -394,20 +394,25 @@ renderOfflineBtn();
 <script src="dict/desktop-download.js?v=20261017b"></script>
 <script src="dict/announce.js?v=20261021"></script>
 <script>
-// ===== D1 迁移悬浮条 =====
+// ===== D1 迁移悬浮条（所有用户可见，客人模式用本地标记）=====
 (function () {
   var user = null;
   try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
-  if (!user) return; // 未登录不显示
+  var uid = user ? (user.email || user.login || user.id || "") : "";
+  var isGuest = !user;
 
-  var uid = user.email || user.login || user.id || "";
-  if (!uid) return;
+  // 客人模式：查本地标记
+  if (isGuest) {
+    if (localStorage.getItem("wordGameD1ReadyGuest") === "1") return;
+    showBanner();
+    return;
+  }
 
-  // 已准备好就不显示
+  // 登录用户：查云端 ready 状态
   fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid))
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (d && d.ready) return; // 已迁移
+      if (d && d.ready) return;
       showBanner();
     })
     .catch(function () { showBanner(); });
@@ -427,12 +432,19 @@ renderOfflineBtn();
     document.getElementById("d1ReadyBtn").onclick = function () {
       this.textContent = "迁移中...";
       this.disabled = true;
-      fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), { method: "POST" })
-        .then(function () {
-          bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已开启云端存储，后续数据将自动同步</div>';
-          setTimeout(function () { bar.remove(); }, 2500);
-          if (window.d1MarkReady) window.d1MarkReady();
-        });
+      if (isGuest) {
+        // 客人模式：本地标记，不调 API
+        localStorage.setItem("wordGameD1ReadyGuest", "1");
+        bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已记录（登录后自动同步云端）</div>';
+        setTimeout(function () { bar.remove(); }, 2500);
+      } else {
+        fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), { method: "POST" })
+          .then(function () {
+            bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已开启云端存储，后续数据将自动同步</div>';
+            setTimeout(function () { bar.remove(); }, 2500);
+            if (window.d1MarkReady) window.d1MarkReady();
+          });
+      }
     };
     document.getElementById("d1CloseBtn").onclick = function () { bar.remove(); };
   }
