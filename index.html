@@ -455,6 +455,27 @@ renderOfflineBtn();
     document.getElementById("d1CloseBtn").onclick = function () { bar.remove(); };
   }
 })();
+
+// 底部身份显示
+(function () {
+  var user = null;
+  try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+  if (!user) return;
+  var uid = user.email || user.login || user.id || "";
+  if (!uid) return;
+  var bar = document.createElement("div");
+  bar.style.cssText = "position:fixed;bottom:0;left:0;right:0;padding:8px;text-align:center;font-size:12px;background:rgba(0,0,0,0.6);color:#ccc;z-index:999;backdrop-filter:blur(4px);";
+  bar.innerHTML = '<span style="color:#aaa;">身份：</span><span id="bottomPlan">--</span> · <span style="color:#ffd54f;" id="bottomCredits">--</span> 积分 · <a href="one.html" style="color:#4ecdc4;text-decoration:none;">钱包</a>';
+  document.body.appendChild(bar);
+  fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var planNames = { free: "Club Free", one: "Club One", pro: "Club One Pro" };
+      document.getElementById("bottomPlan").textContent = planNames[d.plan] || d.plan;
+      document.getElementById("bottomCredits").textContent = d.credits;
+    })
+    .catch(function () {});
+})();
 </script>
 </body>
 </html>

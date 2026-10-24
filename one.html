@@ -58,6 +58,16 @@ h2 { margin-bottom:20px; }
 </div>
 
 <div class="card">
+  <h3 style="margin-bottom:12px;font-size:15px;">🎨 主题设置</h3>
+  <div style="display:flex;gap:10px;">
+    <button class="btn" style="flex:1;background:linear-gradient(135deg,#162a22,#1a3a2e);color:#fff;" onclick="setTheme('default')">默认</button>
+    <button class="btn" style="flex:1;background:linear-gradient(135deg,#2a1f0a,#3d2e0f);color:#ffd54f;" onclick="setTheme('one')">金色</button>
+    <button class="btn" style="flex:1;background:linear-gradient(90deg,#ff6b6b,#feca57,#48dbfb,#1dd1a1);color:#000;" onclick="setTheme('pro')">彩虹</button>
+  </div>
+  <p style="font-size:12px;color:#aaa;margin-top:8px;">根据您的会员计划自动切换，也可手动选择</p>
+</div>
+
+<div class="card">
   <h3 style="margin-bottom:12px;font-size:15px;">💎 充值积分（灰度）</h3>
   <p style="font-size:13px;color:#aaa;">充值功能正在灰度测试中，暂未开放。</p>
 </div>
@@ -124,6 +134,28 @@ function buyOne() {
 function buyPro() {
   location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=true&uid=" + encodeURIComponent(uid);
 }
+
+function setTheme(theme) {
+  localStorage.setItem("wordGameTheme", theme);
+  if (theme === "default") {
+    document.body.style.background = "";
+  } else if (theme === "one") {
+    document.body.style.background = "linear-gradient(135deg, #2a1f0a, #3d2e0f)";
+  } else if (theme === "pro") {
+    document.body.style.background = "linear-gradient(135deg, #1a0a2a, #2a0a1a, #0a1a2a, #0a2a1a)";
+    document.body.style.backgroundSize = "400% 400%";
+    document.body.style.animation = "rainbow 15s ease infinite";
+  }
+  // 同步到 d1-sync 的主题系统
+  var css = document.getElementById("theme-css");
+  if (css) css.remove();
+}
+
+// 启动时恢复手动选择的主题
+(function () {
+  var saved = localStorage.getItem("wordGameTheme");
+  if (saved) setTheme(saved);
+})();
 </script>
 </body>
 </html>
