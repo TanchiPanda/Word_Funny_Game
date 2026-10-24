@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>发送通知 - 单词闯关</title>
+<link rel="icon" href="../site-icon/favicon.svg">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Comic Sans MS","Chalkboard SE","Microsoft Yahei","PingFang SC",sans-serif; }
+body { background:linear-gradient(135deg,#162a22,#1a3a2e); color:#e0f0e8; min-height:100vh; padding:20px; max-width:600px; margin:0 auto; }
+.back-btn { display:inline-block; color:#4ecdc4; text-decoration:none; margin-bottom:20px; font-size:14px; }
+h2 { margin-bottom:20px; }
+.card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:20px; }
+label { display:block; margin:12px 0 6px; font-size:13px; color:#aaa; }
+input, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.3); color:#fff; font-size:14px; font-family:inherit; }
+textarea { min-height:100px; resize:vertical; }
+button { margin-top:16px; padding:10px 20px; border:none; border-radius:8px; background:#4a9e6e; color:#fff; font-size:14px; cursor:pointer; }
+button:hover { background:#5ab87e; }
+.status { margin-top:12px; font-size:13px; }
+</style>
+</head>
+<body>
+<a href="index.html" class="back-btn">← 返回通知</a>
+<h2>✏️ 发送通知</h2>
+<div class="card">
+  <label>密码</label>
+  <input type="password" id="pwd" placeholder="管理密码">
+  <label>标题</label>
+  <input type="text" id="title" placeholder="通知标题">
+  <label>内容</label>
+  <textarea id="content" placeholder="通知内容"></textarea>
+  <label>详情页链接（可选，如 settings.html）</label>
+  <input type="text" id="link" placeholder="settings.html">
+  <label>收件人（all = 所有人，或填用户邮箱）</label>
+  <input type="text" id="recipient" value="all">
+  <button onclick="send()">发送</button>
+  <div class="status" id="status"></div>
+</div>
+<script>
+function send() {
+  var pwd = document.getElementById("pwd").value;
+  var title = document.getElementById("title").value.trim();
+  var content = document.getElementById("content").value.trim();
+  var link = document.getElementById("link").value.trim();
+  var recipient = document.getElementById("recipient").value.trim() || "all";
+  var status = document.getElementById("status");
+
+  if (!pwd || !title || !content) {
+    status.innerHTML = '<span style="color:#e88;">请填写完整</span>';
+    return;
+  }
+
+  status.innerHTML = '发送中...';
+  fetch("https://api.r6t5.dpdns.org/api/notifications?user_id=admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: pwd, title: title, content: content, link: link, recipient: recipient })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        status.innerHTML = '<span style="color:#7ee;">✅ 发送成功</span>';
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
+        document.getElementById("link").value = "";
+      } else {
+        status.innerHTML = '<span style="color:#e88;">发送失败：' + (d.error || "未知错误") + '</span>';
+      }
+    })
+    .catch(function () {
+      status.innerHTML = '<span style="color:#e88;">网络错误</span>';
+    });
+}
+</script>
+</body>
+</html>

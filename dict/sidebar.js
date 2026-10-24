@@ -9,6 +9,7 @@
 
   const items = [
     { icon: "home.svg", label: "首页", href: base + "index.html", match: ["index.html"] },
+    { icon: "flask.svg", label: "通知", href: base + "nof/index.html", match: ["nof/index.html"] },
     { icon: "gamepad.svg", label: "连连看", href: base + "match.html", match: ["match.html"] },
     { icon: "chart.svg", label: "练习记录", href: base + "dict/records.html", match: ["records.html"] },
     { icon: "pencil.svg", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },

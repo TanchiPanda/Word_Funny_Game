@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通知 - 单词闯关</title>
+<link rel="icon" href="../site-icon/favicon.svg">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Comic Sans MS","Chalkboard SE","Microsoft Yahei","PingFang SC",sans-serif; }
+body { background:linear-gradient(135deg,#162a22,#1a3a2e); color:#e0f0e8; min-height:100vh; padding:20px; }
+.back-btn { display:inline-block; color:#4ecdc4; text-decoration:none; margin-bottom:20px; font-size:14px; }
+.card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px; margin-bottom:12px; }
+.title { font-size:16px; font-weight:bold; color:#ffd54f; margin-bottom:8px; }
+.content { font-size:14px; line-height:1.6; color:#ccc; margin-bottom:8px; }
+.meta { font-size:12px; color:#888; }
+.link { color:#4ecdc4; text-decoration:none; font-size:13px; }
+.loading { text-align:center; color:#888; padding:40px; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-btn">← 返回首页</a>
+<h2 style="margin-bottom:16px;">📢 通知</h2>
+<div id="list" class="loading">加载中...</div>
+<script src="../dict/sidebar.js?v=20261024"></script>
+<script src="../dict/d1-sync.js?v=20261024"></script>
+<script>
+(function () {
+  var user = null;
+  try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+  var uid = user ? (user.email || user.login || user.id || "guest") : "guest";
+
+  fetch("https://api.r6t5.dpdns.org/api/notifications?user_id=" + encodeURIComponent(uid))
+    .then(function (r) { return r.json(); })
+    .then(function (list) {
+      var el = document.getElementById("list");
+      if (!list.length) { el.innerHTML = '<div class="loading">暂无通知</div>'; return; }
+      el.innerHTML = list.map(function (n) {
+        var d = new Date(n.created_at);
+        var date = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+        return '<div class="card">' +
+          '<div class="title">' + n.title + '</div>' +
+          '<div class="content">' + n.content + '</div>' +
+          (n.link ? '<a class="link" href="../' + n.link + '">查看详情 →</a><br>' : '') +
+          '<div class="meta">' + date + '</div>' +
+          '</div>';
+      }).join("");
+    })
+    .catch(function () {
+      document.getElementById("list").innerHTML = '<div class="loading">加载失败，请检查网络</div>';
+    });
+})();
+</script>
+</body>
+</html>
