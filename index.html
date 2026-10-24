@@ -438,20 +438,15 @@ renderOfflineBtn();
         bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已记录（登录后自动同步云端）</div>';
         setTimeout(function () { bar.remove(); }, 2500);
       } else {
-        var controller = new AbortController();
-        var timeout = setTimeout(function () { controller.abort(); }, 8000);
         fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), {
-          method: "POST",
-          signal: controller.signal
+          method: "POST"
         })
           .then(function () {
-            clearTimeout(timeout);
             bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已开启云端存储，后续数据将自动同步</div>';
             setTimeout(function () { bar.remove(); }, 2500);
             if (window.d1MarkReady) window.d1MarkReady();
           })
           .catch(function () {
-            clearTimeout(timeout);
             self.disabled = false;
             self.textContent = "重试";
           });

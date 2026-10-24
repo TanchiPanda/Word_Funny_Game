@@ -594,26 +594,20 @@
         return;
       }
 
-      // 登录用户：调 API，加 8 秒超时
-      var controller = new AbortController();
-      var timeout = setTimeout(function () { controller.abort(); }, 8000);
-
+      // 登录用户：调 API
       fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), {
-        method: "POST",
-        signal: controller.signal
+        method: "POST"
       })
         .then(function (r) { return r.json(); })
         .then(function () {
-          clearTimeout(timeout);
           btn.textContent = "✅ 已开启云端存储";
           status.innerHTML = '<span style="color:#7ee;">你的数据已自动同步到 Cloudflare D1</span>';
           if (window.d1MarkReady) window.d1MarkReady();
         })
         .catch(function () {
-          clearTimeout(timeout);
           btn.disabled = false;
           btn.textContent = "重试";
-          status.innerHTML = '<span style="color:#e88;">网络超时，请稍后重试</span>';
+          status.innerHTML = '<span style="color:#e88;">网络错误，请重试</span>';
         });
     }
     </script>
