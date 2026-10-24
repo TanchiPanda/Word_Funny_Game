@@ -4,11 +4,11 @@
 //   1. 未登录：不同步
 //   2. 已登录但未点"我已准备好"：本地存储为主，D1 不写
 //   3. 已点"我已准备好"：每个 localStorage 变化自动同步到 D1（按 key 逐个写）
-//   4. 2026-11-23 后：强制 D1 为主，本地仅缓存
+//   4. 已强制 D1（评估期已提前结束）
 
 (function () {
   var API = "https://api.r6t5.dpdns.org/api";
-  var FORCE_DATE = "2026-11-23"; // 此日期后强制 D1
+  var FORCE_DATE = "2026-10-24"; // 评估期已提前结束，直接强制 D1
   // 不同步的 key（登录状态、token、密钥）
   var SKIP_KEYS = [
     "wordGameGitHubUser", "wordGameMSAToken", "wordGameMSAExpires",
