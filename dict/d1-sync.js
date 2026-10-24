@@ -21,16 +21,18 @@
   }
   function userEmail(u) { return (u && (u.email || u.login || u.id)) || ""; }
 
-  // 根据用户计划切换主题（全局所有页面）
+  // 立即应用已保存的主题（不等网络）
   function applyTheme(plan) {
     document.body.classList.remove("theme-one", "theme-pro");
     var saved = localStorage.getItem("wordGameTheme") || "default";
-    // 权限：Free 只能默认，One 可以金色，Pro 可以彩虹
+    // 权限检查
     var allowed = ["default"];
     if (plan === "one" || plan === "pro") allowed.push("one");
     if (plan === "pro") allowed.push("pro");
-    if (!allowed.includes(saved)) saved = "default";
-
+    // 没拉到 plan 时，先按已保存的主题应用（避免闪烁）
+    if (plan) {
+      if (!allowed.includes(saved)) saved = "default";
+    }
     var css = document.getElementById("theme-css");
     if (css) css.remove();
     if (saved === "one") {
@@ -48,7 +50,10 @@
     }
   }
 
-  // 拉取用户计划并应用主题
+  // 启动时立即应用已保存的主题（避免延迟闪烁）
+  applyTheme(null);
+
+  // 拉取用户计划并校正主题
   var user2 = getUser();
   if (user2) {
     fetch(API.replace("/kv", "") + "/user?user_id=" + encodeURIComponent(userEmail(user2)))
@@ -56,6 +61,7 @@
       .then(function (d) { if (d && d.plan) applyTheme(d.plan); })
       .catch(function () {});
   }
+  window.d1ApplyTheme = function () { applyTheme(window.USER_PLAN); };
   function isForced() {
     var d = new Date();
     var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
