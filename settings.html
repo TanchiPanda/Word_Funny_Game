@@ -586,24 +586,34 @@
       btn.disabled = true;
       btn.textContent = "处理中...";
 
+      // 客人模式：直接本地标记，不调 API
       if (!user) {
-        // 客人模式
         localStorage.setItem("wordGameD1ReadyGuest", "1");
         btn.textContent = "✅ 已准备（本地）";
         status.innerHTML = '<span style="color:#7ee;">客人模式：登录后自动同步云端</span>';
         return;
       }
 
-      fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), { method: "POST" })
+      // 登录用户：调 API，加 8 秒超时
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 8000);
+
+      fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), {
+        method: "POST",
+        signal: controller.signal
+      })
+        .then(function (r) { return r.json(); })
         .then(function () {
+          clearTimeout(timeout);
           btn.textContent = "✅ 已开启云端存储";
           status.innerHTML = '<span style="color:#7ee;">你的数据已自动同步到 Cloudflare D1</span>';
           if (window.d1MarkReady) window.d1MarkReady();
         })
         .catch(function () {
+          clearTimeout(timeout);
           btn.disabled = false;
           btn.textContent = "重试";
-          status.innerHTML = '<span style="color:#e88;">网络错误，请重试</span>';
+          status.innerHTML = '<span style="color:#e88;">网络超时，请稍后重试</span>';
         });
     }
     </script>
