@@ -7,7 +7,7 @@
 //   4. 2026-11-23 后：强制 D1 为主，本地仅缓存
 
 (function () {
-  var API = "https://word-game-api.hehebaobao0613.workers.dev/api";
+  var API = "https://api.r6t5.dpdns.org/api";
   var FORCE_DATE = "2026-11-23"; // 此日期后强制 D1
   // 不同步的 key（登录状态、token、密钥）
   var SKIP_KEYS = [

@@ -409,7 +409,7 @@ renderOfflineBtn();
   }
 
   // 登录用户：查云端 ready 状态
-  fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid))
+  fetch("https://api.r6t5.dpdns.org/api/ready?user_id=" + encodeURIComponent(uid))
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (d && d.ready) return;
@@ -438,7 +438,7 @@ renderOfflineBtn();
         bar.innerHTML = '<div style="text-align:center;color:#7ee;">✅ 已记录（登录后自动同步云端）</div>';
         setTimeout(function () { bar.remove(); }, 2500);
       } else {
-        fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), {
+        fetch("https://api.r6t5.dpdns.org/api/ready?user_id=" + encodeURIComponent(uid), {
           method: "POST"
         })
           .then(function () {

@@ -563,7 +563,7 @@
           }
           return;
         }
-        fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid))
+        fetch("https://api.r6t5.dpdns.org/api/ready?user_id=" + encodeURIComponent(uid))
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (d && d.ready) {
@@ -595,7 +595,7 @@
       }
 
       // 登录用户：调 API
-      fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), {
+      fetch("https://api.r6t5.dpdns.org/api/ready?user_id=" + encodeURIComponent(uid), {
         method: "POST"
       })
         .then(function (r) { return r.json(); })
