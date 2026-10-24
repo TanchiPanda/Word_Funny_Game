@@ -1,5 +1,5 @@
 ﻿// ===== 词库：多单词本结构（每个词本含 free 标志与章节 levels；示例词本可在下方直接替换/增删）=====
-const WORD_BOOKS = [
+let WORD_BOOKS = [
   { name: "初二秋季教材", free: false, levels: [
 
   { name: "LV1", words: [
@@ -2469,3 +2469,15 @@ function getAllBooks() {
     } catch(e) {}
     return WORD_BOOKS.concat(custom);
 }
+
+// 从 D1 拉取内置词书（覆盖本地默认）
+fetch("https://api.r6t5.dpdns.org/api/wordbooks?user_id=builtin")
+  .then(function (r) { return r.json(); })
+  .then(function (books) {
+    if (Array.isArray(books) && books.length > 0) {
+      WORD_BOOKS = books;
+      // 触发页面重新渲染
+      if (typeof window.onWordbooksLoaded === "function") window.onWordbooksLoaded();
+    }
+  })
+  .catch(function () {});
