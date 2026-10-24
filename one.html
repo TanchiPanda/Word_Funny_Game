@@ -118,31 +118,11 @@ function doCheckin() {
 }
 
 function buyOne() {
-  if (!confirm("确认花费 1500 积分购买 Club One（永久，单买词书 8 折）？")) return;
-  fetch("https://api.r6t5.dpdns.org/api/buy-one?user_id=" + encodeURIComponent(uid), { method: "POST" })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok) {
-        document.getElementById("buyStatus").innerHTML = '<span style="color:#7ee;">✅ 已开通 Club One</span>';
-        refresh();
-      } else {
-        document.getElementById("buyStatus").innerHTML = '<span style="color:#e88;">' + (d.error || "购买失败") + '</span>';
-      }
-    });
+  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=false";
 }
 
 function buyPro() {
-  if (!confirm("确认花费 666 积分购买 Club One Pro（1 年，全部课时）？")) return;
-  fetch("https://api.r6t5.dpdns.org/api/buy-pro?user_id=" + encodeURIComponent(uid), { method: "POST" })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok) {
-        document.getElementById("buyStatus").innerHTML = '<span style="color:#7ee;">✅ 已开通 Club One Pro（1 年）</span>';
-        refresh();
-      } else {
-        document.getElementById("buyStatus").innerHTML = '<span style="color:#e88;">' + (d.error || "购买失败") + '</span>';
-      }
-    });
+  location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=one&pro=true";
 }
 </script>
 </body>
