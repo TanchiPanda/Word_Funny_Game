@@ -554,12 +554,34 @@
 
       // 检查当前状态
       function checkReady() {
+        var today = new Date();
+        var todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+        var forced = todayStr >= "2026-11-23";
+
+        function applyUI(ready) {
+          // 已准备好：隐藏云同步卡片、导出按钮、准备按钮，只留导入
+          if (ready || forced) {
+            var cs = document.getElementById("cloudSyncCard");
+            if (cs) cs.style.display = "none";
+            var exportBtn = document.querySelector('button[onclick="exportData()"]');
+            if (exportBtn) exportBtn.style.display = "none";
+            btn.style.display = "none";
+          }
+          // 11月23日后：导入按钮也隐藏
+          if (forced) {
+            var importBtn = document.querySelector('button[onclick="document.getElementById(\'importFile\').click()"]');
+            if (importBtn) importBtn.style.display = "none";
+            status.innerHTML = '<span style="color:#7ee;">已强制使用云端存储，本地导入已关闭</span>';
+          }
+        }
+
         if (!user) {
           // 客人模式
           if (localStorage.getItem("wordGameD1ReadyGuest") === "1") {
             btn.textContent = "✅ 已准备（本地）";
             btn.disabled = true;
             status.innerHTML = '<span style="color:#7ee;">客人模式：登录后自动同步云端</span>';
+            applyUI(true);
           }
           return;
         }
@@ -570,6 +592,7 @@
               btn.textContent = "✅ 已开启云端存储";
               btn.disabled = true;
               status.innerHTML = '<span style="color:#7ee;">你的数据已自动同步到 Cloudflare D1</span>';
+              applyUI(true);
             }
           }).catch(function(){});
       }
@@ -613,7 +636,7 @@
     </script>
 
     <!-- ========== 云同步 ========== -->
-    <div class="card">
+    <div class="card" id="cloudSyncCard">
         <div class="card-title"><img class="inline-icon" src="site-icon/cloud.svg" alt="" /> 云同步</div>
         <div class="card-desc">同步游戏进度到云端，换设备不丢失。配置和诊断在高级同步设置中。</div>
         <div class="btn-group">
