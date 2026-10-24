@@ -136,25 +136,38 @@ function buyPro() {
 }
 
 function setTheme(theme) {
-  localStorage.setItem("wordGameTheme", theme);
-  if (theme === "default") {
-    document.body.style.background = "";
-  } else if (theme === "one") {
-    document.body.style.background = "linear-gradient(135deg, #2a1f0a, #3d2e0f)";
-  } else if (theme === "pro") {
-    document.body.style.background = "linear-gradient(135deg, #1a0a2a, #2a0a1a, #0a1a2a, #0a2a1a)";
-    document.body.style.backgroundSize = "400% 400%";
-    document.body.style.animation = "rainbow 15s ease infinite";
+  // 权限检查
+  var allowed = ["default"];
+  if (window.USER_PLAN === "one" || window.USER_PLAN === "pro") allowed.push("one");
+  if (window.USER_PLAN === "pro") allowed.push("pro");
+  if (!allowed.includes(theme)) {
+    alert("当前计划不支持此主题，请升级会员");
+    return;
   }
-  // 同步到 d1-sync 的主题系统
-  var css = document.getElementById("theme-css");
-  if (css) css.remove();
+  localStorage.setItem("wordGameTheme", theme);
+  // 触发全局主题刷新
+  if (window.d1ApplyTheme) window.d1ApplyTheme();
+  location.reload();
 }
 
-// 启动时恢复手动选择的主题
+// 启动时根据用户计划更新主题按钮状态
 (function () {
-  var saved = localStorage.getItem("wordGameTheme");
-  if (saved) setTheme(saved);
+  fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      window.USER_PLAN = d.plan;
+      var buttons = document.querySelectorAll(".card:nth-of-type(2) .btn");
+      if (d.plan === "free") {
+        buttons[1].style.opacity = "0.4";
+        buttons[1].style.pointerEvents = "none";
+        buttons[2].style.opacity = "0.4";
+        buttons[2].style.pointerEvents = "none";
+      } else if (d.plan === "one") {
+        buttons[2].style.opacity = "0.4";
+        buttons[2].style.pointerEvents = "none";
+      }
+    })
+    .catch(function () {});
 })();
 </script>
 </body>

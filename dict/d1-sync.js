@@ -21,33 +21,30 @@
   }
   function userEmail(u) { return (u && (u.email || u.login || u.id)) || ""; }
 
-  // 根据用户计划切换主题
+  // 根据用户计划切换主题（全局所有页面）
   function applyTheme(plan) {
-    // 移除旧主题
     document.body.classList.remove("theme-one", "theme-pro");
-    if (plan === "one") {
+    var saved = localStorage.getItem("wordGameTheme") || "default";
+    // 权限：Free 只能默认，One 可以金色，Pro 可以彩虹
+    var allowed = ["default"];
+    if (plan === "one" || plan === "pro") allowed.push("one");
+    if (plan === "pro") allowed.push("pro");
+    if (!allowed.includes(saved)) saved = "default";
+
+    var css = document.getElementById("theme-css");
+    if (css) css.remove();
+    if (saved === "one") {
       document.body.classList.add("theme-one");
-      if (!document.getElementById("theme-css")) {
-        var css = document.createElement("style");
-        css.id = "theme-css";
-        css.textContent = `
-          body { background: linear-gradient(135deg, #2a1f0a, #3d2e0f) !important; }
-          .sb { background: linear-gradient(180deg, #3d2e0f, #4a3a15) !important; }
-        `;
-        document.head.appendChild(css);
-      }
-    } else if (plan === "pro") {
+      var c1 = document.createElement("style");
+      c1.id = "theme-css";
+      c1.textContent = 'body { background: linear-gradient(135deg, #2a1f0a, #3d2e0f) !important; } .sb { background: linear-gradient(180deg, #3d2e0f, #4a3a15) !important; }';
+      document.head.appendChild(c1);
+    } else if (saved === "pro") {
       document.body.classList.add("theme-pro");
-      if (!document.getElementById("theme-css")) {
-        var css = document.createElement("style");
-        css.id = "theme-css";
-        css.textContent = `
-          body { background: linear-gradient(135deg, #1a0a2a, #2a0a1a, #0a1a2a, #0a2a1a) !important; background-size: 400% 400% !important; animation: rainbow 15s ease infinite !important; }
-          @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-          .sb { background: linear-gradient(180deg, #2a0a4a, #4a0a2a) !important; }
-        `;
-        document.head.appendChild(css);
-      }
+      var c2 = document.createElement("style");
+      c2.id = "theme-css";
+      c2.textContent = 'body { background: linear-gradient(135deg, #1a0a2a, #2a0a1a, #0a1a2a, #0a2a1a) !important; background-size: 400% 400% !important; animation: rainbow 15s ease infinite !important; } @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} } .sb { background: linear-gradient(180deg, #2a0a4a, #4a0a2a) !important; }';
+      document.head.appendChild(c2);
     }
   }
 
