@@ -4,13 +4,13 @@
 
 (function () {
   const current = location.pathname.split("/").pop() || "index.html";
-  const base = current === "index.html" ? "" : (location.pathname.includes("/dict/") ? "../" : "");
+  const base = current === "index.html" ? "" : (location.pathname.includes("/dict/") || location.pathname.includes("/nof/") ? "../" : "");
   const ICON = base + "site-icon/";
 
   const items = [
     { icon: "home.svg", label: "首页", href: base + "index.html", match: ["index.html"] },
     { icon: "flask.svg", label: "通知", href: base + "nof/index.html", match: ["nof/index.html"] },
-    { icon: "user.svg", label: "R6T5 Club", href: base + "one.html", match: ["one.html"] },
+    { icon: "bolt.svg", label: "R6T5 Club", href: base + "one.html", match: ["one.html"] },
     { icon: "gamepad.svg", label: "连连看", href: base + "match.html", match: ["match.html"] },
     { icon: "chart.svg", label: "练习记录", href: base + "dict/records.html", match: ["records.html"] },
     { icon: "pencil.svg", label: "单词拼写", href: base + "spell.html", match: ["spell.html"] },

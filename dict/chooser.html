@@ -371,6 +371,32 @@ function tryLocked(bi, li) {
     pendingPick = { bi, li };
     sessionStorage.setItem("wordGamePendingPick", JSON.stringify({ bi, li }));
     document.getElementById("gateErr").innerText = "";
+    var titleEl = document.querySelector("#gateModal .gate-title");
+    var tipEl = document.querySelector("#gateModal .gate-tip");
+    var btnEl = document.querySelector("#gateModal .gate-btn.ok");
+
+    // 未登录：提示登录
+    if (isGuest()) {
+        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 此课时需要登录';
+        tipEl.textContent = "登录后即可选择课时";
+        btnEl.textContent = "🔑 立即登录";
+        btnEl.onclick = function() { location.href = "../login.html"; };
+    } else if (USER_PLAN === "pro") {
+        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 课时锁定';
+        tipEl.textContent = "请刷新页面重试";
+        btnEl.textContent = "刷新";
+        btnEl.onclick = function() { location.reload(); };
+    } else if (USER_PLAN === "one") {
+        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要 Club One Pro';
+        tipEl.textContent = "Club One 只能体验前 3 课时，升级 Pro 解锁全部";
+        btnEl.textContent = "👑 升级 Pro";
+        btnEl.onclick = function() { location.href = "../one.html"; };
+    } else {
+        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要升级计划';
+        tipEl.textContent = "免费用户只能体验前 3 课时，升级解锁全部";
+        btnEl.textContent = "👑 查看会员计划";
+        btnEl.onclick = function() { location.href = "../one.html"; };
+    }
     document.getElementById("gateModal").classList.add("show");
 }
 function closeGate() {
