@@ -536,10 +536,77 @@
         <div class="btn-group">
             <button class="primary-btn" type="button" onclick="exportData()"><img class="inline-icon" src="site-icon/upload.svg" alt="" /> 导出全部数据</button>
             <button class="ghost-btn" type="button" onclick="document.getElementById('importFile').click()"><img class="inline-icon" src="site-icon/download.svg" alt="" /> 导入数据</button>
+            <button class="primary-btn" type="button" id="d1ReadySettingsBtn" style="background:#4a9e6e;" onclick="d1ReadyFromSettings()"><img class="inline-icon" src="site-icon/cloud.svg" alt="" /> 我已准备好迁移</button>
         </div>
         <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
         <div class="status-line" id="dataStatus"></div>
+        <div class="status-line" id="d1ReadyStatus" style="margin-top:6px;"></div>
     </div>
+
+    <script>
+    // 设置页的"我已准备好"按钮
+    (function () {
+      var user = null;
+      try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+      var uid = user ? (user.email || user.login || user.id || "") : "";
+      var btn = document.getElementById("d1ReadySettingsBtn");
+      var status = document.getElementById("d1ReadyStatus");
+
+      // 检查当前状态
+      function checkReady() {
+        if (!user) {
+          // 客人模式
+          if (localStorage.getItem("wordGameD1ReadyGuest") === "1") {
+            btn.textContent = "✅ 已准备（本地）";
+            btn.disabled = true;
+            status.innerHTML = '<span style="color:#7ee;">客人模式：登录后自动同步云端</span>';
+          }
+          return;
+        }
+        fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid))
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && d.ready) {
+              btn.textContent = "✅ 已开启云端存储";
+              btn.disabled = true;
+              status.innerHTML = '<span style="color:#7ee;">你的数据已自动同步到 Cloudflare D1</span>';
+            }
+          }).catch(function(){});
+      }
+      checkReady();
+    })();
+
+    function d1ReadyFromSettings() {
+      var user = null;
+      try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+      var uid = user ? (user.email || user.login || user.id || "") : "";
+      var btn = document.getElementById("d1ReadySettingsBtn");
+      var status = document.getElementById("d1ReadyStatus");
+
+      btn.disabled = true;
+      btn.textContent = "处理中...";
+
+      if (!user) {
+        // 客人模式
+        localStorage.setItem("wordGameD1ReadyGuest", "1");
+        btn.textContent = "✅ 已准备（本地）";
+        status.innerHTML = '<span style="color:#7ee;">客人模式：登录后自动同步云端</span>';
+        return;
+      }
+
+      fetch("https://word-game-api.hehebaobao0613.workers.dev/api/ready?user_id=" + encodeURIComponent(uid), { method: "POST" })
+        .then(function () {
+          btn.textContent = "✅ 已开启云端存储";
+          status.innerHTML = '<span style="color:#7ee;">你的数据已自动同步到 Cloudflare D1</span>';
+          if (window.d1MarkReady) window.d1MarkReady();
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.textContent = "重试";
+          status.innerHTML = '<span style="color:#e88;">网络错误，请重试</span>';
+        });
+    }
+    </script>
 
     <!-- ========== 云同步 ========== -->
     <div class="card">
