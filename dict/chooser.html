@@ -252,9 +252,12 @@
 <script src="auth.js?v=20261017b"></script>
 <script>
 const GUEST_MAX_LEVEL = 2;
+var USER_PLAN = "free"; // 从 D1 拉取后更新
 function isGuest() { return !isLoggedIn(); }
 function guestCanReach(book, levelIdx) {
-    if (!isGuest()) return true;
+    // Pro 全部课时
+    if (USER_PLAN === "pro") return true;
+    // Free/One：免费词书全部，付费词书前 3 课时
     if (book.free) return true;
     return levelIdx <= GUEST_MAX_LEVEL;
 }
@@ -390,7 +393,23 @@ function goBack() {
     saveCurrentSelection();
     location.href = "../index.html";
 }
-render();
+// 从 D1 拉取用户计划，然后渲染
+(function () {
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+    var uid = user ? (user.email || user.login || user.id || "guest") : "guest";
+    if (user) {
+        fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                USER_PLAN = d.plan || "free";
+                render();
+            })
+            .catch(function () { render(); });
+    } else {
+        render();
+    }
+})();
 </script>
 <script src="sidebar.js?v=20261017b"></script>
 <script src="d1-sync.js?v=20261024"></script>

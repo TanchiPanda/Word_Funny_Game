@@ -20,6 +20,45 @@
     try { return JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) { return null; }
   }
   function userEmail(u) { return (u && (u.email || u.login || u.id)) || ""; }
+
+  // 根据用户计划切换主题
+  function applyTheme(plan) {
+    // 移除旧主题
+    document.body.classList.remove("theme-one", "theme-pro");
+    if (plan === "one") {
+      document.body.classList.add("theme-one");
+      if (!document.getElementById("theme-css")) {
+        var css = document.createElement("style");
+        css.id = "theme-css";
+        css.textContent = `
+          body { background: linear-gradient(135deg, #2a1f0a, #3d2e0f) !important; }
+          .sb { background: linear-gradient(180deg, #3d2e0f, #4a3a15) !important; }
+        `;
+        document.head.appendChild(css);
+      }
+    } else if (plan === "pro") {
+      document.body.classList.add("theme-pro");
+      if (!document.getElementById("theme-css")) {
+        var css = document.createElement("style");
+        css.id = "theme-css";
+        css.textContent = `
+          body { background: linear-gradient(135deg, #1a0a2a, #2a0a1a, #0a1a2a, #0a2a1a) !important; background-size: 400% 400% !important; animation: rainbow 15s ease infinite !important; }
+          @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+          .sb { background: linear-gradient(180deg, #2a0a4a, #4a0a2a) !important; }
+        `;
+        document.head.appendChild(css);
+      }
+    }
+  }
+
+  // 拉取用户计划并应用主题
+  var user2 = getUser();
+  if (user2) {
+    fetch(API.replace("/kv", "") + "/user?user_id=" + encodeURIComponent(userEmail(user2)))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.plan) applyTheme(d.plan); })
+      .catch(function () {});
+  }
   function isForced() {
     var d = new Date();
     var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
