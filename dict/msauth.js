@@ -137,3 +137,25 @@ function msPeekToken() { return null; }
 function msHasToken() { return false; }
 async function graphFetch() { throw new Error("OneDrive 同步已停用"); }
 async function msGetDriveQuota() { return { total: 0, used: 0, remaining: 0 }; }
+
+// ---------- settings.html 展示校正（线上该页未重传，用垫片清掉 OneDrive/微软残留）----------
+(function () {
+    function fixSettings() {
+        var od = document.getElementById("onedriveBox");
+        if (od && od.textContent.indexOf("OneDrive 同步已停用") < 0) {
+            od.innerHTML =
+                '<div class="card-title"><img class="inline-icon" src="site-icon/cloud.svg" alt="" /> 云同步</div>' +
+                '<div class="card-desc">已切换为 Supabase 登录，学习数据保存在云端数据库。OneDrive 同步已停用。</div>';
+        }
+        var ai = document.getElementById("accountInfo");
+        if (ai && ai.textContent.indexOf("Microsoft") >= 0) {
+            ai.innerHTML =
+                '<div style="font-size:16px;color:#b8d8c8;margin-bottom:14px;">未登录 · 使用邮箱登录</div>' +
+                '<button class="primary-btn" type="button" onclick="location.href=\'login.html\'">立即登录</button>';
+        }
+    }
+    if (document.getElementById("onedriveBox") || location.pathname.indexOf("settings.html") >= 0) {
+        fixSettings();
+        setInterval(fixSettings, 800);
+    }
+})();
