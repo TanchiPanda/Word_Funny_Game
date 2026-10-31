@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<link rel="icon" type="image/svg+xml" href="../site-icon/favicon.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同步收藏词书 - 单词闯关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft Yahei","PingFang SC",sans-serif;background:linear-gradient(135deg,#162a22,#1a3a2e);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.wrap{max-width:520px;width:100%;background:rgba(255,255,255,.06);border-radius:16px;padding:28px;text-align:center}
+h1{color:#ffd700;margin-bottom:14px;font-size:20px}
+.msg{font-size:15px;line-height:1.8;margin:12px 0}
+.ok{color:#39d98a} .err{color:#ff8888}
+.list{text-align:left;font-size:14px;max-height:220px;overflow:auto;margin:12px 0;line-height:1.9}
+.list .w{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.list .pos{color:#ffd700;margin:0 6px}
+a{color:#4ecdc4}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⭐ 同步收藏到词书</h1>
+  <div id="out" class="msg">正在处理…</div>
+  <div id="list" class="list"></div>
+  <div id="foot"></div>
+</div>
+<script>
+const API = "https://api.r6t5.dpdns.org/api";
+const BOOKS_KEY = "wordGameCustomBooks";
+
+function b64urlDecode(s) {
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return decodeURIComponent(escape(atob(s)));
+}
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); }
+  catch (e) { return null; }
+}
+function userEmail(u) { return (u && (u.email || u.login || u.id)) || ""; }
+
+function fail(text) {
+  document.getElementById("out").innerHTML = '<span class="err">' + text + "</span>";
+}
+
+async function pushKv(uid, key, value) {
+  try {
+    await fetch(API + "/kv?user_id=" + encodeURIComponent(uid), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value })
+    });
+  } catch (e) { /* 本地已保存，D1 失败不阻断 */ }
+}
+
+(async function () {
+  const out = document.getElementById("out");
+  const m = location.hash.match(/data=([A-Za-z0-9\-_=]+)/);
+  if (!m) { fail("未收到收藏数据（缺少 #data 参数）。请从扩展弹窗点「同步到游戏词书」。"); return; }
+
+  let payload;
+  try { payload = JSON.parse(b64urlDecode(m[1])); }
+  catch (e) { fail("数据解析失败，请重试。"); return; }
+
+  const u = getUser();
+  const uid = userEmail(u);
+  if (!uid) { fail("还未登录，请先打开 <a href='https://myacc.r6t5.dpdns.org'>账号中心</a> 登录后再同步。"); return; }
+
+  const bookName = (payload.bookName || "我的收藏").trim();
+  const levelName = (payload.levelName || "LV1").trim();
+  const words = (payload.words || []).filter(w => w && w.en && w.en.trim());
+  if (!words.length) { fail("没有有效单词。"); return; }
+
+  // 读现有词书
+  let books;
+  try { books = JSON.parse(localStorage.getItem(BOOKS_KEY) || "[]"); }
+  catch (e) { books = []; }
+  if (!Array.isArray(books)) books = [];
+
+  let book = books.find(b => b.name === bookName);
+  if (!book) {
+    book = { id: Date.now(), name: bookName, data: [] };
+    books.push(book);
+  }
+  let level = (book.data || []).find(l => l.name === levelName);
+  if (!level) {
+    level = { name: levelName, words: [] };
+    book.data.push(level);
+  }
+
+  let added = 0, skipped = 0;
+  const existSet = new Set(level.words.map(x => (x.en || "").toLowerCase()));
+  const listEl = document.getElementById("list");
+  words.forEach(w => {
+    const en = w.en.trim();
+    if (existSet.has(en.toLowerCase())) { skipped++; return; }
+    existSet.add(en.toLowerCase());
+    level.words.push({
+      en: en,
+      phonetic: (w.phonetic || "").trim(),
+      pos: (w.pos || "").trim(),
+      cn: (w.cn || "").trim()
+    });
+    added++;
+    const div = document.createElement("div");
+    div.className = "w";
+    div.innerHTML = "<b>" + escapeHtml(en) + "</b>" +
+      (w.phonetic ? ' <span class="pos">' + escapeHtml(w.phonetic) + "</span>" : "") +
+      (w.pos ? ' <span class="pos">' + escapeHtml(w.pos) + "</span>" : "") +
+      " " + escapeHtml(w.cn || "");
+    listEl.appendChild(div);
+  });
+
+  localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
+  await pushKv(uid, BOOKS_KEY, JSON.stringify(books));
+
+  out.innerHTML = '<span class="ok">✅ 完成：新增 ' + added + " 词" +
+    (skipped ? "，跳过重复 " + skipped : "") +
+    "，已归入《" + escapeHtml(bookName) + "》· " + escapeHtml(levelName) + "</span>";
+  document.getElementById("foot").innerHTML =
+    '<div style="margin-top:14px"><a href="../dict/chooser.html">前往选词书闯关 →</a></div>';
+})();
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+</script>
+</body>
+</html>
