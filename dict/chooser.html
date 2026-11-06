@@ -9,215 +9,41 @@
     <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
     <title>选择单词本与课时</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Comic Sans MS", "Chalkboard SE", "Microsoft Yahei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            min-height: 100vh;
-            background: linear-gradient(135deg,#244a36,#2d6a4a,#1a3a2e);
-            padding: 20px 12px 40px;
-            color: #fff;
-        }
-        .wrap { max-width: 680px; margin: 0 auto; }
-        .page-title {
-            text-align: center;
-            font-size: 26px;
-            font-weight: 900;
-            letter-spacing: 4px;
-            margin-bottom: 6px;
-            background: linear-gradient(90deg,#ffd700,#ff6b6b,#4ecdc4);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .page-sub {
-            text-align: center;
-            color: #b8d8c8;
-            font-size: 13px;
-            letter-spacing: 2px;
-            margin-bottom: 24px;
-        }
-        /* 词本卡片 */
-        .book-card {
-            display: flex;
-            gap: 16px;
-            background: rgba(255,255,255,0.07);
-            border: 2px solid rgba(78,205,196,0.35);
-            border-radius: 18px;
-            padding: 18px 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.25);
-        }
-        .book-card.active {
-            border-color: #ffd700;
-            box-shadow: 0 0 0 2px rgba(255,215,0,0.35), 0 6px 24px rgba(0,0,0,0.3);
-        }
-        .cover {
-            flex-shrink: 0;
-            width: 80px;
-            min-height: 110px;
-            border-radius: 12px;
-            background: linear-gradient(160deg,#c2185b,#880e4f);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-        }
-        .book-info { flex: 1; min-width: 0; }
-        .book-name {
-            font-size: 19px;
-            font-weight: bold;
-            color: #fff;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            line-height: 1.3;
-        }
-        .book-name .free-tag {
-            font-size: 12px;
-            color: #39d98a;
-            border: 1px solid rgba(57,217,138,0.5);
-            border-radius: 6px;
-            padding: 1px 7px;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
-        .book-stats {
-            font-size: 13px;
-            color: #b8d8c8;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-        }
-        /* 课时标签 */
-        .level-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .lv-tag {
-            padding: 7px 13px;
-            border-radius: 9px;
-            background: rgba(78,205,196,0.15);
-            border: 1.5px solid rgba(78,205,196,0.5);
-            color: #4ecdc4;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.15s;
-            letter-spacing: 1px;
-        }
-        .lv-tag:active { transform: scale(0.94); }
-        .lv-tag.selected {
-            background: rgba(255,215,0,0.22);
-            border-color: #ffd700;
-            color: #ffd700;
-            box-shadow: 0 0 10px rgba(255,215,0,0.3);
-        }
-        .lv-tag.locked {
-            background: rgba(255,107,107,0.1);
-            border-color: rgba(255,107,107,0.4);
-            color: #999;
-        }
-        /* 当前选择汇总条 */
-        .scope-bar {
-            background: rgba(255,255,255,0.07);
-            border: 1.5px solid rgba(78,205,196,0.35);
-            border-radius: 14px;
-            padding: 12px 15px;
-            margin-bottom: 18px;
-            font-size: 13px;
-            color: #b8d8c8;
-            line-height: 1.7;
-        }
-        .scope-bar b { color: #4ecdc4; }
-        .scope-bar .cnt {
-            display: inline-block;
-            padding: 1px 8px;
-            border-radius: 7px;
-            background: rgba(255,215,0,0.18);
-            color: #ffd700;
-            font-weight: bold;
-            margin: 0 3px;
-        }
-        .scope-hint {
-            text-align: center;
-            font-size: 12px;
-            color: #ffd700;
-            min-height: 17px;
-            margin: -8px 0 12px;
-            letter-spacing: 1px;
-        }
-        /* 底部按钮 */
-        .bottom-area {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-        }
-        .back-btn {
-            width: 100%;
-            max-width: 340px;
-            padding: 15px;
-            border: none;
-            border-radius: 14px;
-            background: linear-gradient(90deg,#2a9d8f,#4ecdc4);
-            color: #fff;
-            font-size: 17px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(108,92,231,0.35);
-        }
-        .back-btn:active { transform: scale(0.97); }
-        /* 解锁弹窗 */
-        .gate-mask {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: rgba(10,5,30,0.78);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .gate-mask.show { display: flex; }
-        .gate-box {
-            width: 100%;
-            max-width: 360px;
-            background: linear-gradient(160deg,#2d5a3e,#244a36);
-            border: 2px solid rgba(255,215,0,0.5);
-            border-radius: 18px;
-            padding: 26px 22px 20px;
-            text-align: center;
-        }
-        .gate-title { font-size: 19px; font-weight: bold; color: #ffd700; margin-bottom: 10px; letter-spacing: 2px; }
-        .gate-tip { font-size: 13px; color: #ddd; line-height: 1.8; margin-bottom: 14px; }
-        .gate-tip .hint-text { color: #ffd700; font-weight: bold; }
-        .gate-input {
-            width: 100%; padding: 12px; border-radius: 10px;
-            border: 2px solid rgba(255,215,0,0.35);
-            background: rgba(255,255,255,0.08); color: #fff;
-            font-size: 16px; text-align: center; outline: none;
-        }
-        .gate-input:focus { border-color: #ffd700; }
-        .gate-err { color: #ff8888; font-size: 13px; min-height: 18px; margin-top: 8px; }
-        .gate-btns { display: flex; gap: 10px; margin-top: 8px; }
-        .gate-btn { flex: 1; padding: 11px; border-radius: 10px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; }
-        .gate-btn.cancel { background: rgba(255,255,255,0.12); color: #ddd; border: 1.5px solid rgba(255,255,255,0.2); }
-        .gate-btn.ok { background: linear-gradient(90deg,#ffd700,#ff9500); color: #222; }
-        .guest-tip {
-            text-align: center;
-            font-size: 12px;
-            color: #ff8888;
-            margin-top: 14px;
-            letter-spacing: 1px;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:"Comic Sans MS","Chalkboard SE","Microsoft Yahei","PingFang SC",-apple-system,BlinkMacSystemFont,sans-serif; -webkit-tap-highlight-color:transparent; }
+        body { min-height:100vh; background:linear-gradient(135deg,#244a36,#2d6a4a,#1a3a2e); padding:20px 12px 40px; color:#fff; }
+        .wrap { max-width:680px; margin:0 auto; }
+        .page-title { text-align:center; font-size:26px; font-weight:900; letter-spacing:4px; margin-bottom:6px; background:linear-gradient(90deg,#ffd700,#ff6b6b,#4ecdc4); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .page-sub { text-align:center; color:#b8d8c8; font-size:13px; letter-spacing:2px; margin-bottom:24px; }
+        .book-card { display:flex; gap:16px; background:rgba(255,255,255,0.07); border:2px solid rgba(78,205,196,0.35); border-radius:18px; padding:18px 16px; margin-bottom:18px; box-shadow:0 6px 24px rgba(0,0,0,0.25); }
+        .book-card.active { border-color:#ffd700; box-shadow:0 0 0 2px rgba(255,215,0,0.35),0 6px 24px rgba(0,0,0,0.3); }
+        .cover { flex-shrink:0; width:80px; min-height:110px; border-radius:12px; background:linear-gradient(160deg,#c2185b,#880e4f); display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 4px 14px rgba(0,0,0,0.35); }
+        .book-info { flex:1; min-width:0; }
+        .book-name { font-size:19px; font-weight:bold; color:#fff; letter-spacing:1px; margin-bottom:6px; line-height:1.3; }
+        .book-name .free-tag { font-size:12px; color:#39d98a; border:1px solid rgba(57,217,138,0.5); border-radius:6px; padding:1px 7px; margin-left:6px; vertical-align:middle; }
+        .book-stats { font-size:13px; color:#b8d8c8; margin-bottom:12px; letter-spacing:1px; }
+        .level-tags { display:flex; flex-wrap:wrap; gap:8px; }
+        .lv-tag { padding:7px 13px; border-radius:9px; background:rgba(78,205,196,0.15); border:1.5px solid rgba(78,205,196,0.5); color:#4ecdc4; font-size:13px; font-weight:bold; cursor:pointer; transition:0.15s; letter-spacing:1px; }
+        .lv-tag:active { transform:scale(0.94); }
+        .lv-tag.selected { background:rgba(255,215,0,0.22); border-color:#ffd700; color:#ffd700; box-shadow:0 0 10px rgba(255,215,0,0.3); }
+        .lv-tag.locked { background:rgba(255,107,107,0.1); border-color:rgba(255,107,107,0.4); color:#999; }
+        .scope-bar { background:rgba(255,255,255,0.07); border:1.5px solid rgba(78,205,196,0.35); border-radius:14px; padding:12px 15px; margin-bottom:18px; font-size:13px; color:#b8d8c8; line-height:1.7; }
+        .scope-bar b { color:#4ecdc4; }
+        .scope-bar .cnt { display:inline-block; padding:1px 8px; border-radius:7px; background:rgba(255,215,0,0.18); color:#ffd700; font-weight:bold; margin:0 3px; }
+        .scope-hint { text-align:center; font-size:12px; color:#ffd700; min-height:17px; margin:-8px 0 12px; letter-spacing:1px; }
+        .bottom-area { margin-top:10px; display:flex; flex-direction:column; gap:12px; align-items:center; }
+        .back-btn { width:100%; max-width:340px; padding:15px; border:none; border-radius:14px; background:linear-gradient(90deg,#2a9d8f,#4ecdc4); color:#fff; font-size:17px; font-weight:bold; letter-spacing:2px; cursor:pointer; box-shadow:0 4px 15px rgba(108,92,231,0.35); }
+        .back-btn:active { transform:scale(0.97); }
+        .gate-mask { position:fixed; inset:0; z-index:1000; background:rgba(10,5,30,0.78); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px; }
+        .gate-mask.show { display:flex; }
+        .gate-box { width:100%; max-width:360px; background:linear-gradient(160deg,#2d5a3e,#244a36); border:2px solid rgba(255,215,0,0.5); border-radius:18px; padding:26px 22px 20px; text-align:center; }
+        .gate-title { font-size:19px; font-weight:bold; color:#ffd700; margin-bottom:10px; letter-spacing:2px; }
+        .gate-tip { font-size:13px; color:#ddd; line-height:1.8; margin-bottom:14px; }
+        .gate-err { color:#ff8888; font-size:13px; min-height:18px; margin-top:8px; }
+        .gate-btns { display:flex; gap:10px; margin-top:8px; }
+        .gate-btn { flex:1; padding:11px; border-radius:10px; border:none; font-size:15px; font-weight:bold; cursor:pointer; }
+        .gate-btn.cancel { background:rgba(255,255,255,0.12); color:#ddd; border:1.5px solid rgba(255,255,255,0.2); }
+        .gate-btn.ok { background:linear-gradient(90deg,#ffd700,#ff9500); color:#222; }
+        .guest-tip { text-align:center; font-size:12px; color:#ff8888; margin-top:14px; letter-spacing:1px; }
     </style>
 </head>
 <body>
@@ -227,222 +53,111 @@
     <div class="scope-bar" id="scopeBar"></div>
     <div id="bookList"></div>
     <div class="scope-hint" id="scopeHint"></div>
-    <div class="guest-tip" id="guestTip" style="display:none;"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
+    <div class="guest-tip" id="guestTip" style="display:none;">客人模式仅可体验前 3 课时，点击锁定课时可解锁全部</div>
     <div class="bottom-area">
-        <button class="back-btn" onclick="goBack()"><img class="inline-icon" src="../site-icon/check.svg" alt="" /> 完成选择，返回首页</button>
+        <button class="back-btn" onclick="goBack()">完成选择，返回首页</button>
     </div>
 </div>
-<!-- 解锁弹窗 -->
 <div class="gate-mask" id="gateModal">
     <div class="gate-box">
-        <div class="gate-title"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 此课时需要登录</div>
-        <div class="gate-tip">登录后即可选择全部课时</div>
+        <div class="gate-title">此课时需要登录</div>
+        <div class="gate-tip" id="gateTip">登录后即可选择全部课时</div>
         <div class="gate-err" id="gateErr"></div>
         <div class="gate-btns" style="flex-direction:column;gap:10px;">
-            <button class="gate-btn ok" onclick="location.href='../login.html'">
-                🔑 立即登录
-            </button>
+            <button class="gate-btn ok" id="gateOkBtn">🔑 立即登录</button>
             <button class="gate-btn cancel" onclick="closeGate()">取消</button>
         </div>
     </div>
 </div>
-<script src="wbook.js?v=20261017b"></script>
+<script src="wbook.js?v=20261031"></script>
 <script src="lab.js?v=20261017b"></script>
-<script src="msauth.js?v=20261017b"></script>
+<script src="sbauth.js?v=20261031"></script>
+<script src="sb-data.js?v=20261031"></script>
 <script src="auth.js?v=20261017b"></script>
 <script>
 const GUEST_MAX_LEVEL = 2;
-var USER_PLAN = "free"; // 从 D1 拉取后更新
+var USER_PLAN = "free";
 function isGuest() { return !isLoggedIn(); }
-function guestCanReach(book, levelIdx) {
-    // Pro 全部课时
-    if (USER_PLAN === "pro") return true;
-    // Free/One：免费词书全部，付费词书前 3 课时
-    if (book.free) return true;
-    return levelIdx <= GUEST_MAX_LEVEL;
-}
-// 多选课时功能（公测，默认开启）；lab.js 没加载时按开启处理
-function multiOn() {
-    return (typeof labEnabled === "function") ? labEnabled("multiLevel") : true;
-}
+function guestCanReach(book, levelIdx) { if (USER_PLAN === "pro") return true; if (book.free) return true; return levelIdx <= GUEST_MAX_LEVEL; }
+function multiOn() { return (typeof labEnabled === "function") ? labEnabled("multiLevel") : true; }
 let hintTimer = null;
-function showHint(msg) {
-    const el = document.getElementById("scopeHint");
-    el.innerText = msg;
-    if (hintTimer) clearTimeout(hintTimer);
-    hintTimer = setTimeout(function () { el.innerText = ""; }, 2200);
-}
-// 当前选择汇总
+function showHint(msg) { const el = document.getElementById("scopeHint"); el.innerText = msg; if (hintTimer) clearTimeout(hintTimer); hintTimer = setTimeout(function(){ el.innerText=""; },2200); }
 function renderScopeBar() {
-    const refs = activeLevelRefs();
-    const all = getAllBooks();
-    const total = activeWordList().length;
-    const bookIdx = {};
-    refs.forEach(function (r) { bookIdx[r.bi] = 1; });
-    const bookNames = Object.keys(bookIdx).map(function (k) { return all[k].name; });
-
-    document.getElementById("scopeBar").innerHTML =
-        "已选 <span class=\"cnt\">" + refs.length + "</span> 个课时 · 共 <b>" + total + "</b> 词" +
-        (refs.length > 1 ? "<br>范围：" + bookNames.join("、") : "<br>范围：" + all[refs[0].bi].levels[refs[0].li].name);
-
-    document.getElementById("pageSub").innerText = multiOn()
-        ? "点击课时标签可多选，再点一次取消"
-        : "点击课时标签即可切换，选择自动保存";
+    const refs = activeLevelRefs(); const all = getAllBooks(); const total = activeWordList().length;
+    const bookIdx = {}; refs.forEach(function(r){ bookIdx[r.bi]=1; });
+    const bookNames = Object.keys(bookIdx).map(function(k){ return all[k].name; });
+    document.getElementById("scopeBar").innerHTML = "已选 <span class=\"cnt\">"+refs.length+"</span> 个课时 · 共 <b>"+total+"</b> 词"+(refs.length>1?"<br>范围："+bookNames.join("、"):"<br>范围："+all[refs[0].bi].levels[refs[0].li].name);
+    document.getElementById("pageSub").innerText = multiOn() ? "点击课时标签可多选，再点一次取消" : "点击课时标签即可切换，选择自动保存";
 }
-// 渲染词本列表
 function render() {
     loadCurrentSelection();
-    const list = document.getElementById("bookList");
-    list.innerHTML = "";
+    const list = document.getElementById("bookList"); list.innerHTML = "";
     const guest = isGuest();
     document.getElementById("guestTip").style.display = guest ? "" : "none";
     WORD_BOOKS.forEach((book, bi) => {
         const card = document.createElement("div");
-        const anySel = book.levels.some((lv, li) => isLevelSelected(bi, li));
-        card.className = "book-card" + (anySel ? " active" : "");
+        const anySel = book.levels.some((lv,li)=>isLevelSelected(bi,li));
+        card.className = "book-card" + (anySel?" active":"");
         const totalWords = bookTotalWords(book);
         let levelsHtml = "";
         book.levels.forEach((lv, li) => {
             const reachable = guestCanReach(book, li);
             const selected = isLevelSelected(bi, li);
-            if (reachable) {
-                levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
-            } else {
-                levelsHtml += `<span class="lv-tag locked" onclick="tryLocked(${bi},${li})"><img class="inline-icon" src="../site-icon/lock.svg" alt="" /> ${lv.name}</span>`;
-            }
+            if (reachable) levelsHtml += '<span class="lv-tag'+(selected?" selected":"")+'" onclick="pickLevel('+bi+','+li+')">'+lv.name+'</span>';
+            else levelsHtml += '<span class="lv-tag locked" onclick="tryLocked('+bi+','+li+')">'+lv.name+'</span>';
         });
-        card.innerHTML = `
-            <div class="cover"><img class="inline-icon" src="../site-icon/book-open.svg" alt="" /> </div>
-            <div class="book-info">
-                <div class="book-name">${book.name}${book.free ? '<span class="free-tag">免费</span>' : ""}</div>
-                <div class="book-stats">共 ${book.levels.length} 课时 · ${totalWords} 词</div>
-                <div class="level-tags">${levelsHtml}</div>
-            </div>`;
+        card.innerHTML = '<div class="cover">📘</div><div class="book-info"><div class="book-name">'+book.name+(book.free?'<span class="free-tag">免费</span>':"")+'</div><div class="book-stats">共 '+book.levels.length+' 课时 · '+totalWords+' 词</div><div class="level-tags">'+levelsHtml+'</div></div>';
         list.appendChild(card);
     });
-    // 自定义词书
-    let custom = [];
-    try { custom = JSON.parse(localStorage.getItem("wordGameCustomBooks") || "[]"); } catch {}
+    const custom = getAllBooks().slice(WORD_BOOKS.length);
     custom.forEach((cb, ci) => {
         const bi = WORD_BOOKS.length + ci;
         const card = document.createElement("div");
-        const anySel = cb.data.some((lv, li) => isLevelSelected(bi, li));
-        card.className = "book-card" + (anySel ? " active" : "");
+        const anySel = cb.levels.some((lv,li)=>isLevelSelected(bi,li));
+        card.className = "book-card" + (anySel?" active":"");
         let levelsHtml = "";
-        cb.data.forEach((lv, li) => {
-            const selected = isLevelSelected(bi, li);
-            levelsHtml += `<span class="lv-tag${selected ? " selected" : ""}" onclick="pickLevel(${bi},${li})">${lv.name}</span>`;
-        });
-        card.innerHTML = `
-            <div class="cover"><img class="inline-icon" src="../site-icon/note.svg" alt="" /> </div>
-            <div class="book-info">
-                <div class="book-name">${cb.name}<span class="free-tag">自定义</span></div>
-                <div class="book-stats">共 ${cb.data.length} 课时 · ${cb.data.reduce((s,l)=>s+l.words.length,0)} 词</div>
-                <div class="level-tags">${levelsHtml}</div>
-            </div>`;
+        cb.levels.forEach((lv, li) => { const selected = isLevelSelected(bi,li); levelsHtml += '<span class="lv-tag'+(selected?" selected":"")+'" onclick="pickLevel('+bi+','+li+')">'+lv.name+'</span>'; });
+        const wc = cb.levels.reduce((s,l)=>s+l.words.length,0);
+        card.innerHTML = '<div class="cover">📗</div><div class="book-info"><div class="book-name">'+cb.name+'<span class="free-tag">自定义</span></div><div class="book-stats">共 '+cb.levels.length+' 课时 · '+wc+' 词</div><div class="level-tags">'+levelsHtml+'</div></div>';
         list.appendChild(card);
     });
-    // 新建按钮
     const add = document.createElement("div");
-    add.className = "book-card";
-    add.style.border = "2px dashed rgba(255,255,255,0.2)";
-    add.style.cursor = "pointer";
-    add.innerHTML = `<div class="cover" style="opacity:0.5"><img class="inline-icon" src="../site-icon/check.svg" alt="" /> </div><div class="book-info"><div class="book-name" style="color:#b8d8c8;">新建/编辑词书</div></div>`;
+    add.className = "book-card"; add.style.border = "2px dashed rgba(255,255,255,0.2)"; add.style.cursor = "pointer";
+    add.innerHTML = '<div class="cover" style="opacity:0.5">➕</div><div class="book-info"><div class="book-name" style="color:#b8d8c8;">新建/编辑词书</div></div>';
     add.onclick = () => location.href = "editor.html";
     list.appendChild(add);
-
     renderScopeBar();
 }
-// 点击课时：多选模式下切换勾选，单选模式下直接切换
 function pickLevel(bi, li) {
-    if (multiOn()) {
-        if (!toggleLevelRef(bi, li)) {
-            showHint("至少保留一个课时");
-            return;
-        }
-    } else {
-        setSingleLevelRef(bi, li);
-    }
+    if (multiOn()) { if (!toggleLevelRef(bi,li)) { showHint("至少保留一个课时"); return; } }
+    else { setSingleLevelRef(bi, li); }
     render();
 }
-// 锁定课时：尝试解锁
 let pendingPick = null;
 function tryLocked(bi, li) {
-    pendingPick = { bi, li };
-    sessionStorage.setItem("wordGamePendingPick", JSON.stringify({ bi, li }));
+    pendingPick = {bi, li};
+    sessionStorage.setItem("wordGamePendingPick", JSON.stringify({bi, li}));
     document.getElementById("gateErr").innerText = "";
     var titleEl = document.querySelector("#gateModal .gate-title");
-    var tipEl = document.querySelector("#gateModal .gate-tip");
-    var btnEl = document.querySelector("#gateModal .gate-btn.ok");
-
-    // 未登录：提示登录
-    if (isGuest()) {
-        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 此课时需要登录';
-        tipEl.textContent = "登录后即可选择课时";
-        btnEl.textContent = "🔑 立即登录";
-        btnEl.onclick = function() { location.href = "../login.html"; };
-    } else if (USER_PLAN === "pro") {
-        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 课时锁定';
-        tipEl.textContent = "请刷新页面重试";
-        btnEl.textContent = "刷新";
-        btnEl.onclick = function() { location.reload(); };
-    } else if (USER_PLAN === "one") {
-        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要 Club One Pro';
-        tipEl.textContent = "Club One 只能体验前 3 课时，升级 Pro 解锁全部，或单买本词书（8 折）";
-        btnEl.textContent = "👑 升级 Pro / 单买词书";
-        btnEl.onclick = function() {
-            var book = WORD_BOOKS[bi];
-            var bookId = book.name;
-            location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=wordgm&bookid=" + encodeURIComponent(bookId) + "&uid=" + encodeURIComponent(isGuest() ? "" : (JSON.parse(localStorage.getItem("wordGameGitHubUser")||"{}").email || ""));
-        };
-    } else {
-        titleEl.innerHTML = '<img class="inline-icon" src="../site-icon/lock.svg" alt="" /> 需要升级计划';
-        tipEl.textContent = "免费用户只能体验前 3 课时，升级解锁全部，或单买本词书";
-        btnEl.textContent = "👑 查看会员计划 / 单买词书";
-        btnEl.onclick = function() {
-            var book = WORD_BOOKS[bi];
-            var bookId = book.name;
-            location.href = "https://wallet.r6t5.dpdns.org/checkout.html?app=wordgm&bookid=" + encodeURIComponent(bookId) + "&uid=" + encodeURIComponent(isGuest() ? "" : (JSON.parse(localStorage.getItem("wordGameGitHubUser")||"{}").email || ""));
-        };
+    var tipEl = document.getElementById("gateTip");
+    var btnEl = document.getElementById("gateOkBtn");
+    if (isGuest()) { titleEl.innerText = "此课时需要登录"; tipEl.textContent = "登录后即可选择课时"; btnEl.textContent = "🔑 立即登录"; btnEl.onclick = function(){ location.href = "../login.html"; };
+    } else if (USER_PLAN === "pro") { titleEl.innerText = "课时锁定"; tipEl.textContent = "请刷新页面重试"; btnEl.textContent = "刷新"; btnEl.onclick = function(){ location.reload(); };
+    } else { titleEl.innerText = "需要升级计划"; tipEl.textContent = "免费/Club One 只能体验前 3 课时，升级解锁全部"; btnEl.textContent = "👑 查看会员计划"; btnEl.onclick = function(){ location.href = "../one.html"; };
     }
     document.getElementById("gateModal").classList.add("show");
 }
-function closeGate() {
-    pendingPick = null;
-    sessionStorage.removeItem("wordGamePendingPick");
-    document.getElementById("gateModal").classList.remove("show");
-}
-// 登录回来后恢复选择
-(function() {
-    const saved = sessionStorage.getItem("wordGamePendingPick");
-    if (saved && isLoggedIn()) {
-        sessionStorage.removeItem("wordGamePendingPick");
-        try {
-            const p = JSON.parse(saved);
-            pickLevel(p.bi, p.li);
-        } catch(e) {}
-    }
-})();
-function goBack() {
-    saveCurrentSelection();
-    location.href = "../index.html";
-}
-// 从 D1 拉取用户计划，然后渲染
-(function () {
+function closeGate() { pendingPick = null; sessionStorage.removeItem("wordGamePendingPick"); document.getElementById("gateModal").classList.remove("show"); }
+(function() { const saved = sessionStorage.getItem("wordGamePendingPick"); if (saved && isLoggedIn()) { sessionStorage.removeItem("wordGamePendingPick"); try { const p = JSON.parse(saved); pickLevel(p.bi, p.li); } catch(e){} } })();
+function goBack() { saveCurrentSelection(); location.href = "../index.html"; }
+window.onWordbooksLoaded = function() { render(); };
+(async function () {
     var user = null;
-    try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
-    var uid = user ? (user.email || user.login || user.id || "guest") : "guest";
-    if (user) {
-        fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
-                USER_PLAN = d.plan || "free";
-                render();
-            })
-            .catch(function () { render(); });
-    } else {
-        render();
+    try { user = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch(e) {}
+    if (user && typeof SBData !== "undefined" && SBData.getProfile) {
+        try { var d = await SBData.getProfile(); USER_PLAN = (d && d.plan) || "free"; } catch(e) { USER_PLAN = "free"; }
     }
+    render();
 })();
 </script>
 <script src="sidebar.js?v=20261017b"></script>
