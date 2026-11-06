@@ -73,6 +73,8 @@ h2 { margin-bottom:20px; }
 </div>
 
 <script src="dict/sidebar.js?v=20261024"></script>
+<script src="dict/sbauth.js?v=20261031"></script>
+<script src="dict/sb-data.js?v=20261031"></script>
 <script src="dict/d1-sync.js?v=20261024"></script>
 <script>
 var user = null;
@@ -87,44 +89,43 @@ if (!uid) {
   refresh();
 }
 
-function refresh() {
-  fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      document.getElementById("creditsNum").textContent = d.credits;
-      var tag = '<span class="tag ' + (tagNames[d.plan] || "tag-free") + '">' + (planNames[d.plan] || d.plan) + '</span>';
-      document.getElementById("planName").innerHTML = tag;
-      if (d.plan_expires) {
-        var exp = new Date(d.plan_expires);
-        document.getElementById("planExpires").textContent = "到期：" + exp.toLocaleDateString("zh-CN");
-      } else {
-        document.getElementById("planExpires").textContent = d.plan === "free" ? "免费计划" : "永久有效";
-      }
-      var btn = document.getElementById("checkinBtn");
-      if (d.checked_in_today) {
-        btn.disabled = true;
-        btn.textContent = "今日已签到";
-      } else {
-        btn.disabled = false;
-        btn.textContent = "每日签到（+" + (d.plan === "pro" || d.plan === "one" ? 600 : 200) + "积分）";
-      }
-      document.getElementById("buyOneBtn").style.display = (d.plan === "free") ? "" : "none";
-      document.getElementById("buyProBtn").style.display = (d.plan === "free" || d.plan === "one") ? "" : "none";
-    })
-    .catch(function () {});
+async function refresh() {
+  try {
+    var d = await SBData.getProfile();
+    document.getElementById("creditsNum").textContent = d.credits;
+    var tag = '<span class="tag ' + (tagNames[d.plan] || "tag-free") + '">' + (planNames[d.plan] || d.plan) + '</span>';
+    document.getElementById("planName").innerHTML = tag;
+    if (d.plan_expires) {
+      var exp = new Date(d.plan_expires);
+      document.getElementById("planExpires").textContent = "到期：" + exp.toLocaleDateString("zh-CN");
+    } else {
+      document.getElementById("planExpires").textContent = d.plan === "free" ? "免费计划" : "永久有效";
+    }
+    var btn = document.getElementById("checkinBtn");
+    if (d.checked_in_today) {
+      btn.disabled = true;
+      btn.textContent = "今日已签到";
+    } else {
+      btn.disabled = false;
+      btn.textContent = "每日签到（+" + (d.plan === "pro" || d.plan === "one" ? 600 : 200) + "积分）";
+    }
+    document.getElementById("buyOneBtn").style.display = (d.plan === "free") ? "" : "none";
+    document.getElementById("buyProBtn").style.display = (d.plan === "free" || d.plan === "one") ? "" : "none";
+  } catch (e) {}
 }
 
-function doCheckin() {
-  fetch("https://api.r6t5.dpdns.org/api/checkin?user_id=" + encodeURIComponent(uid), { method: "POST" })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.ok) {
-        document.getElementById("checkinStatus").innerHTML = '<span style="color:#7ee;">✅ 签到成功，获得 ' + d.reward + ' 积分</span>';
-        refresh();
-      } else {
-        document.getElementById("checkinStatus").innerHTML = '<span style="color:#e88;">' + (d.error || "签到失败") + '</span>';
-      }
-    });
+async function doCheckin() {
+  try {
+    var d = await SBData.checkin();
+    if (d.ok) {
+      document.getElementById("checkinStatus").innerHTML = '<span style="color:#7ee;">✅ 签到成功，获得 ' + d.reward + ' 积分</span>';
+      refresh();
+    } else {
+      document.getElementById("checkinStatus").innerHTML = '<span style="color:#e88;">' + (d.error || "签到失败") + '</span>';
+    }
+  } catch (e) {
+    document.getElementById("checkinStatus").innerHTML = '<span style="color:#e88;">签到失败，请重试</span>';
+  }
 }
 
 function buyOne() {
@@ -151,23 +152,22 @@ function setTheme(theme) {
 }
 
 // 启动时根据用户计划更新主题按钮状态
-(function () {
-  fetch("https://api.r6t5.dpdns.org/api/user?user_id=" + encodeURIComponent(uid))
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      window.USER_PLAN = d.plan;
-      var buttons = document.querySelectorAll(".card:nth-of-type(2) .btn");
-      if (d.plan === "free") {
-        buttons[1].style.opacity = "0.4";
-        buttons[1].style.pointerEvents = "none";
-        buttons[2].style.opacity = "0.4";
-        buttons[2].style.pointerEvents = "none";
-      } else if (d.plan === "one") {
-        buttons[2].style.opacity = "0.4";
-        buttons[2].style.pointerEvents = "none";
-      }
-    })
-    .catch(function () {});
+(async function () {
+  if (!uid) return;
+  try {
+    var d = await SBData.getProfile();
+    window.USER_PLAN = d.plan;
+    var buttons = document.querySelectorAll(".card:nth-of-type(2) .btn");
+    if (d.plan === "free") {
+      buttons[1].style.opacity = "0.4";
+      buttons[1].style.pointerEvents = "none";
+      buttons[2].style.opacity = "0.4";
+      buttons[2].style.pointerEvents = "none";
+    } else if (d.plan === "one") {
+      buttons[2].style.opacity = "0.4";
+      buttons[2].style.pointerEvents = "none";
+    }
+  } catch (e) {}
 })();
 </script>
 </body>
