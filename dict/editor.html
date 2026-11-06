@@ -33,127 +33,84 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
 .err{color:#e74c3c;font-size:13px;margin-top:6px}
 .row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
 .row label{min-width:80px;font-size:13px;color:#b8d8c8}
+.hidden{display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1><img class="inline-icon" src="../site-icon/note.svg" alt="" /> 词书编辑器</h1>
-
-<!-- 词书列表 -->
+<h1>词书编辑器</h1>
 <div class="card" id="listCard">
   <div style="font-size:16px;font-weight:bold;margin-bottom:10px;">我的词书</div>
   <div class="book-list" id="bookList"></div>
   <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-primary" onclick="newBook()">+ 新建词书</button>
   </div>
-  <div class="tip">词书数据自动随云同步备份，无需手动导出。</div>
+  <div class="tip">词书直接保存在你的云端账号，无需手动导出。</div>
 </div>
-
-<!-- 编辑器 -->
 <div class="card hidden" id="editCard">
-  <div class="row">
-    <label>词书名称</label>
-    <input type="text" id="bookName" placeholder="例如：我的课外单词">
-  </div>
-  <div class="row">
-    <label>课时名称</label>
-    <input type="text" id="levelName" placeholder="LV1">
-    <button class="btn btn-ghost" onclick="addLevel()">+ 增加课时</button>
-    <button class="btn btn-red" onclick="delLevel()">删除课时</button>
-  </div>
+  <div class="row"><label>词书名称</label><input type="text" id="bookName" placeholder="例如：我的课外单词"></div>
+  <div class="row"><label>课时名称</label><input type="text" id="levelName" placeholder="LV1"><button class="btn btn-ghost" onclick="addLevel()">+ 增加课时</button><button class="btn btn-red" onclick="delLevel()">删除课时</button></div>
   <div id="levelTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
-
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('basic')"><img class="inline-icon" src="../site-icon/chart.svg" alt="" /> 表格编辑</div>
-    <div class="tab" onclick="switchTab('code')"><img class="inline-icon" src="../site-icon/desktop.svg" alt="" /> 代码编辑</div>
+    <div class="tab active" onclick="switchTab('basic')">表格编辑</div>
+    <div class="tab" onclick="switchTab('code')">代码编辑</div>
   </div>
-
-  <!-- 表格编辑 -->
   <div id="basicPanel">
     <table>
       <thead><tr><th style="width:25%">英文</th><th style="width:20%">音标</th><th style="width:12%">词性</th><th style="width:35%">中文</th><th style="width:8%"></th></tr></thead>
       <tbody id="wordRows"></tbody>
     </table>
-    <div style="margin-top:8px">
-      <button class="btn btn-ghost" onclick="addRow()">+ 添加单词</button>
-    </div>
+    <div style="margin-top:8px"><button class="btn btn-ghost" onclick="addRow()">+ 添加单词</button></div>
   </div>
-
-  <!-- 代码编辑 -->
   <div id="codePanel" class="hidden">
     <textarea id="codeInput" placeholder='[{"name":"LV1","words":[{"en":"apple","phonetic":"/ˈæpl/","pos":"n.","cn":"苹果"}]}]'></textarea>
     <div class="err" id="codeErr"></div>
   </div>
-
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-primary" onclick="saveBook()"><img class="inline-icon" src="../site-icon/save.svg" alt="" /> 保存</button>
-    <button class="btn btn-red" onclick="deleteBook()"><img class="inline-icon" src="../site-icon/trash.svg" alt="" /> 删除</button>
+    <button class="btn btn-primary" onclick="saveBook()">保存</button>
+    <button class="btn btn-red" onclick="deleteBook()">删除</button>
     <button class="btn btn-ghost" onclick="backToList()">← 返回</button>
   </div>
 </div>
-
-<div style="text-align:center;margin-top:16px">
-  <button class="btn btn-ghost" onclick="location.href='chooser.html'">← 选课时</button>
+<div style="text-align:center;margin-top:16px"><button class="btn btn-ghost" onclick="location.href='chooser.html'">← 选课时</button></div>
 </div>
-</div>
-
-<script src="sync.js?v=20261017b"></script>
+<script src="sbauth.js?v=20261031"></script>
+<script src="sb-data.js?v=20261031"></script>
 <script>
-const KEY = "wordGameCustomBooks";
+let _books = [];
 let editingId = null;
 let currentLevelIdx = 0;
 let editMode = "basic";
-
-function getBooks(){ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch{ return []; } }
-function setBooks(b){ localStorage.setItem(KEY, JSON.stringify(b)); }
-function autoSync(){ if(typeof syncPushDebounced==="function") syncPushDebounced(500); }
-
-function renderList(){
-  const books = getBooks();
+async function refreshList() {
+  try { _books = await SBData.listBooks(); }
+  catch (e) { _books = []; alert("读取词书失败：" + ((e && e.message) || e)); }
+  renderList();
+}
+function renderList() {
   const el = document.getElementById("bookList");
-  if(!books.length){ el.innerHTML = '<div style="color:#b8d8c8;padding:16px;text-align:center">还没有词书，点上方新建</div>'; return; }
-  el.innerHTML = books.map((b,i)=>{
-    let wc=0; try{ b.data.forEach(l=>wc+=l.words.length); }catch{}
-    return `<div class="book-item" onclick="editBook(${b.id})">
-      <div><div style="font-weight:bold">${b.name}</div><div style="font-size:12px;color:#b8d8c8">${b.data.length} 课时 · ${wc} 词</div></div>
-      <div style="display:flex;gap:4px">
-        <button class="btn btn-red" onclick="event.stopPropagation();delBookById(${b.id})"><img class="inline-icon" src="../site-icon/trash.svg" alt="" /> </button>
-      </div>
-    </div>`;
+  if (!_books.length) { el.innerHTML = '<div style="color:#b8d8c8;padding:16px;text-align:center">还没有词书，点上方新建</div>'; return; }
+  el.innerHTML = _books.map((b) => {
+    let wc = 0; try { b.data.forEach(l => wc += l.words.length); } catch {}
+    return '<div class="book-item" onclick="editBook(\''+b.id+'\')"><div><div style="font-weight:bold">'+b.name+'</div><div style="font-size:12px;color:#b8d8c8">'+b.data.length+' 课时 · '+wc+' 词</div></div><div style="display:flex;gap:4px"><button class="btn btn-red" onclick="event.stopPropagation();delBookById(\''+b.id+'\')">删</button></div></div>';
   }).join("");
 }
-
-function newBook(){
+function newBook() {
   editingId = null; currentLevelIdx = 0;
   document.getElementById("bookName").value = "";
   document.getElementById("levelName").value = "LV1";
-  document.getElementById("codeInput").value = JSON.stringify([
-    {name:"LV1",words:[{en:"example",phonetic:"/ɪɡˈzɑːmpl/",pos:"n.",cn:"例子"}]}
-  ], null, 2);
-  loadCodeToBasic();
-  showEdit();
+  document.getElementById("codeInput").value = JSON.stringify([{name:"LV1",words:[{en:"example",phonetic:"/ɪɡˈzɑːmpl/",pos:"n.",cn:"例子"}]}], null, 2);
+  loadCodeToBasic(); showEdit();
 }
-
-function editBook(id){
-  const b = getBooks().find(x=>x.id===id); if(!b) return;
+function editBook(id) {
+  const b = _books.find(x => x.id === id); if (!b) return;
   editingId = id; currentLevelIdx = 0;
   document.getElementById("bookName").value = b.name;
-  document.getElementById("levelName").value = b.data[0]?.name || "LV1";
+  document.getElementById("levelName").value = (b.data[0] && b.data[0].name) || "LV1";
   document.getElementById("codeInput").value = JSON.stringify(b.data, null, 2);
-  loadCodeToBasic();
-  showEdit();
+  loadCodeToBasic(); showEdit();
 }
-
-function showEdit(){
-  document.getElementById("listCard").classList.add("hidden");
-  document.getElementById("editCard").classList.remove("hidden");
-}
-function backToList(){
-  document.getElementById("editCard").classList.add("hidden");
-  document.getElementById("listCard").classList.remove("hidden");
-  renderList();
-}
-
+function showEdit(){document.getElementById("listCard").classList.add("hidden");document.getElementById("editCard").classList.remove("hidden");}
+function backToList(){document.getElementById("editCard").classList.add("hidden");document.getElementById("listCard").classList.remove("hidden");refreshList();}
 function switchTab(m){
   editMode = m;
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active", (i===0&&m==="basic")||(i===1&&m==="code")));
@@ -162,25 +119,19 @@ function switchTab(m){
   document.getElementById("basicPanel").classList.toggle("hidden", m!=="basic");
   document.getElementById("codePanel").classList.toggle("hidden", m!=="code");
 }
-
 function addRow(word){
   const tbody = document.getElementById("wordRows");
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td><input value="${word?.en||""}" data-f="en"></td>
-    <td><input value="${word?.phonetic||""}" data-f="phonetic"></td>
-    <td><input value="${word?.pos||""}" data-f="pos"></td>
-    <td><input value="${word?.cn||""}" data-f="cn"></td>
-    <td><button class="btn btn-red" style="padding:4px 8px" onclick="this.closest('tr').remove()"><img class="inline-icon" src="../site-icon/close.svg" alt="" /> </button></td>`;
+  tr.innerHTML = '<td><input value="'+(word&&word.en||'')+'" data-f="en"></td><td><input value="'+(word&&word.phonetic||'')+'" data-f="phonetic"></td><td><input value="'+(word&&word.pos||'')+'" data-f="pos"></td><td><input value="'+(word&&word.cn||'')+'" data-f="cn"></td><td><button class="btn btn-red" style="padding:4px 8px" onclick="this.closest(\'tr\').remove()">删</button></td>';
   tbody.appendChild(tr);
 }
-
 function loadCodeToBasic(){
   try{
     const data = JSON.parse(document.getElementById("codeInput").value);
     if(!Array.isArray(data)||!data.length) return;
     if(currentLevelIdx >= data.length) currentLevelIdx = data.length - 1;
-    document.getElementById("levelName").value = data[currentLevelIdx]?.name || "LV1";
-    const words = data[currentLevelIdx]?.words || [];
+    document.getElementById("levelName").value = (data[currentLevelIdx] && data[currentLevelIdx].name) || "LV1";
+    const words = (data[currentLevelIdx] && data[currentLevelIdx].words) || [];
     const tbody = document.getElementById("wordRows");
     tbody.innerHTML = "";
     words.forEach(w=>addRow(w));
@@ -188,23 +139,14 @@ function loadCodeToBasic(){
     renderLevelTabs();
   }catch(e){}
 }
-
 function renderLevelTabs(){
   try{
     const data = JSON.parse(document.getElementById("codeInput").value);
     const el = document.getElementById("levelTabs");
-    el.innerHTML = data.map((l,i)=>
-      `<button class="btn ${i===currentLevelIdx?'btn-primary':'btn-ghost'}" onclick="switchLevel(${i})">${l.name||'课时'+(i+1)}</button>`
-    ).join("");
+    el.innerHTML = data.map((l,i)=>'<button class="btn '+(i===currentLevelIdx?'btn-primary':'btn-ghost')+'" onclick="switchLevel('+i+')">'+(l.name||('课时'+(i+1)))+'</button>').join("");
   }catch(e){}
 }
-
-function switchLevel(i){
-  saveBasicToCode();
-  currentLevelIdx = i;
-  loadCodeToBasic();
-}
-
+function switchLevel(i){saveBasicToCode();currentLevelIdx=i;loadCodeToBasic();}
 function addLevel(){
   saveBasicToCode();
   try{
@@ -216,39 +158,32 @@ function addLevel(){
     loadCodeToBasic();
   }catch(e){}
 }
-
 function delLevel(){
   try{
     const data = JSON.parse(document.getElementById("codeInput").value);
     if(!Array.isArray(data)||data.length<=1){ alert("至少保留一个课时"); return; }
-    if(!confirm("删除课时「"+(data[currentLevelIdx]?.name||"")+"」？")) return;
+    if(!confirm("删除课时「"+((data[currentLevelIdx]&&data[currentLevelIdx].name)||"")+"」？")) return;
     data.splice(currentLevelIdx,1);
     if(currentLevelIdx >= data.length) currentLevelIdx = data.length - 1;
     document.getElementById("codeInput").value = JSON.stringify(data, null, 2);
     loadCodeToBasic();
   }catch(e){}
 }
-
 function saveBasicToCode(){
-  // 读取表格数据
   const rows = document.querySelectorAll("#wordRows tr");
   const words = [];
   rows.forEach(tr=>{
     const w = {};
-    tr.querySelectorAll("input").forEach(inp=>{
-      w[inp.dataset.f] = inp.value.trim();
-    });
+    tr.querySelectorAll("input").forEach(inp=>{ w[inp.dataset.f] = inp.value.trim(); });
     if(w.en) words.push(w);
   });
-  // 合并到现有 JSON
   let data;
   try{ data = JSON.parse(document.getElementById("codeInput").value); }catch{ data = []; }
   if(!Array.isArray(data)||!data.length) data = [{name:"LV1",words:[]}];
   data[currentLevelIdx] = { name: document.getElementById("levelName").value || "LV1", words };
   document.getElementById("codeInput").value = JSON.stringify(data, null, 2);
 }
-
-function saveBook(){
+async function saveBook(){
   saveBasicToCode();
   const name = document.getElementById("bookName").value.trim();
   if(!name){ alert("请输入词书名称"); return; }
@@ -256,42 +191,25 @@ function saveBook(){
   try{
     data = JSON.parse(document.getElementById("codeInput").value);
     if(!Array.isArray(data)) throw "必须是数组";
-    data.forEach((l,i)=>{
-      if(!l.name) throw `第${i+1}课时缺少 name`;
-      if(!Array.isArray(l.words)) throw `第${i+1}课时 words 不是数组`;
-    });
+    data.forEach((l,i)=>{ if(!l.name) throw "第"+(i+1)+"课时缺少 name"; if(!Array.isArray(l.words)) throw "第"+(i+1)+"课时 words 不是数组"; });
   }catch(e){ alert("格式错误："+e); return; }
-  const books = getBooks();
-  if(editingId){
-    const b = books.find(x=>x.id===editingId);
-    if(b){ b.name=name; b.data=data; }
-  } else {
-    books.push({ id: Date.now(), name, data });
-  }
-  setBooks(books);
-  autoSync();
-  alert("✅ 已保存");
-  backToList();
+  try { await SBData.saveBookFull(editingId, name, data); alert("✅ 已保存"); backToList(); }
+  catch (e) { alert("保存失败：" + ((e && e.message) || e)); }
 }
-
-function deleteBook(){
+async function deleteBook(){
   if(!editingId) return;
   if(!confirm("删除这个词书？")) return;
-  setBooks(getBooks().filter(x=>x.id!==editingId));
-  autoSync();
-  backToList();
+  try { await SBData.deleteBook(editingId); backToList(); }
+  catch (e) { alert("删除失败：" + ((e && e.message) || e)); }
 }
-function delBookById(id){
+async function delBookById(id){
   if(!confirm("删除这个词书？")) return;
-  setBooks(getBooks().filter(x=>x.id!==id));
-  autoSync();
-  renderList();
+  try { await SBData.deleteBook(id); refreshList(); }
+  catch (e) { alert("删除失败：" + ((e && e.message) || e)); }
 }
-
-renderList();
+refreshList();
 </script>
 <script src="sidebar.js?v=20261017b"></script>
-<script src="d1-sync.js?v=20261024"></script>
 <script src="desktop-download.js?v=20261017b"></script>
 </body>
 </html>
