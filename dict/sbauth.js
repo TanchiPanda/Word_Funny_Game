@@ -49,7 +49,6 @@ async function sbInit() {
     return _sb;
 }
 
-// ---------- 用户对象映射 ----------
 function _mapUser(sbUser) {
     if (!sbUser) return null;
     var email = sbUser.email || (sbUser.user_metadata && sbUser.user_metadata.email) || "";
@@ -69,7 +68,6 @@ function _saveAuth(u) {
     return u;
 }
 
-// ---------- 读取本地用户 ----------
 function sbGetUser() {
     try {
         var u = JSON.parse(localStorage.getItem(SB_USER_KEY) || "null");
@@ -80,7 +78,6 @@ function sbGetUser() {
     return null;
 }
 
-// 异步：从 Supabase 拿最新会话并写入本地
 async function sbRefreshUser() {
     var client = await sbInit();
     var { data } = await client.auth.getSession();
@@ -90,7 +87,6 @@ async function sbRefreshUser() {
     return null;
 }
 
-// ---------- 跨子域 cookie（与原 msauth 保持一致，钱包站可读）----------
 function _hubCookieDomain() {
     var h = location.hostname;
     var i = h.indexOf(".");
@@ -114,7 +110,6 @@ function _clearHubCookie(name) {
     } catch (e) {}
 }
 
-// ---------- 登录跳转（统一跳到账号中心 myacc）----------
 function msLogin(options) {
     var opt = options || {};
     var returnTo = opt.returnTo || location.href;
@@ -122,7 +117,6 @@ function msLogin(options) {
     location.href = url;
 }
 
-// ---------- 读取并清除返回页 ----------
 function msTakeReturnTo(def) {
     try {
         var v = localStorage.getItem("msReturnTo");
@@ -132,7 +126,6 @@ function msTakeReturnTo(def) {
     return def || "index.html";
 }
 
-// ---------- 处理回调 ----------
 async function msHandleRedirect(redirectUri) {
     var client = await sbInit();
     var params = new URLSearchParams(location.search);
@@ -146,7 +139,6 @@ async function msHandleRedirect(redirectUri) {
     return u;
 }
 
-// ---------- 退出 ----------
 async function msLogout(redirectUri, opt) {
     var back = (opt && opt.postLogoutRedirectUri) || (location.origin + "/index.html");
     try {
@@ -158,7 +150,6 @@ async function msLogout(redirectUri, opt) {
     location.href = back;
 }
 
-// ---------- 向后兼容别名 ----------
 var msGetUser = sbGetUser;
 function msClearLocal() {
     try { localStorage.removeItem(SB_USER_KEY); } catch (e) {}
