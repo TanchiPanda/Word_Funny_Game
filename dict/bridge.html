@@ -25,34 +25,17 @@ a{color:#4ecdc4}
   <div id="list" class="list"></div>
   <div id="foot"></div>
 </div>
+<script src="sbauth.js?v=20261031"></script>
+<script src="sb-data.js?v=20261031"></script>
 <script>
-const API = "https://api.r6t5.dpdns.org/api";
-const BOOKS_KEY = "wordGameCustomBooks";
-
 function b64urlDecode(s) {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
   while (s.length % 4) s += "=";
   return decodeURIComponent(escape(atob(s)));
 }
 
-function getUser() {
-  try { return JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); }
-  catch (e) { return null; }
-}
-function userEmail(u) { return (u && (u.email || u.login || u.id)) || ""; }
-
 function fail(text) {
   document.getElementById("out").innerHTML = '<span class="err">' + text + "</span>";
-}
-
-async function pushKv(uid, key, value) {
-  try {
-    await fetch(API + "/kv?user_id=" + encodeURIComponent(uid), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, value })
-    });
-  } catch (e) { /* 本地已保存，D1 失败不阻断 */ }
 }
 
 (async function () {
@@ -64,63 +47,44 @@ async function pushKv(uid, key, value) {
   try { payload = JSON.parse(b64urlDecode(m[1])); }
   catch (e) { fail("数据解析失败，请重试。"); return; }
 
-  const u = getUser();
-  const uid = userEmail(u);
-  if (!uid) { fail("还未登录，请先打开 <a href='https://myacc.r6t5.dpdns.org'>账号中心</a> 登录后再同步。"); return; }
-
   const bookName = (payload.bookName || "我的收藏").trim();
   const levelName = (payload.levelName || "LV1").trim();
   const words = (payload.words || []).filter(w => w && w.en && w.en.trim());
   if (!words.length) { fail("没有有效单词。"); return; }
 
-  // 读现有词书
-  let books;
-  try { books = JSON.parse(localStorage.getItem(BOOKS_KEY) || "[]"); }
-  catch (e) { books = []; }
-  if (!Array.isArray(books)) books = [];
-
-  let book = books.find(b => b.name === bookName);
-  if (!book) {
-    book = { id: Date.now(), name: bookName, data: [] };
-    books.push(book);
-  }
-  let level = (book.data || []).find(l => l.name === levelName);
-  if (!level) {
-    level = { name: levelName, words: [] };
-    book.data.push(level);
+  // 会话校验（Supabase 会话；未登录给引导）
+  try {
+    if (typeof sbRefreshUser === "function") await sbRefreshUser();
+  } catch (e) {}
+  const u = (typeof sbGetUser === "function") ? sbGetUser() : null;
+  if (!u || !(u.id || u.email)) {
+    fail('还未登录，请先打开 <a href="https://myacc.r6t5.dpdns.org/?app=wordgm&return=' +
+      encodeURIComponent(location.href) + '">账号中心</a> 登录后再同步。');
+    return;
   }
 
-  let added = 0, skipped = 0;
-  const existSet = new Set(level.words.map(x => (x.en || "").toLowerCase()));
-  const listEl = document.getElementById("list");
-  words.forEach(w => {
-    const en = w.en.trim();
-    if (existSet.has(en.toLowerCase())) { skipped++; return; }
-    existSet.add(en.toLowerCase());
-    level.words.push({
-      en: en,
-      phonetic: (w.phonetic || "").trim(),
-      pos: (w.pos || "").trim(),
-      cn: (w.cn || "").trim()
+  out.textContent = "正在写入云端词书…";
+  try {
+    const r = await SBData.appendWords(bookName, levelName, words);
+    const listEl = document.getElementById("list");
+    words.forEach(w => {
+      const en = w.en.trim();
+      const div = document.createElement("div");
+      div.className = "w";
+      div.innerHTML = "<b>" + escapeHtml(en) + "</b>" +
+        (w.phonetic ? ' <span class="pos">' + escapeHtml(w.phonetic) + "</span>" : "") +
+        (w.pos ? ' <span class="pos">' + escapeHtml(w.pos) + "</span>" : "") +
+        " " + escapeHtml(w.cn || "");
+      listEl.appendChild(div);
     });
-    added++;
-    const div = document.createElement("div");
-    div.className = "w";
-    div.innerHTML = "<b>" + escapeHtml(en) + "</b>" +
-      (w.phonetic ? ' <span class="pos">' + escapeHtml(w.phonetic) + "</span>" : "") +
-      (w.pos ? ' <span class="pos">' + escapeHtml(w.pos) + "</span>" : "") +
-      " " + escapeHtml(w.cn || "");
-    listEl.appendChild(div);
-  });
-
-  localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
-  await pushKv(uid, BOOKS_KEY, JSON.stringify(books));
-
-  out.innerHTML = '<span class="ok">✅ 完成：新增 ' + added + " 词" +
-    (skipped ? "，跳过重复 " + skipped : "") +
-    "，已归入《" + escapeHtml(bookName) + "》· " + escapeHtml(levelName) + "</span>";
-  document.getElementById("foot").innerHTML =
-    '<div style="margin-top:14px"><a href="../dict/chooser.html">前往选词书闯关 →</a></div>';
+    out.innerHTML = '<span class="ok">✅ 完成：新增 ' + r.added + " 词" +
+      (r.skipped ? "，跳过重复 " + r.skipped : "") +
+      "，已归入《" + escapeHtml(bookName) + "》· " + escapeHtml(levelName) + "</span>";
+    document.getElementById("foot").innerHTML =
+      '<div style="margin-top:14px"><a href="../dict/chooser.html">前往选词书闯关 →</a></div>';
+  } catch (e) {
+    fail("写入失败：" + escapeHtml((e && e.message) || e) + "。请确认已登录且数据库已初始化。");
+  }
 })();
 
 function escapeHtml(s) {
