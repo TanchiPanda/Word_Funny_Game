@@ -28,9 +28,8 @@ function _detectChinaNode() {
 
 var IS_CN_NODE = _detectChinaNode();
 
-// TODO(CN)：等后台拿到中国大陆区域的 Supabase project URL 和 anon key 后替换下面两个占位符
-var CN_SB_URL  = "https://TODO-CN-REGION.supabase.co";
-var CN_SB_ANON = "TODO_CN_ANON_KEY";
+var CN_SB_URL  = "https://bxanbosouqnezggwdqhs.supabase.co";
+var CN_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4YW5ib3NvdXFuZXpnZ3dkcWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNDg5NjAsImV4cCI6MjEwOTkyNDk2MH0.a29TONXcHs6lssvNw0KCAMVw6KkWsgysH5fiM3Pr0HM";
 var CN_APP_ID  = "wordgm-md-beta";  // 中国大陆测试版应用
 
 // 国际/CF 节点（默认）
