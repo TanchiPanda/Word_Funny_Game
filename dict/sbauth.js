@@ -30,9 +30,8 @@ var IS_CN_NODE = _detectChinaNode();
 
 var CN_SB_URL  = "https://bxanbosouqnezggwdqhs.supabase.co";
 var CN_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4YW5ib3NvdXFuZXpnZ3dkcWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNDg5NjAsImV4cCI6MjEwOTkyNDk2MH0.a29TONXcHs6lssvNw0KCAMVw6KkWsgysH5fiM3Pr0HM";
-var CN_APP_ID  = "wordgm-md-beta";  // 中国大陆测试版应用
+var CN_APP_ID  = "wordgm-md-beta";
 
-// 国际/CF 节点（默认）
 var INTL_SB_URL  = "https://fckqmlwkujixwztzqqni.supabase.co";
 var INTL_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja3FtbHdrdWppeHd6dHpxcW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjkzODksImV4cCI6MjEwNTkwNTM4OX0.W6FHJ-CgNNuCO9xEcrNuLj2y6-1D6Gyy72D0oGmA7Xw";
 var INTL_APP_ID  = "wordgm";
@@ -148,15 +147,14 @@ function _clearHubCookie(name) {
 function msLogin(options) {
     var opt = options || {};
     var returnTo = opt.returnTo || location.href;
-    // 如果当前是 cn 节点，returnTo 上保留 country=cn，登录回来还在 cn 节点
-    if (IS_CN_NODE && returnTo.indexOf("country=cn") < 0) {
-        try {
-            var u = new URL(returnTo);
-            u.searchParams.set("country", "cn");
-            returnTo = u.toString();
-        } catch (e) {}
-    }
-    var url = "https://myacc.r6t5.dpdns.org/?app=" + SB_APP_ID + "&return=" + encodeURIComponent(returnTo);
+    // 跳 myacc 时显式带上当前节点标记，防止 myacc 误判
+    var wantCountry = IS_CN_NODE ? "cn" : "cf";
+    try {
+        var u = new URL(returnTo);
+        u.searchParams.set("country", wantCountry);
+        returnTo = u.toString();
+    } catch (e) {}
+    var url = "https://myacc.r6t5.dpdns.org/?app=" + SB_APP_ID + "&country=" + wantCountry + "&return=" + encodeURIComponent(returnTo);
     location.href = url;
 }
 
