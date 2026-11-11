@@ -3,8 +3,44 @@
 // 兼容原 msauth.js 的函数名（msLogin/msGetUser/msLogout/msHandleRedirect/msTakeReturnTo），
 // 各页面只需把 <script src="dict/msauth.js"> 换成 <script src="dict/sbauth.js">。
 
-var SB_URL = "https://fckqmlwkujixwztzqqni.supabase.co";
-var SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja3FtbHdrdWppeHd6dHpxcW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjkzODksImV4cCI6MjEwNTkwNTM4OX0.W6FHJ-CgNNuCO9xEcrNuLj2y6-1D6Gyy72D0oGmA7Xw";
+// ---------- 节点判断：country=cn 走中国大陆服务器，否则走国际/CF 节点 ----------
+function _detectChinaNode() {
+    // 1) URL 显式 ?country=cn 优先
+    try {
+        var p = new URLSearchParams(location.search || "");
+        if (p.get("country") === "cn") {
+            try { sessionStorage.setItem("wordGameCountry", "cn"); } catch (e) {}
+            return true;
+        }
+        if (p.get("country") === "intl" || p.get("country") === "cf") {
+            try { sessionStorage.removeItem("wordGameCountry"); } catch (e) {}
+            return false;
+        }
+    } catch (e) {}
+    // 2) 跳转/刷新后从 sessionStorage 恢复
+    try {
+        if (sessionStorage.getItem("wordGameCountry") === "cn") return true;
+    } catch (e) {}
+    // 3) 预留：未来若 cn 子域名直接落地，在此追加 hostname 判断
+    // if (location.hostname.indexOf("cn.") === 0) return true;
+    return false;
+}
+
+var IS_CN_NODE = _detectChinaNode();
+
+// TODO(CN)：等后台拿到中国大陆区域的 Supabase project URL 和 anon key 后替换下面两个占位符
+var CN_SB_URL  = "https://TODO-CN-REGION.supabase.co";
+var CN_SB_ANON = "TODO_CN_ANON_KEY";
+var CN_APP_ID  = "wordgm-md-beta";  // 中国大陆测试版应用
+
+// 国际/CF 节点（默认）
+var INTL_SB_URL  = "https://fckqmlwkujixwztzqqni.supabase.co";
+var INTL_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja3FtbHdrdWppeHd6dHpxcW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjkzODksImV4cCI6MjEwNTkwNTM4OX0.W6FHJ-CgNNuCO9xEcrNuLj2y6-1D6Gyy72D0oGmA7Xw";
+var INTL_APP_ID  = "wordgm";
+
+var SB_URL  = IS_CN_NODE ? CN_SB_URL : INTL_SB_URL;
+var SB_ANON = IS_CN_NODE ? CN_SB_ANON : INTL_SB_ANON;
+var SB_APP_ID = IS_CN_NODE ? CN_APP_ID : INTL_APP_ID;
 
 var SB_USER_KEY = "wordGameGitHubUser";
 var _sb = null;
@@ -101,7 +137,7 @@ function _writeHubCookie(name, value, days) {
     } catch (e) {}
 }
 function _readHubCookie(name) {
-    var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*))"));
     return m ? decodeURIComponent(m[1]) : null;
 }
 function _clearHubCookie(name) {
@@ -113,7 +149,15 @@ function _clearHubCookie(name) {
 function msLogin(options) {
     var opt = options || {};
     var returnTo = opt.returnTo || location.href;
-    var url = "https://myacc.r6t5.dpdns.org/?app=wordgm&return=" + encodeURIComponent(returnTo);
+    // 如果当前是 cn 节点，returnTo 上保留 country=cn，登录回来还在 cn 节点
+    if (IS_CN_NODE && returnTo.indexOf("country=cn") < 0) {
+        try {
+            var u = new URL(returnTo);
+            u.searchParams.set("country", "cn");
+            returnTo = u.toString();
+        } catch (e) {}
+    }
+    var url = "https://myacc.r6t5.dpdns.org/?app=" + SB_APP_ID + "&return=" + encodeURIComponent(returnTo);
     location.href = url;
 }
 
