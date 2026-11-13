@@ -118,6 +118,7 @@ function render() {
     const list = document.getElementById("bookList"); list.innerHTML = "";
     const guest = isGuest();
     document.getElementById("guestTip").style.display = guest ? "" : "none";
+    // Classic 恢复按钮：仅登录且非 pro 显示；已激活则置灰
     const classicBtn = document.getElementById("classicBtn");
     if (!guest && USER_PLAN !== "pro") {
         classicBtn.style.display = "";

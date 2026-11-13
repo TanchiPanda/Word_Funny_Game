@@ -28,10 +28,12 @@ function _detectChinaNode() {
 
 var IS_CN_NODE = _detectChinaNode();
 
+// TODO(CN)：等后台拿到中国大陆区域的 Supabase project URL 和 anon key 后替换下面两个占位符
 var CN_SB_URL  = "https://bxanbosouqnezggwdqhs.supabase.co";
 var CN_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4YW5ib3NvdXFuZXpnZ3dkcWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNDg5NjAsImV4cCI6MjEwOTkyNDk2MH0.a29TONXcHs6lssvNw0KCAMVw6KkWsgysH5fiM3Pr0HM";
-var CN_APP_ID  = "wordgm-md-beta";
+var CN_APP_ID  = "wordgm-md-beta";  // 中国大陆测试版应用
 
+// 国际/CF 节点（默认）
 var INTL_SB_URL  = "https://fckqmlwkujixwztzqqni.supabase.co";
 var INTL_SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZja3FtbHdrdWppeHd6dHpxcW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzMjkzODksImV4cCI6MjEwNTkwNTM4OX0.W6FHJ-CgNNuCO9xEcrNuLj2y6-1D6Gyy72D0oGmA7Xw";
 var INTL_APP_ID  = "wordgm";
@@ -135,7 +137,7 @@ function _writeHubCookie(name, value, days) {
     } catch (e) {}
 }
 function _readHubCookie(name) {
-    var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*))"));
+    var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
     return m ? decodeURIComponent(m[1]) : null;
 }
 function _clearHubCookie(name) {
