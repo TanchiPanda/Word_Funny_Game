@@ -80,7 +80,7 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
 </div>
 <div style="text-align:center;margin-top:16px"><button class="btn btn-ghost" onclick="location.href='chooser.html'">← 选课时</button></div>
 </div>
-<script src="sbauth.js?v=20261031"></script>
+<script src="sbauth.js?v=20261113"></script>
 <script src="sb-data.js?v=20261031"></script>
 <script>
 let _books = [];
@@ -216,8 +216,11 @@ async function delBookById(id){
 refreshList();
 
 // ===== 识图导入词书（Workers AI） =====
-function ocrPick(){
-  if(typeof sbGetUser === "function" && !sbGetUser()){
+async function ocrPick(){
+  // 按真实会话校验，避免本地缓存过期时报"已登录"却调不通接口
+  var u = null;
+  try { u = (typeof sbResolveAuth === "function") ? await sbResolveAuth() : sbGetUser(); } catch (e) {}
+  if(!u){
     alert("请先登录后再使用识图导入");
     return;
   }

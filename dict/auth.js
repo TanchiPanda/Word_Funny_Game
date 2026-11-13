@@ -1,17 +1,27 @@
 // ===== 认证兼容层 =====
-// 底层为微软原生 OAuth（dict/msauth.js），已移除 Supabase
+// 底层为 Supabase Auth（dict/sbauth.js）
 // 对外保留原有函数名，避免各页面改动
 
 const ACCOUNT_URL = "https://myacc.r6t5.dpdns.org";
 const APP_ID = "wordgm";
 
 // ---------- 登录状态 ----------
+function _currentUser() {
+    // 优先用 sbauth 的账号状态（会按真实 Supabase 会话校验）
+    if (typeof sbGetUser === "function") {
+        var u = sbGetUser();
+        if (u) return u;
+    }
+    if (typeof msGetUser === "function") return msGetUser();
+    return null;
+}
+
 function isLoggedIn() {
-    return !!msGetUser();
+    return !!_currentUser();
 }
 
 function getGitHubUser() {
-    return msGetUser();
+    return _currentUser();
 }
 
 // 兼容旧名
@@ -51,8 +61,11 @@ async function refreshAccessToken() {
 // 普通页面只读本地/ cookie 状态，不加载 MSAL（按需在调用令牌时加载）
 async function initAuth() {
     if (location.pathname.endsWith("/login.html")) return;
-    // 若本地无用户但同域 cookie 有，则视为已登录（跨子域共享）
-    return msGetUser();
+    // 先按真实会话校验（而不是只读本地缓存），避免"显示已登录但会话已失效"
+    if (typeof sbResolveAuth === "function") {
+        try { return await sbResolveAuth(); } catch (e) {}
+    }
+    return _currentUser();
 }
 
 if (document.readyState === "loading") {

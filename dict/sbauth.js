@@ -101,26 +101,117 @@ function _mapUser(sbUser) {
 function _saveAuth(u) {
     try { localStorage.setItem(SB_USER_KEY, JSON.stringify(u)); } catch (e) {}
     _writeHubCookie("ms_user", JSON.stringify(u), 7);
+    _writeHubCookie("ms_user_node", IS_CN_NODE ? "cn" : "cf", 7);
     return u;
 }
 
+function _clearAuth() {
+    try { localStorage.removeItem(SB_USER_KEY); } catch (e) {}
+    _clearHubCookie("ms_user");
+    _clearHubCookie("ms_user_node");
+}
+
+// 登录态缓存：checked=false 时 sbGetUser 走"乐观缓存"，checked=true 时以真实会话为准
+var _sbState = { user: null, checked: false, ts: 0, checking: null };
+
 function sbGetUser() {
+    if (_sbState.checked) return _sbState.user;
+
+    // 未校验时：跨站 cookie 是账号中心最新写入的，优先于本页旧 localStorage
+    var cookieNode = _readHubCookie("ms_user_node");
+    if (cookieNode && cookieNode !== (IS_CN_NODE ? "cn" : "cf")) return null; // 节点不符，不能当本人
+
+    var c = _readHubCookie("ms_user");
+    if (c) {
+        try {
+            var cu = JSON.parse(c);
+            if (cu && (cu.id || cu.email)) return cu;
+        } catch (e) {}
+    }
     try {
         var u = JSON.parse(localStorage.getItem(SB_USER_KEY) || "null");
         if (u && (u.id || u.email)) return u;
     } catch (e) {}
-    var c = _readHubCookie("ms_user");
-    if (c) { try { return JSON.parse(c); } catch (e) {} }
     return null;
 }
 
+// 消费 URL 里带回的会话（账号中心 return 时是 #access_token，PKCE 时是 ?code=）
+async function _consumeUrlSession(client) {
+    try {
+        var hash = location.hash || "";
+        if (hash.indexOf("access_token=") >= 0) {
+            var hp = new URLSearchParams(hash.replace(/^#/, ""));
+            var at = hp.get("access_token");
+            var rt = hp.get("refresh_token");
+            if (at && rt) {
+                await client.auth.setSession({ access_token: at, refresh_token: rt });
+                try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+            }
+            return;
+        }
+        var qs = new URLSearchParams(location.search || "");
+        var code = qs.get("code");
+        if (code && typeof client.auth.exchangeCodeForSession === "function") {
+            await client.auth.exchangeCodeForSession(code);
+            try {
+                qs.delete("code");
+                history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs.toString() : ""));
+            } catch (e) {}
+        }
+    } catch (e) {}
+}
+
+// 真正的登录态解析：以 Supabase 会话为唯一标准，并回写/清理本地缓存
+async function sbResolveAuth(force) {
+    if (_sbState.checking) return _sbState.checking;
+    if (!force && _sbState.checked && Date.now() - _sbState.ts < 30000) return _sbState.user;
+
+    _sbState.checking = (async function () {
+        var user = null;
+        try {
+            var client = await sbInit();
+            await _consumeUrlSession(client);
+
+            var { data } = await client.auth.getSession();
+            var session = data && data.session;
+
+            // 会话过期时尝试刷新一次
+            if (!session) {
+                try {
+                    var r = await client.auth.refreshSession();
+                    if (r && r.data && r.data.session) session = r.data.session;
+                } catch (e) {}
+            }
+
+            if (session && session.user) user = _saveAuth(_mapUser(session.user));
+            else _clearAuth();
+        } catch (e) {
+            // 网络/库加载失败：不清缓存，避免误判成"未登录"
+            user = sbGetUser();
+        }
+
+        _sbState.user = user;
+        _sbState.checked = true;
+        _sbState.ts = Date.now();
+        _sbState.checking = null;
+        try {
+            document.dispatchEvent(new CustomEvent("sb:auth", { detail: { user: user } }));
+        } catch (e) {}
+        return user;
+    })();
+
+    return _sbState.checking;
+}
+
 async function sbRefreshUser() {
-    var client = await sbInit();
-    var { data } = await client.auth.getSession();
-    if (data && data.session && data.session.user) {
-        return _saveAuth(_mapUser(data.session.user));
-    }
-    return null;
+    return await sbResolveAuth(true);
+}
+
+// 订阅登录态变化（页面可用它刷新 UI）
+function sbOnAuth(cb) {
+    if (typeof cb !== "function") return;
+    document.addEventListener("sb:auth", function (e) { cb(e.detail && e.detail.user); });
+    cb(sbGetUser());
 }
 
 // 取当前 access_token（供服务端接口调用）
@@ -134,6 +225,21 @@ async function sbGetAccessToken() {
     } catch (e) {}
     return null;
 }
+
+// 启动时自动校验一次；从账号中心切回来（focus/可见性变化）时重新校验
+(function () {
+    function boot() { sbResolveAuth().catch(function () {}); }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+    else setTimeout(boot, 0);
+
+    function recheck() {
+        if (document.hidden) return;
+        if (Date.now() - _sbState.ts < 10000) return;
+        sbResolveAuth(true).catch(function () {});
+    }
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+})();
 
 function _hubCookieDomain() {
     var h = location.hostname;
@@ -182,16 +288,8 @@ function msTakeReturnTo(def) {
 }
 
 async function msHandleRedirect(redirectUri) {
-    var client = await sbInit();
-    var params = new URLSearchParams(location.search);
-    if (params.get("code") || location.hash.indexOf("access_token") >= 0) {
-        var { data, error } = await client.auth.getSessionFromUrl({ storeSession: true });
-        if (!error && data && data.session) {
-            return _saveAuth(_mapUser(data.session.user));
-        }
-    }
-    var u = await sbRefreshUser();
-    return u;
+    // 统一交给 sbResolveAuth：自动消费 #access_token / ?code= 并校验会话
+    return await sbResolveAuth(true);
 }
 
 async function msLogout(redirectUri, opt) {
@@ -200,15 +298,19 @@ async function msLogout(redirectUri, opt) {
         var client = await sbInit();
         await client.auth.signOut();
     } catch (e) {}
-    try { localStorage.removeItem(SB_USER_KEY); } catch (e) {}
-    _clearHubCookie("ms_user");
+    _clearAuth();
+    _sbState.user = null;
+    _sbState.checked = true;
+    _sbState.ts = Date.now();
     location.href = back;
 }
 
 var msGetUser = sbGetUser;
 function msClearLocal() {
-    try { localStorage.removeItem(SB_USER_KEY); } catch (e) {}
-    _clearHubCookie("ms_user");
+    _clearAuth();
+    _sbState.user = null;
+    _sbState.checked = true;
+    _sbState.ts = Date.now();
 }
 async function msGetToken() { return null; }
 function msPeekToken() { return null; }
