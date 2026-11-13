@@ -271,31 +271,44 @@ function buildNotesMessages(body) {
   const q = String(body.question || "").slice(0, 1000);
   const action = String(body.action || "ask");
 
-  const ctx = [
-    note ? "【整篇笔记】\n" + note : "",
-    sel ? "【当前选中片段】\n" + sel : "",
-  ].filter(Boolean).join("\n\n");
+  const refNote = note && note !== sel
+    ? "参考上下文（整篇笔记，不要复述、不要输出）：\n<<<\n" + note + "\n>>>\n\n"
+    : "";
 
-  let task;
+  let userContent;
   if (action === "ask") {
-    task = "请回答用户关于笔记的问题。能引用原文就简短引用；笔记里没有相关信息时直接说明。\n\n用户问题：" + (q || "这段内容是什么意思？");
+    userContent =
+      (sel ? "选中的片段：\n<<<\n" + sel + "\n>>>\n\n" : "") +
+      (note && note !== sel ? "整篇笔记：\n<<<\n" + note + "\n>>>\n\n" : "") +
+      "问题：" + (q || "这段内容是什么意思？") +
+      "\n\n要求：直接回答，不要复述笔记原文，不要输出 <<< >>> 标记。";
   } else if (action === "rewrite") {
-    task = "任务：" + (NOTES_STYLES[body.style] || NOTES_STYLES.polish) +
-      "\n只输出改写后的文字，不要解释、不要加引号、不要写“改写如下”。保留原有 Markdown 结构与列表层级。";
+    if (!sel) return null;
+    userContent =
+      refNote +
+      "任务：" + (NOTES_STYLES[body.style] || NOTES_STYLES.polish) + "\n" +
+      "只改写下面这一段的文字：\n<<<\n" + sel + "\n>>>\n" +
+      "要求：直接输出改写后的文字本身；不要解释、不要加引号、不要写“改写如下”；不要输出 <<< >>> 标记；保留原有的 Markdown 结构。";
   } else if (action === "summary") {
-    task = sel
-      ? "把【当前选中片段】总结成 3~6 条要点，每条一句话，只输出列表。"
-      : "把【整篇笔记】总结成 3~8 条要点，每条一句话，只输出列表。";
+    userContent =
+      refNote +
+      (sel
+        ? "把下面这段总结成 3~6 条要点，每条一句话：\n<<<\n" + sel + "\n>>>"
+        : "把上面的整篇笔记总结成 3~8 条要点，每条一句话。") +
+      "\n要求：只输出 Markdown 列表，不要开头结尾的说明。";
   } else if (action === "translate") {
-    task = body.target === "en"
-      ? "把【当前选中片段】（没有就用整篇笔记）翻译成英文，只输出译文，保留 Markdown 格式。"
-      : "把【当前选中片段】（没有就用整篇笔记）翻译成中文，只输出译文，保留 Markdown 格式。";
+    const target = body.target === "en" ? "英文" : "中文";
+    userContent =
+      refNote +
+      "把下面这段翻译成" + target + "：\n<<<\n" + (sel || note) + "\n>>>\n" +
+      "要求：只输出译文，保留 Markdown 格式，不要输出 <<< >>> 标记。";
   } else {
-    task = "请就这段笔记给出有用的补充或建议。";
+    userContent = refNote + "请就这段笔记给出有用的补充或建议。";
   }
+
   return [
     { role: "system", content: NOTES_SYSTEM },
-    { role: "user", content: (ctx ? ctx + "\n\n" : "") + task },
+    { role: "user", content: userContent },
   ];
 }
 
@@ -331,10 +344,15 @@ async function handleNotesAi(request, env) {
     }, 429);
   }
 
+  const messages = buildNotesMessages(body);
+  if (!messages) {
+    return json({ ok: false, error: "no_selection", message: "请先在正文里选中要改写的文字" }, 400);
+  }
+
   const models = [env.NOTES_MODEL || NOTES_MODEL, NOTES_FALLBACK];
   for (const m of models) {
     try {
-      const out = await env.AI.run(m, { messages: buildNotesMessages(body), max_tokens: 1024, temperature: 0.4 });
+      const out = await env.AI.run(m, { messages, max_tokens: 1024, temperature: 0.4 });
       const text = (out && (out.response || out.text)) ||
         (out && out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) || "";
       if (String(text).trim()) {
