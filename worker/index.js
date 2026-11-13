@@ -350,6 +350,29 @@ async function handleNotesAi(request, env) {
   }
 
   const models = [env.NOTES_MODEL || NOTES_MODEL, NOTES_FALLBACK];
+
+  // 流式：边生成边返回，避免十几秒干等
+  const wantStream = absBody.stream === true || url.searchParams.get("stream") === "1";
+  if (wantStream) {
+    for (const m of models) {
+      try {
+        const out = await env.AI.run(m, { messages, max_tokens: 1024, temperature: 0.4, stream: true });
+        if (!out || !out.getReader) continue;
+        return new Response(out, {
+          headers: {
+            ...CORS,
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache",
+            "X-AI-Model": m,
+            "X-AI-Used": String(quota.used),
+            "X-AI-Limit": String(quota.limit),
+            "Access-Control-Expose-Headers": "X-AI-Model, X-AI-Used, X-AI-Limit",
+          },
+        });
+      } catch (e) {}
+    }
+  }
+
   for (const m of models) {
     try {
       const out = await env.AI.run(m, { messages, max_tokens: 1024, temperature: 0.4 });
