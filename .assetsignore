@@ -1,0 +1,7 @@
+.git
+.gitignore
+wrangler.toml
+.assetsignore
+worker
+functions
+.github

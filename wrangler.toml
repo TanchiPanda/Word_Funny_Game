@@ -1,0 +1,23 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "word-funny-game"
+main = "worker/index.js"
+compatibility_date = "2026-11-01"
+
+# 静态资源就是仓库根目录（与原部署保持一致）
+[assets]
+directory = "."
+binding = "ASSETS"
+# 只有 /api/* 进入 Worker，其余直接由静态资源返回，行为和现在一致
+run_worker_first = ["/api/*"]
+
+# Workers AI 绑定（识图用）
+[ai]
+binding = "AI"
+
+# 额度计数用的 KV：先在 Dashboard 建 namespace，再把 id 填进来
+# [[kv_namespaces]]
+# binding = "VISION_QUOTA"
+# id = "<你的 KV namespace id>"
+
+[observability]
+enabled = true
