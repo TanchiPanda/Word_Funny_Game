@@ -228,6 +228,16 @@ async function handleApi(request, env) {
     return new Response(null, { status: 204, headers: CORS });
   }
 
+  // 健康检查：用于确认绑定是否生效（不返回任何密钥）
+  if (path === "/api/health") {
+    return json({
+      ok: true,
+      ai: !!(env && env.AI && typeof env.AI.run === "function"),
+      kv: !!(env && env.VISION_QUOTA && typeof env.VISION_QUOTA.get === "function"),
+      model: MODEL,
+    });
+  }
+
   if (path === "/api/vision" || path === "/api/quota") {
     if (request.method !== "POST") return json({ ok: false, error: "Method Not Allowed" }, 405);
 
