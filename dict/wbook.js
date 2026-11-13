@@ -2459,16 +2459,35 @@ function setSingleLevelRef(bi, li) {
 function bookTotalWords(book) {
     return book.levels.reduce((sum, lv) => sum + lv.words.length, 0);
 }
-// 获取所有词书（含自定义词书）
+// 自定义词书：权威数据源在 Supabase（RLS 直连），内存缓存，不再以 localStorage 为来源
+let _customBooks = [];
+
+// 获取所有词书（内置 WORD_BOOKS + 云端自定义词书）
 function getAllBooks() {
-    let custom = [];
-    try {
-        custom = JSON.parse(localStorage.getItem("wordGameCustomBooks") || "[]").map(cb => ({
-            name: cb.name, free: false, levels: cb.data
-        }));
-    } catch(e) {}
-    return WORD_BOOKS.concat(custom);
+    return WORD_BOOKS.concat(_customBooks);
 }
+
+// 登录后从 Supabase 拉取自定义词书并填充内存缓存，完成后通知页面重渲染
+var _customRetry = 0;
+function loadCustomBooksFromCloud() {
+    _customBooks = [];
+    // wbook.js 可能先于 sb-data.js 加载：短重试等待 SBData 就绪，最多约 3 秒
+    if (typeof SBData === "undefined" || !SBData.listBooks) {
+        if (_customRetry++ < 10) setTimeout(loadCustomBooksFromCloud, 300);
+        return;
+    }
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem("wordGameGitHubUser") || "null"); } catch (e) {}
+    if (!u || !(u.id || u.email)) return;
+    SBData.listBooks().then(function (books) {
+        _customBooks = (books || []).map(function (cb) {
+            return { id: cb.id, name: cb.name, free: false, levels: cb.data };
+        });
+        if (typeof window.onWordbooksLoaded === "function") window.onWordbooksLoaded();
+    }).catch(function () {});
+}
+// 脚本多在 body 末尾执行，直接拉取；SBData 未就绪时由上面的重试兜底
+loadCustomBooksFromCloud();
 
 // 从 D1 拉取内置词书（覆盖本地默认）
 fetch("https://api.r6t5.dpdns.org/api/wordbooks?user_id=builtin")

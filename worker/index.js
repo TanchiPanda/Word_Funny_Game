@@ -219,6 +219,135 @@ async function handleVision(body, request, env) {
 }
 
 
+
+// ===== TanchiNotes「AI 帮写」接口（跨域给 tcnotes 调用）=====
+// 路由：POST /api/notes-ai   GET /api/notes-ai/quota
+const NOTES_MODEL = "@cf/zai-org/glm-4.7-flash";
+const NOTES_FALLBACK = "@cf/qwen/qwen3-30b-a3b-fp8";
+const NOTES_DAILY = 60;
+const NOTES_MINUTE = 8;
+const _notesMem = new Map();
+
+async function notesQuota(env, id, consume) {
+  const day = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const dayKey = "ai:v:" + id + ":" + day;
+  const minKey = "ai:m:" + id + ":" + Math.floor(Date.now() / 60000);
+  const kv = env && env.VISION_QUOTA && typeof env.VISION_QUOTA.get === "function" ? env.VISION_QUOTA : null;
+
+  const dUsed = kv ? parseInt((await kv.get(dayKey)) || "0", 10) : (_notesMem.get(dayKey) || 0);
+  const mUsed = kv ? parseInt((await kv.get(minKey)) || "0", 10) : (_notesMem.get(minKey) || 0);
+
+  if (consume) {
+    if (dUsed >= NOTES_DAILY) return { ok: false, reason: "daily", used: dUsed, limit: NOTES_DAILY, mode: kv ? "kv" : "memory" };
+    if (mUsed >= NOTES_MINUTE) return { ok: false, reason: "minute", used: mUsed, limit: NOTES_MINUTE, mode: kv ? "kv" : "memory" };
+    if (kv) {
+      await Promise.all([
+        kv.put(dayKey, String(dUsed + 1), { expirationTtl: 172800 }),
+        kv.put(minKey, String(mUsed + 1), { expirationTtl: 120 }),
+      ]);
+    } else {
+      _notesMem.set(dayKey, dUsed + 1);
+      _notesMem.set(minKey, mUsed + 1);
+    }
+    return { ok: true, used: dUsed + 1, limit: NOTES_DAILY, mode: kv ? "kv" : "memory" };
+  }
+  return { used: dUsed, limit: NOTES_DAILY, mode: kv ? "kv" : "memory" };
+}
+
+const NOTES_SYSTEM =
+  "你是「贪吃笔记」里的中文写作助手。用户的笔记使用 Markdown 语法。回答简洁、直接，不要客套话，除 Markdown 外不要使用 HTML。";
+
+const NOTES_STYLES = {
+  polish: "润色：保持原意与信息量，让表达更通顺自然，修正语病与标点。",
+  concise: "精简：压缩到原长度 50%~70%，只保留关键信息。",
+  expand: "扩写：补充细节与过渡，长度约为原来 1.5 倍，不要编造事实。",
+  formal: "正式化：改成书面、正式的表达。",
+  casual: "口语化：改成自然口语，保留专业术语。",
+};
+
+function buildNotesMessages(body) {
+  const sel = String(body.selection || "").slice(0, 6000);
+  const note = String(body.note || "").slice(0, 8000);
+  const q = String(body.question || "").slice(0, 1000);
+  const action = String(body.action || "ask");
+
+  const ctx = [
+    note ? "【整篇笔记】\n" + note : "",
+    sel ? "【当前选中片段】\n" + sel : "",
+  ].filter(Boolean).join("\n\n");
+
+  let task;
+  if (action === "ask") {
+    task = "请回答用户关于笔记的问题。能引用原文就简短引用；笔记里没有相关信息时直接说明。\n\n用户问题：" + (q || "这段内容是什么意思？");
+  } else if (action === "rewrite") {
+    task = "任务：" + (NOTES_STYLES[body.style] || NOTES_STYLES.polish) +
+      "\n只输出改写后的文字，不要解释、不要加引号、不要写“改写如下”。保留原有 Markdown 结构与列表层级。";
+  } else if (action === "summary") {
+    task = sel
+      ? "把【当前选中片段】总结成 3~6 条要点，每条一句话，只输出列表。"
+      : "把【整篇笔记】总结成 3~8 条要点，每条一句话，只输出列表。";
+  } else if (action === "translate") {
+    task = body.target === "en"
+      ? "把【当前选中片段】（没有就用整篇笔记）翻译成英文，只输出译文，保留 Markdown 格式。"
+      : "把【当前选中片段】（没有就用整篇笔记）翻译成中文，只输出译文，保留 Markdown 格式。";
+  } else {
+    task = "请就这段笔记给出有用的补充或建议。";
+  }
+  return [
+    { role: "system", content: NOTES_SYSTEM },
+    { role: "user", content: (ctx ? ctx + "\n\n" : "") + task },
+  ];
+}
+
+async function handleNotesAi(request, env) {
+  const url = new URL(request.url);
+  const auth = request.headers.get("Authorization") || "";
+  let sub = null;
+  if (auth) {
+    try { sub = (await verifyJwt(auth.replace(/^Bearer\s+/i, ""))).sub; } catch (e) { sub = null; }
+  }
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const id = sub ? "u:" + sub : "ip:" + ip;
+
+  if (url.pathname === "/api/notes-ai/quota") {
+    return json({ ok: true, signedIn: !!sub, ...(await notesQuota(env, id, false)) });
+  }
+  if (request.method !== "POST") return json({ ok: false, error: "Method Not Allowed" }, 405);
+
+  let body = {};
+  try { body = JSON.parse((await request.text()) || "{}"); } catch (e) {
+    return json({ ok: false, error: "请求格式错误" }, 400);
+  }
+
+  const quota = await notesQuota(env, id, true);
+  if (!quota.ok) {
+    return json({
+      ok: false,
+      error: quota.reason === "daily" ? "daily_limit" : "rate_limited",
+      message: quota.reason === "daily"
+        ? "今天的 AI 额度用完了（" + quota.limit + " 次/天），明天再来"
+        : "操作太快了，休息几秒再试",
+      used: quota.used, limit: quota.limit, mode: quota.mode,
+    }, 429);
+  }
+
+  const models = [env.NOTES_MODEL || NOTES_MODEL, NOTES_FALLBACK];
+  for (const m of models) {
+    try {
+      const out = await env.AI.run(m, { messages: buildNotesMessages(body), max_tokens: 1024, temperature: 0.4 });
+      const text = (out && (out.response || out.text)) ||
+        (out && out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) || "";
+      if (String(text).trim()) {
+        return json({
+          ok: true, signedIn: !!sub, text: String(text).trim(), model: m,
+          used: quota.used, limit: quota.limit, left: Math.max(0, quota.limit - quota.used), mode: quota.mode,
+        });
+      }
+    } catch (e) {}
+  }
+  return json({ ok: false, error: "model_error", message: "模型这次没返回结果，稍后重试" }, 502);
+}
+
 // ---------- 路由 ----------
 async function handleApi(request, env) {
   const url = new URL(request.url);
@@ -235,7 +364,13 @@ async function handleApi(request, env) {
       ai: !!(env && env.AI && typeof env.AI.run === "function"),
       kv: !!(env && env.VISION_QUOTA && typeof env.VISION_QUOTA.get === "function"),
       model: MODEL,
+      notesModel: NOTES_MODEL,
+      notesDaily: NOTES_DAILY,
     });
+  }
+
+  if (path === "/api/notes-ai" || path === "/api/notes-ai/quota") {
+    return await handleNotesAi(request, env);
   }
 
   if (path === "/api/vision" || path === "/api/quota") {
