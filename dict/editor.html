@@ -63,7 +63,9 @@ td input:focus{outline:none;background:rgba(255,255,255,0.1)}
     </table>
     <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-ghost" onclick="addRow()">+ 添加单词</button>
-      <button class="btn btn-muted" disabled title="识图导入词书功能正在适配中，敬请期待">📷 识图导入（适配中）</button>
+      <button class="btn btn-green" onclick="ocrPick()">📷 识图导入词书</button>
+      <input type="file" id="ocrFile" accept="image/*" style="display:none" onchange="ocrHandle(this)">
+      <span id="ocrHint" style="font-size:12px;color:#b8d8c8"></span>
     </div>
   </div>
   <div id="codePanel" class="hidden">
@@ -212,6 +214,97 @@ async function delBookById(id){
   catch (e) { alert("删除失败：" + ((e && e.message) || e)); }
 }
 refreshList();
+
+// ===== 识图导入词书（Workers AI） =====
+function ocrPick(){
+  if(typeof sbGetUser === "function" && !sbGetUser()){
+    alert("请先登录后再使用识图导入");
+    return;
+  }
+  var f = document.getElementById("ocrFile");
+  f.value = "";
+  f.click();
+}
+
+// 压缩图片：长边 ≤1600px，JPEG 0.85
+function ocrCompress(file){
+  return new Promise(function(resolve, reject){
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function(){
+      try{
+        var max = 1600;
+        var w = img.width, h = img.height;
+        if(Math.max(w,h) > max){
+          var s = max / Math.max(w,h);
+          w = Math.round(w*s); h = Math.round(h*s);
+        }
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL("image/jpeg", 0.85));
+      }catch(e){ URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("图片读取失败")); };
+    img.src = url;
+  });
+}
+
+async function ocrHandle(input){
+  var file = input.files && input.files[0];
+  if(!file) return;
+  var hint = document.getElementById("ocrHint");
+  try{
+    hint.textContent = "正在压缩图片…";
+    var image = await ocrCompress(file);
+    if(image.length > 5_600_000) throw new Error("图片太大，请换一张小一点的");
+
+    var token = (typeof sbGetAccessToken === "function") ? await sbGetAccessToken() : null;
+    if(!token) throw new Error("登录已过期，请重新登录");
+
+    hint.textContent = "正在识别，约需 5–15 秒…";
+    var resp = await fetch("/api/vision", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ image: image })
+    });
+    var d = await resp.json();
+    if(!resp.ok || !d.ok) throw new Error(d.error || ("请求失败 " + resp.status));
+
+    var words = d.words || [];
+    if(!words.length){
+      hint.textContent = "没识别到单词，可换个角度或更清晰的图";
+      if(d.raw) console.warn("vision raw:", d.raw);
+      return;
+    }
+
+    var tbody = document.getElementById("wordRows");
+    // 表格里若只有一个空行，先清掉
+    var onlyEmpty = tbody.rows.length === 1 && ["en","phonetic","pos","cn"].every(function(f){
+      return !(tbody.rows[0].querySelector('[data-f="'+f+'"]') || {}).value;
+    });
+    if(onlyEmpty) tbody.innerHTML = "";
+
+    // 已存在的词先去重，避免重复导入
+    var have = {};
+    Array.prototype.forEach.call(tbody.querySelectorAll('[data-f="en"]'), function(el){
+      if(el.value.trim()) have[el.value.trim().toLowerCase()] = 1;
+    });
+    var added = 0, dup = 0;
+    words.forEach(function(w){
+      if(have[w.en.toLowerCase()]){ dup++; return; }
+      have[w.en.toLowerCase()] = 1;
+      addRow(w); added++;
+    });
+    saveBasicToCode();
+
+    hint.textContent = "已导入 " + added + " 个词" + (dup ? "，跳过重复 " + dup + " 个" : "") +
+      (d.quota ? "（今日 " + d.quota.used + "/" + d.quota.limit + "）" : "");
+  }catch(e){
+    hint.textContent = "失败：" + ((e && e.message) || e);
+  }
+}
 </script>
 <script src="sidebar.js?v=20261017b"></script>
 <script src="desktop-download.js?v=20261017b"></script>

@@ -123,6 +123,18 @@ async function sbRefreshUser() {
     return null;
 }
 
+// 取当前 access_token（供服务端接口调用）
+async function sbGetAccessToken() {
+    try {
+        var client = await sbInit();
+        var { data } = await client.auth.getSession();
+        if (data && data.session && data.session.access_token) return data.session.access_token;
+        var r = await client.auth.refreshSession();
+        if (r && r.data && r.data.session) return r.data.session.access_token;
+    } catch (e) {}
+    return null;
+}
+
 function _hubCookieDomain() {
     var h = location.hostname;
     var i = h.indexOf(".");
